@@ -1,96 +1,142 @@
-# Farmacia
+# ApoPharma — Sistema de Gestión de Farmacia de Emergencia
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Monorepo para digitalizar la gestión de insumos y la dispensación de medicamentos en una farmacia de campaña. Reemplaza el registro en papel por un flujo ágil basado en escaneo QR, mantiene el inventario actualizado en tiempo real y permite un control mínimo pero seguro sobre la entrega de fármacos a los pacientes.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Stack
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+| Capa | Tecnología |
+|---|---|
+| **Frontend** | Angular 21 (standalone) + Ionic 8 |
+| **Backend** | NestJS 11 + TypeORM |
+| **Base de datos** | SQLite (embebida, sin servidor) |
+| **Lenguaje** | TypeScript ~5.9 (strict) |
+| **Monorepo** | Nx 23 |
+| **Estilos** | SCSS |
+| **Test unitarios (FE)** | Vitest |
+| **Test unitarios (BE)** | Jest + ts-jest |
+| **E2E (FE)** | Playwright |
+| **E2E (BE)** | Jest + Axios |
+| **Linter** | ESLint v9 (flat config) |
+| **Formateo** | Prettier |
 
-## Run tasks
+## Propósito
 
-To run tasks with Nx use:
+El sistema está diseñado para **equipos humanitarios** que operan farmacias de emergencia en terreno. Su objetivo es:
 
-```sh
-npx nx <target> <project-name>
+1. **Recepcionar donaciones** — registrar lotes de medicamentos con etiquetado QR para trazabilidad total.
+2. **Mantener inventario perpetuo** — con descuento automático al dispensar, alertas de stock bajo y conteo físico para ajustes.
+3. **Dispensar medicamentos** — mediante flujo guiado por escaneo QR del paciente y del lote, con validación básica de dosis.
+4. **Historial por paciente** — registrar entregas anteriores asociadas a un ID de emergencia.
+5. **Administrar el sistema** — gestión de usuarios, roles, umbrales de stock y límites de dosis.
+
+## Alcance
+
+### Incluye
+- Registro de lotes con código QR único y ubicación física
+- Control de stock automático con alertas de umbral bajo y vencimiento próximo
+- Registro rápido de pacientes de emergencia con marcación "damnificado"
+- Dispensación con escaneo de paciente y lote, validación de dosis y registro de entregas
+- Conteo físico para ajustar inventario
+- Historial de dispensaciones por paciente
+- Autenticación por PIN y control de roles (farmacéutico, despachador)
+
+### Fuera de alcance
+- Valor monetario de donaciones o gestión contable
+- Expediente médico completo, diagnóstico o prescripción electrónica
+- Detección de interacciones medicamentosas complejas
+- Órdenes de compra automáticas
+- Proyecciones de consumo avanzadas
+
+## Arquitectura
+
+```
+Farmacia/
+├── apps/
+│   ├── frontend/                    Angular 21 + Ionic 8 (standalone)
+│   │   └── src/app/
+│   │       ├── auth/                Inicio de sesión
+│   │       ├── recepcion/           Dashboard de ingresos + modales
+│   │       ├── inventario/          Panel de stock + umbrales
+│   │       ├── dispensacion/        Flujo de 3 pasos (escanear → seleccionar → confirmar)
+│   │       ├── historial/           Historial de paciente
+│   │       ├── administracion/      Usuarios y configuración
+│   │       ├── shared/              Componentes, pipes y modelos compartidos
+│   │       └── core/                Interceptors, guards y servicios singleton
+│   │
+│   ├── backend/                     NestJS 11
+│   │   └── src/app/
+│   │       ├── auth/                Login + JWT
+│   │       ├── recepcion/           CRUD lotes y medicamentos
+│   │       ├── inventario/          Stock, ajustes, umbrales
+│   │       ├── dispensacion/        Pacientes, dispensación, validación dosis
+│   │       ├── historial/           Consulta de dispensaciones
+│   │       ├── administracion/      CRUD usuarios y configuración
+│   │       └── common/              Entidades, guards, decoradores
+│   │
+│   ├── frontend-e2e/               Playwright
+│   └── backend-e2e/                Jest + Axios
+│
+├── documents/                       Planes detallados por módulo
+│   ├── base.md                      Referencia general de arquitectura
+│   ├── frontend-plan.md             Plan de implementación frontend
+│   ├── backend-plan.md              Plan de implementación backend
+│   └── modules/                     Propósito, diseño y tareas por módulo
+│       ├── autenticacion/
+│       ├── recepcion/
+│       ├── inventario/
+│       ├── dispensacion/
+│       ├── historial/
+│       └── administracion/
+│
+├── .opencode/                       Agentes opencode para el proyecto
+│   └── agents/                      Definiciones de agentes especializados
+│
+├── nx.json
+├── eslint.config.mjs
+├── tsconfig.base.json
+└── package.json
 ```
 
-For example:
+## Base de Datos (7 tablas)
+
+| Tabla | Propósito |
+|---|---|
+| `medicamento` | Catálogo de medicamentos |
+| `lote` | Lotes con código QR, stock, vencimiento |
+| `paciente` | Registro mínimo de pacientes de emergencia |
+| `dispensacion` | Cabecera de cada entrega |
+| `dispensacion_detalle` | Items de cada dispensación |
+| `usuario` | Usuarios del sistema con PIN y rol |
+| `configuracion` | Umbrales de stock y límites de dosis |
+
+## Módulos Funcionales
+
+| Módulo | Pantallas | Modales |
+|---|---|---|
+| **Autenticación** | Login | Recuperación de PIN |
+| **Recepción** | Dashboard de Ingresos | Ingreso Lote, Nuevo Medicamento, Impresión QR |
+| **Inventario** | Panel Stock General, Config. Umbrales | Ajuste Stock, Detalle Lote, Alerta Stock, Editar Umbral |
+| **Dispensación** | Paso 1-2-3 (flujo guiado) | Registro Paciente, Búsqueda Paciente/Medicamento, Validación Dosis, Confirmación |
+| **Historial** | Historial de Paciente | Detalle Dispensación |
+| **Administración** | Gestión Usuarios, Config. General | Crear/Editar Usuario, Límites Dosis |
+
+## Comandos
 
 ```sh
-npx nx build myproject
+# Frontend
+npx nx serve frontend                      # http://localhost:4200
+npx nx build frontend                      # Producción
+npx nx build frontend --configuration=development
+npx nx test frontend
+npx nx lint frontend
+npx nx e2e frontend-e2e
+
+# Backend
+npx nx serve backend                       # http://localhost:3000/api
+npx nx build backend
+npx nx test backend
+npx nx lint backend
+npx nx e2e backend-e2e
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-To install a new plugin you can use the `nx add` command. Here's an example of adding the React plugin:
-```sh
-npx nx add @nx/react
-```
-
-Use the plugin's generator to create new projects. For example, to create a new React app or library:
-
-```sh
-# Generate an app
-npx nx g @nx/react:app demo
-
-# Generate a library
-npx nx g @nx/react:lib some-lib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/intro#learn-nx?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Ver `AGENTS.md` para la lista completa de comandos y el uso de los agentes opencode.

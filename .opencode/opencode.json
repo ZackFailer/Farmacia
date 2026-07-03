@@ -1,0 +1,52 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "documents/base.md"],
+  "references": {
+    "docs": {
+      "path": "documents",
+      "description": "Use for project architecture, module plans, purpose, design, and tasks"
+    },
+    "frontend-plan": {
+      "path": "documents/frontend-plan.md",
+      "description": "Use for frontend implementation: routes, components, services, modals"
+    },
+    "backend-plan": {
+      "path": "documents/backend-plan.md",
+      "description": "Use for backend implementation: modules, entities, endpoints, DTOs"
+    }
+  },
+  "agent": {
+    "frontend": {
+      "description": "Generates Angular + Ionic components, pages, services, modals, and routes",
+      "mode": "subagent"
+    },
+    "backend": {
+      "description": "Generates NestJS modules, entities, controllers, services, DTOs, and guards",
+      "mode": "subagent"
+    },
+    "auth": {
+      "description": "Implements authentication: login page, PIN + JWT flow, guards for both frontend and backend",
+      "mode": "subagent"
+    },
+    "recepcion": {
+      "description": "Implements reception module: lot registration, QR labels, medication autocomplete",
+      "mode": "subagent"
+    },
+    "inventario": {
+      "description": "Implements inventory module: stock panel, thresholds, physical count, alerts",
+      "mode": "subagent"
+    },
+    "dispensacion": {
+      "description": "Implements dispensation module: 3-step scan flow, patient registration, dose validation",
+      "mode": "subagent"
+    },
+    "historial": {
+      "description": "Implements patient history module: dispensation history lookup and detail views",
+      "mode": "subagent"
+    },
+    "admin": {
+      "description": "Implements administration module: user CRUD, system configuration, role management",
+      "mode": "subagent"
+    }
+  }
+}
