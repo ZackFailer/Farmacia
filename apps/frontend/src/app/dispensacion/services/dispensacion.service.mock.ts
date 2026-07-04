@@ -85,6 +85,13 @@ export class MockDispensacionService extends DispensacionService {
     return of(lotes);
   }
 
+  getLoteByQR(codigoQR: string): Observable<Lote> {
+    const lote = SEED_LOTES.find(l => l.codigo_qr === codigoQR);
+    if (!lote) return throwError(() => new Error('Lote no encontrado'));
+    const medicamento = SEED_MEDICAMENTOS.find(m => m.id === lote.medicamento_id);
+    return of({ ...lote, medicamento });
+  }
+
   getLimiteDosis(medicamentoId: number): Observable<Configuracion | null> {
     const config = SEED_CONFIGS.find(c => c.medicamento_id === medicamentoId) ?? null;
     return of(config);

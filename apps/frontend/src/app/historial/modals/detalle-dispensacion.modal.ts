@@ -1,18 +1,18 @@
 import { Component, Input } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonNote,
   IonFooter, ModalController,
 } from '@ionic/angular/standalone';
 import type { Dispensacion } from '../../shared/models/dispensacion.model';
+import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
 
 @Component({
   standalone: true,
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonLabel, IonNote,
-    IonFooter, DatePipe,
+    IonFooter, FechaRelativaPipe,
   ],
   template: `
     <ion-header>
@@ -27,7 +27,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <p>Fecha: <strong>{{ dispensacion.fecha_hora | date:'dd/MM/yyyy HH:mm' }}</strong></p>
+          <p>Fecha: <strong>{{ dispensacion.fecha_hora | fechaRelativa }}</strong></p>
           <p>Despachó: <strong>{{ dispensacion.despachado_por ?? '—' }}</strong></p>
         </ion-label>
       </ion-item>

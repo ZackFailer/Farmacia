@@ -1,13 +1,14 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonNote, IonList, IonFooter, ModalController } from '@ionic/angular/standalone';
 import { TitleCasePipe, DatePipe } from '@angular/common';
+import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
 import { InventarioService } from '../services/inventario.service';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Movimiento } from '../../shared/models/stock-item.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonNote, IonList, IonFooter, TitleCasePipe, DatePipe],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonNote, IonList, IonFooter, TitleCasePipe, DatePipe, FechaRelativaPipe],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -35,7 +36,7 @@ import type { Movimiento } from '../../shared/models/stock-item.model';
             <ion-label>
               <h3>{{ mov.tipo | titlecase }}</h3>
               <p>{{ mov.descripcion }}</p>
-              <ion-note>{{ mov.fecha | date:'dd/MM/yy HH:mm' }}</ion-note>
+              <ion-note>{{ mov.fecha | fechaRelativa }}</ion-note>
             </ion-label>
             <ion-note slot="end" [style.color]="mov.cantidad > 0 ? 'var(--stock-ok)' : 'var(--stock-agotado)'">
               {{ mov.cantidad > 0 ? '+' : '' }}{{ mov.cantidad }}

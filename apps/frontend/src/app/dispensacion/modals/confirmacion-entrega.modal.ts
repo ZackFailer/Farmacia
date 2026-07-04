@@ -1,5 +1,4 @@
 import { Component, Input, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonSpinner,
   IonContent, IonItem, IonLabel, IonNote,
@@ -13,7 +12,7 @@ import type { RecetaItem } from '../services/dispensacion.service';
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonSpinner,
     IonContent, IonItem, IonLabel, IonNote,
-    IonFooter, DatePipe,
+    IonFooter,
   ],
   template: `
     <ion-header>

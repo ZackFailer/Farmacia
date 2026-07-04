@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonContent, IonButton, IonItem, IonLabel, IonNote, ModalController } from '@ionic/angular/standalone';
+import { IonContent, IonButton, IonItem, IonLabel, ModalController } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
 import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { ResumenRecetaComponent } from '../components/resumen-receta.component';
 import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
+import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
+import type { Lote } from '../../shared/models/lote.model';
+import type { Medicamento } from '../../shared/models/medicamento.model';
 
 @Component({
   standalone: true,
-  imports: [IonContent, IonButton, IonItem, IonLabel, IonNote, EncabezadoPasoComponent, ResumenRecetaComponent],
+  imports: [IonContent, IonButton, IonItem, IonLabel, EncabezadoPasoComponent, ResumenRecetaComponent, EscanerQrComponent],
   template: `
     <app-encabezado-paso [paso]="2"></app-encabezado-paso>
 
@@ -20,6 +23,8 @@ import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
           </ion-label>
         </ion-item>
       }
+
+      <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
 
       <div style="display: flex; gap: var(--app-space-md); margin: var(--app-space-lg) 0;">
         <ion-button expand="block" fill="outline" (click)="abrirBusquedaMedicamento()">
@@ -48,6 +53,22 @@ export class Paso2SeleccionarMedsPage {
 
   get estado() { return this.dispensacionService.estado; }
 
+  onCodigoEscaneado(codigo: string): void {
+    this.dispensacionService.getLoteByQR(codigo).subscribe({
+      next: (lote) => {
+        const medicamento = (lote as Lote & { medicamento: Medicamento }).medicamento;
+        this.dispensacionService.agregarItem({
+          medicamento,
+          lote,
+          cantidad: 1,
+        });
+      },
+      error: () => {
+        // lote no encontrado por QR
+      },
+    });
+  }
+
   async abrirBusquedaMedicamento(): Promise<void> {
     const modal = await this.modalCtrl.create({
       component: BusquedaMedicamentoModal,
@@ -64,6 +85,7 @@ export class Paso2SeleccionarMedsPage {
   }
 
   anterior(): void {
+    this.dispensacionService.resetPaciente();
     this.router.navigate(['/dispensacion/paso1']);
   }
 

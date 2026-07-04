@@ -1,12 +1,13 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { DatePipe } from '@angular/common';
+
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
   IonItem, IonLabel, IonNote, IonButton, IonSpinner, ModalController,
 } from '@ionic/angular/standalone';
 import { HistorialService } from '../services/historial.service';
 import { DetalleDispensacionModal } from '../modals/detalle-dispensacion.modal';
+import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
 import type { Dispensacion } from '../../shared/models/dispensacion.model';
 
 @Component({
@@ -14,7 +15,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
   imports: [
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
     IonItem, IonLabel, IonNote, IonButton, IonSpinner,
-    DatePipe,
+    FechaRelativaPipe,
   ],
   template: `
     <ion-header>
@@ -46,7 +47,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
         @for (d of dispensaciones(); track d.id) {
           <ion-item button (click)="verDetalle(d)">
             <ion-label>
-              <h2>{{ d.fecha_hora | date:'dd/MM/yyyy HH:mm' }}</h2>
+              <h2>{{ d.fecha_hora | fechaRelativa }}</h2>
               <p>
                 @for (item of d.items; track item.id; let last = $last) {
                   {{ item.medicamento_nombre }}{{ last ? '' : ', ' }}

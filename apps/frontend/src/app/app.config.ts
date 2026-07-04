@@ -15,6 +15,8 @@ import { DispensacionService } from './dispensacion/services/dispensacion.servic
 import { MockDispensacionService } from './dispensacion/services/dispensacion.service.mock';
 import { HistorialService } from './historial/services/historial.service';
 import { MockHistorialService } from './historial/services/historial.service.mock';
+import { AdministracionService } from './administracion/services/administracion.service';
+import { MockAdministracionService } from './administracion/services/administracion.service.mock';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -27,5 +29,6 @@ export const appConfig: ApplicationConfig = {
     { provide: InventarioService, useClass: MockInventarioService },
     { provide: DispensacionService, useClass: MockDispensacionService },
     { provide: HistorialService, useClass: MockHistorialService },
+    { provide: AdministracionService, useClass: MockAdministracionService },
   ],
 };

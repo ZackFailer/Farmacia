@@ -30,6 +30,7 @@ export abstract class DispensacionService {
   abstract buscarPaciente(idEmergencia: string): Observable<Paciente>;
   abstract buscarMedicamentos(search: string): Observable<Medicamento[]>;
   abstract getLotesDisponibles(medicamentoId: number): Observable<Lote[]>;
+  abstract getLoteByQR(codigoQR: string): Observable<Lote>;
   abstract getLimiteDosis(medicamentoId: number): Observable<Configuracion | null>;
   abstract crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion>;
 
@@ -43,6 +44,10 @@ export abstract class DispensacionService {
 
   eliminarItem(index: number): void {
     this._estado.update(e => ({ ...e, items: e.items.filter((_, i) => i !== index) }));
+  }
+
+  resetPaciente(): void {
+    this._estado.update(e => ({ ...e, paciente: null, paso: 1 }));
   }
 
   reiniciar(): void {

@@ -1,24 +1,25 @@
 import { Component, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonInput, IonSearchbar, ModalController } from '@ionic/angular/standalone';
+import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonSearchbar, ModalController, ViewWillEnter } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
 import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { BusquedaPacienteModal } from '../modals/busqueda-paciente.modal';
 import { RegistroPacienteModal } from '../modals/registro-paciente.modal';
+import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import type { Paciente } from '../../shared/models/paciente.model';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonContent, IonButton, IonItem, IonLabel, IonNote, IonInput, IonSearchbar, RouterLink, EncabezadoPasoComponent],
+  imports: [FormsModule, IonContent, IonButton, IonItem, IonLabel, IonNote, IonSearchbar, EncabezadoPasoComponent, EscanerQrComponent],
   template: `
     <app-encabezado-paso [paso]="1"></app-encabezado-paso>
 
     <ion-content class="ion-padding">
       @if (!pacienteIdentificado()) {
         <div style="text-align: center; padding: var(--app-space-2xl) 0;">
-          <div class="app-empty-icon">📷</div>
-          <p style="margin-bottom: var(--app-space-xl);">Escanee el código del paciente (brazalete / receta)</p>
+          <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
+          <p style="margin: var(--app-space-lg) 0 var(--app-space-xl);">Escanee el código del paciente (brazalete / receta)</p>
 
           <ion-searchbar [(ngModel)]="codigoBuscado" (ionInput)="buscarPorCodigo()" placeholder="O ingrese código manualmente..." debounce="500"></ion-searchbar>
 
@@ -51,14 +52,14 @@ import type { Paciente } from '../../shared/models/paciente.model';
         </ion-button>
 
         <div style="display: flex; gap: var(--app-space-md); margin-top: var(--app-space-md);">
-          <ion-button expand="block" fill="outline" color="medium" routerLink="/recepcion">Cancelar</ion-button>
+          <ion-button expand="block" fill="outline" color="medium" (click)="cancelar()">Cancelar</ion-button>
           <ion-button expand="block" (click)="siguiente()">Siguiente →</ion-button>
         </div>
       }
     </ion-content>
   `,
 })
-export class Paso1EscanearPacientePage {
+export class Paso1EscanearPacientePage implements ViewWillEnter {
   codigoBuscado = '';
   pacienteIdentificado = signal<Paciente | null>(null);
   errorMsg = signal('');
@@ -68,6 +69,17 @@ export class Paso1EscanearPacientePage {
     private modalCtrl: ModalController,
     private router: Router,
   ) {}
+
+  ionViewWillEnter(): void {
+    this.pacienteIdentificado.set(null);
+    this.codigoBuscado = '';
+    this.errorMsg.set('');
+  }
+
+  onCodigoEscaneado(codigo: string): void {
+    this.codigoBuscado = codigo;
+    this.buscarPorCodigo();
+  }
 
   buscarPorCodigo(): void {
     const id = this.codigoBuscado.trim().toUpperCase();
@@ -119,6 +131,11 @@ export class Paso1EscanearPacientePage {
     const p = this.pacienteIdentificado();
     if (!p) return;
     this.router.navigate(['/historial', p.id]);
+  }
+
+  cancelar(): void {
+    this.dispensacionService.reiniciar();
+    this.router.navigate(['/recepcion']);
   }
 
   siguiente(): void {

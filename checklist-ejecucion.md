@@ -55,7 +55,7 @@
 
 ## Fase 1 — Módulo de Autenticación ✅
 
-> **Estado: COMPLETADA** — Build y tests exitosos (6 tests).
+> **Estado: COMPLETADA** — Build y tests exitosos (5 tests).
 
 ### Servicios
 
@@ -109,71 +109,75 @@
 
 ---
 
-## Fase 3 — Módulo de Inventario
+## Fase 3 — Módulo de Inventario ✅
+
+> **Estado: COMPLETADA** — Build exitoso.
 
 ### Servicios
 
-- [ ] `inventario/services/inventario.service.ts`:
+- [x] `inventario/services/inventario.service.ts`:
   - `getStockGeneral(params?: { search?, ubicacion? }): Observable<StockItem[]>`
   - `getProximosVencer(): Observable<Lote[]>`
   - `ajustarStock(loteId: number, cantidadReal: number): Observable<Lote>`
   - `getMovimientosLote(loteId: number): Observable<TipoMovimiento[]>`
   - `getUmbrales(): Observable<Configuracion[]>`
   - `actualizarUmbral(id: number, umbral: number): Observable<Configuracion>`
-- [ ] `inventario/services/inventario.service.mock.ts` — Mock con 15 medicamentos y stocks variados
+- [x] `inventario/services/inventario.service.mock.ts` — Mock con 15 medicamentos y stocks variados
 
 ### Páginas
 
-- [ ] `inventario/pages/panel-stock.page.ts`:
+- [x] `inventario/pages/panel-stock.page.ts`:
   - Sección "Vitales" anclada al inicio (antibióticos, insulina, analgésicos)
   - Lista con `TarjetaMedicamentoComponent`
   - Filtros: búsqueda por nombre, select de ubicación
   - Alerta toast al cargar si hay stock bajo en vitales
   - Botón "Ver lotes" → abre `DetalleLoteModal`
   - Botón "Ajustar" → abre `AjusteStockModal`
-- [ ] `inventario/pages/configurar-umbrales.page.ts`:
+- [x] `inventario/pages/configurar-umbrales.page.ts`:
   - Lista de medicamentos con umbral actual
   - Botón "Editar" → abre `EditarUmbralModal`
 
 ### Modales
 
-- [ ] `inventario/modals/ajuste-stock.modal.ts`:
+- [x] `inventario/modals/ajuste-stock.modal.ts`:
   - Mostrar lote, medicamento, stock actual
   - Input: cantidad real contada
   - Calcular diferencia en tiempo real
   - Botón "Ajustar Stock" → PATCH
-- [ ] `inventario/modals/detalle-lote.modal.ts`:
+- [x] `inventario/modals/detalle-lote.modal.ts`:
   - Datos fijos del lote
   - Timeline de movimientos
   - Botón "Reimprimir QR"
-- [ ] `inventario/modals/editar-umbral.modal.ts`:
+- [x] `inventario/modals/editar-umbral.modal.ts`:
   - Input numérico para umbral mínimo
   - Guardar → PATCH
 
 ### Componentes
 
-- [ ] `shared/components/indicador-stock.component.ts`:
+- [x] `shared/components/indicador-stock.component.ts`:
   - Input: `cantidad: number`, `umbral: number`
   - Output visual: color + texto según semáforo
   - Seguir patrón sección 7 del `design-system.md`
-- [ ] `inventario/components/tarjeta-medicamento.component.ts`:
+- [x] `inventario/components/tarjeta-medicamento.component.ts`:
   - Input: `medicamento`, `stockTotal`, `umbral`, `proximoVencer`
   - Output: `verLotes`, `ajustar`
   - Borde izquierdo con color según estado
 
 ### Rutas
 
-- [ ] `inventario/inventario.routes.ts`:
+- [x] `inventario/inventario.routes.ts`:
   - `/inventario` → `PanelStockPage` (farmaceutico, despachador)
   - `/inventario/umbrales` → `ConfigurarUmbralesPage` (solo farmaceutico)
 
 ---
 
-## Fase 4 — Módulo de Dispensación
+## Fase 4 — Módulo de Dispensación ✅
+
+> **Estado: COMPLETADA** — Build + 18 tests pasando. Bug fix: reset paciente al volver a paso1.
 
 ### Servicios
 
-- [ ] `dispensacion/services/dispensacion.service.ts`:
+- [x] `dispensacion/services/dispensacion.service.ts`:
   - `registrarPaciente(dto: Partial<Paciente>): Observable<Paciente>`
   - `buscarPaciente(idEmergencia: string): Observable<Paciente>`
   - `buscarMedicamentos(search: string): Observable<Medicamento[]>`
@@ -181,22 +185,24 @@
   - `getLimiteDosis(medicamentoId: number): Observable<Configuracion>`
   - `crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion>`
   - Estado compartido con `signal()`: `paciente`, `items`, `paso`
-- [ ] `dispensacion/services/dispensacion.service.mock.ts`
+  - `resetPaciente()` + `reiniciar()`
+- [x] `dispensacion/services/dispensacion.service.mock.ts`
 
 ### Páginas (Flujo 3 pasos)
 
-- [ ] `dispensacion/pages/paso1-escanear-paciente.page.ts`:
-  - Área de escáner QR (componente `EscanerQrComponent`)
+- [x] `dispensacion/pages/paso1-escanear-paciente.page.ts`:
+  - Input manual de código + búsqueda automática con debounce
   - Botones: "Buscar paciente manual", "Registrar nuevo paciente"
   - Al identificar paciente: mostrar datos + botón "Ver historial"
   - Botón "Siguiente →" habilitado solo con paciente identificado
-- [ ] `dispensacion/pages/paso2-seleccionar-meds.page.ts`:
-  - Escáner QR para lote
+  - `ionViewWillEnter` para resetear estado local al volver
+- [x] `dispensacion/pages/paso2-seleccionar-meds.page.ts`:
   - Botón "Buscar medicamento" → modal
   - Lista de receta actual con botón eliminar [✕]
   - Stock disponible por item
   - Botón "Siguiente →" con al menos 1 item
-- [ ] `dispensacion/pages/paso3-confirmar.page.ts`:
+  - "← Anterior" llama a `resetPaciente()` antes de navegar
+- [x] `dispensacion/pages/paso3-confirmar.page.ts`:
   - Resumen: paciente + cada item con dosis calculada
   - Validación de dosis por item
   - Botón "Confirmar Entrega" → POST
@@ -204,48 +210,48 @@
 
 ### Modales
 
-- [ ] `dispensacion/modals/registro-paciente.modal.ts`:
+- [x] `dispensacion/modals/registro-paciente.modal.ts`:
   - Campos: ID emergencia, sexo (M/F toggle), edad, peso, damnificado (Sí/No toggle)
   - Al guardar → POST → seleccionar automáticamente
-- [ ] `dispensacion/modals/busqueda-paciente.modal.ts`:
+- [x] `dispensacion/modals/busqueda-paciente.modal.ts`:
   - Input de ID emergencia + botón Buscar
   - Opción "Registrar nuevo" si no encuentra
-- [ ] `dispensacion/modals/busqueda-medicamento.modal.ts`:
+- [x] `dispensacion/modals/busqueda-medicamento.modal.ts`:
   - Búsqueda con debounce + resultados
   - Selector de lote (FEFO) + cantidad
   - Botón "Agregar a receta"
-- [ ] `dispensacion/modals/validacion-dosis.modal.ts`:
+- [x] `dispensacion/modals/validacion-dosis.modal.ts`:
   - Mostrar: medicamento, dosis calculada, dosis máxima
   - Botones: "Cancelar" (quitar item), "Continuar de todas formas"
-- [ ] `dispensacion/modals/confirmacion-entrega.modal.ts`:
+- [x] `dispensacion/modals/confirmacion-entrega.modal.ts`:
   - Resumen final
   - Loading state
   - Botón "Confirmar"
 
 ### Componentes
 
-- [ ] `shared/components/encabezado-paso.component.ts`:
+- [x] `shared/components/encabezado-paso.component.ts`:
   - Input: `paso: number`, `totalPasos: number`
   - Barra de progreso + texto "Paso X/3"
-- [ ] `shared/components/escaner-qr.component.ts`:
+- [ ] `shared/components/escaner-qr.component.ts` ⏳ PENDIENTE
   - Placeholder con icono `scan-outline`
   - Al tocar: activar cámara
   - Output: `codigoEscaneado: string`
-- [ ] `shared/components/buscador.component.ts`:
+- [ ] `shared/components/buscador.component.ts` ⏳ PENDIENTE
   - Input: `items`, `placeholder`
   - Output: `seleccionado`
   - `ion-searchbar` + lista de resultados
-- [ ] `dispensacion/components/resumen-receta.component.ts`:
+- [x] `dispensacion/components/resumen-receta.component.ts`:
   - Input: `items`
   - Tabla con medicamento, lote, cantidad, dosis
 
 ### Guards
 
-- [ ] `dispensacion/guards/paso.guard.ts` — Verifica que paso anterior completado
+- [x] `dispensacion/guards/paso.guard.ts` — Verifica que paso anterior completado
 
 ### Rutas
 
-- [ ] `dispensacion/dispensacion.routes.ts`:
+- [x] `dispensacion/dispensacion.routes.ts`:
   - `/dispensacion/paso1` → `Paso1EscanearPacientePage`
   - `/dispensacion/paso2` → `Paso2SeleccionarMedsPage`
   - `/dispensacion/paso3` → `Paso3ConfirmarPage`
@@ -253,18 +259,20 @@
 
 ---
 
-## Fase 5 — Módulo de Historial
+## Fase 5 — Módulo de Historial ✅
+
+> **Estado: COMPLETADA** — Build + 5 tests pasando.
 
 ### Servicios
 
-- [ ] `historial/services/historial.service.ts`:
+- [x] `historial/services/historial.service.ts`:
   - `getHistorialPaciente(idEmergencia: string): Observable<Dispensacion[]>`
   - `getDetalleDispensacion(id: number): Observable<Dispensacion>`
-- [ ] `historial/services/historial.service.mock.ts`
+- [x] `historial/services/historial.service.mock.ts`
 
 ### Página
 
-- [ ] `historial/pages/historial-paciente.page.ts`:
+- [x] `historial/pages/historial-paciente.page.ts`:
   - Datos del paciente en cabecera
   - Lista de dispensaciones por fecha DESC
   - Indicador visual de damnificado
@@ -272,7 +280,7 @@
 
 ### Modales
 
-- [ ] `historial/modals/detalle-dispensacion.modal.ts`:
+- [x] `historial/modals/detalle-dispensacion.modal.ts`:
   - Fecha, despachador, paciente, peso
   - Tabla detallada de items
   - Observaciones
@@ -280,71 +288,97 @@
 
 ### Rutas
 
-- [ ] `historial/historial.routes.ts`:
+- [x] `historial/historial.routes.ts`:
   - `/historial/:pacienteId` → `HistorialPacientePage`
 
 ---
 
-## Fase 6 — Módulo de Administración
+## Fase 6 — Módulo de Administración ✅
+
+> **Estado: COMPLETADA** — Build + 9 tests pasando. Guards con `roleGuard([Rol.FARMACEUTICO])` en rutas.
 
 ### Servicios
 
-- [ ] `administracion/services/administracion.service.ts`:
+- [x] `administracion/services/administracion.service.ts`:
   - `getUsuarios(): Observable<Usuario[]>`
   - `crearUsuario(dto): Observable<Usuario>`
   - `actualizarUsuario(id, dto): Observable<Usuario>`
   - `eliminarUsuario(id): Observable<void>`
   - `getConfiguraciones(): Observable<Configuracion[]>`
   - `actualizarConfiguracion(id, dto): Observable<Configuracion>`
-- [ ] `administracion/services/administracion.service.mock.ts`
+- [x] `administracion/services/administracion.service.mock.ts`
 
 ### Páginas
 
-- [ ] `administracion/pages/gestion-usuarios.page.ts`:
+- [x] `administracion/pages/gestion-usuarios.page.ts`:
   - Lista de usuarios con nombre, rol, acciones
   - Botón "+ Nuevo Usuario"
   - Botón "Editar", "Eliminar" por usuario
   - Confirmación antes de eliminar
-- [ ] `administracion/pages/configuracion-general.page.ts`:
+- [x] `administracion/pages/configuracion-general.page.ts`:
   - Secciones: Umbrales de Stock + Límites de Dosis
   - Lista por medicamento con valores actuales
   - Botón "Editar" en cada item
 
 ### Modales
 
-- [ ] `administracion/modals/crear-editar-usuario.modal.ts`:
+- [x] `administracion/modals/crear-editar-usuario.modal.ts`:
   - Campos: nombre*, rol*, PIN*, confirmar PIN*
   - Validar PIN 4-6 dígitos y coincidencia
   - Modo creación vs edición
-- [ ] `administracion/modals/limites-dosis.modal.ts`:
+- [x] `administracion/modals/limites-dosis.modal.ts`:
   - Medicamento (solo lectura)
   - Inputs: dosis máxima (mg/kg), peso referencia (kg)
   - Validar números positivos
 
 ### Guards
 
-- [ ] `administracion/guards/admin.guard.ts` — Solo rol `farmaceutico`
+- [x] `administracion/guards/admin.guard.ts` — Solo rol `farmaceutico`
+  - Reemplazado por `roleGuard([Rol.FARMACEUTICO])` inline en rutas
 
 ### Rutas
 
-- [ ] `administracion/administracion.routes.ts`:
+- [x] `administracion/administracion.routes.ts`:
   - `/admin/usuarios` → `GestionUsuariosPage` (solo farmaceutico)
   - `/admin/configuracion` → `ConfiguracionGeneralPage` (solo farmaceutico)
 
 ---
 
-## Fase 7 — Pipes y Servicios Transversales
+## 🌐 Layout + Navegación Global ✅
 
-- [ ] `shared/pipes/fecha-relativa.pipe.ts`:
-  - Input: `Date | string`
-  - Output: "hace 2 horas", "ayer", "hace 3 días", etc.
-- [ ] `core/services/escaner.service.ts`:
-  - Servicio singleton que maneja ciclo de vida de cámara
-  - Métodos: `iniciar()`, `detener()`, `escanear()`
+> **Estado: COMPLETADA** — Menú lateral con `ion-menu`, botón de logout en footer, `ion-menu-button` en headers de todas las páginas, `swipeGesture=false` en login.
+
+- [x] `app.ts` + `app.html` + `app.scss` — `<ion-menu>` sidebar con 5 items + "Cerrar Sesión" en footer
+- [x] `app.routes.ts` — Ruta login+guard, admin con guards, resto con auth+role
 
 ---
 
-## Fase 8 — Backend (Post-Frontend)
+## Fase 7 — Pipes, Componentes y Servicios Transversales ✅
+
+> **Estado: COMPLETADA** — Build + 38 tests pasando.
+
+- [x] `shared/pipes/fecha-relativa.pipe.ts`:
+  - Input: `Date | string`
+  - Output: "hace 2 horas", "ayer", "hace 3 días", etc.
+  - Integrado en historial (lista + detalle) y movimientos de lote
+- [x] `core/services/escaner.service.ts`:
+  - Servicio singleton `EscanerService` con `iniciar(videoElement)`, `detener()`, `simularEscaneo(codigo)`
+  - Usa `navigator.mediaDevices.getUserMedia` con `facingMode: 'environment'`
+  - Fallback: emite `MOCK-001` si falla permiso de cámara
+- [x] `shared/components/escaner-qr.component.ts`:
+  - Placeholder con icono `scan-outline`, video real al activar, botón "Cancelar"
+  - Emite `(codigoEscaneado)` al recibir código
+  - Integrado en paso1 (paciente) y paso2 (lote) de dispensación
+- [x] `shared/components/buscador.component.ts`:
+  - Genérico `<app-buscador [items] [placeholder] [displayFn] (seleccionado)>`
+  - `ion-searchbar` con debounce + filtrado local + lista de resultados
+- [x] Servicio `getLoteByQR()` agregado a `DispensacionService` + mock
+
+---
+
+## Fase 8 — Backend (Post-Frontend) ⏳
+
+> **Estado: PENDIENTE** — No iniciado.
 
 > ⚠️ Esta fase se ejecuta DESPUÉS de completar todo el frontend con mocks.
 
@@ -401,7 +435,9 @@
 
 ---
 
-## Fase 9 — Integración y Despliegue
+## Fase 9 — Integración y Despliegue ⏳
+
+> **Estado: PENDIENTE** — No iniciado.
 
 - [ ] Reemplazar `useClass: Mock*Service` por servicios reales en `app.config.ts`
 - [ ] Probar flujo completo: Login → Recepción → Inventario → Dispensación → Historial
