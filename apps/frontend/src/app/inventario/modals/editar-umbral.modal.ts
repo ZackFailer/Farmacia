@@ -19,8 +19,8 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ configuracion?.medicamento?.nombre_generico }}</h2>
-          <p>Umbral actual: {{ configuracion?.umbral_minimo }} unds</p>
+          <h2>{{ configuracion.medicamento?.nombre_generico }}</h2>
+          <p>Umbral actual: {{ configuracion.umbral_minimo }} unds</p>
         </ion-label>
       </ion-item>
 

@@ -22,11 +22,11 @@ import type { Movimiento } from '../../shared/models/stock-item.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ lote?.medicamento?.nombre_generico }} {{ lote?.medicamento?.concentracion }}{{ lote?.medicamento?.unidad_concentracion }}</h2>
-          <p>Stock: {{ lote?.cantidad_actual }} / {{ lote?.cantidad_inicial }} inicial</p>
-          <ion-note>Vencimiento: {{ lote?.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
-          @if (lote?.donante) { <ion-note>Donante: {{ lote?.donante }}</ion-note> }
-          @if (lote?.ubicacion) { <ion-note>Ubicación: {{ lote?.ubicacion }}</ion-note> }
+          <h2>{{ lote.medicamento?.nombre_generico }} {{ lote.medicamento?.concentracion }}{{ lote.medicamento?.unidad_concentracion }}</h2>
+          <p>Stock: {{ lote.cantidad_actual }} / {{ lote.cantidad_inicial }} inicial</p>
+          <ion-note>Vencimiento: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
+          @if (lote.donante) { <ion-note>Donante: {{ lote.donante }}</ion-note> }
+          @if (lote.ubicacion) { <ion-note>Ubicación: {{ lote.ubicacion }}</ion-note> }
         </ion-label>
       </ion-item>
 

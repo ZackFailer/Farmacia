@@ -136,7 +136,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   verHistorial(): void {
     const p = this.pacienteIdentificado();
     if (!p) return;
-    this.router.navigate(['/historial', p.id]);
+    this.router.navigate(['/historial', p.id_emergencia]);
   }
 
   cancelar(): void {

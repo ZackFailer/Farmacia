@@ -9,6 +9,14 @@
 @import '@ionic/angular/css/flex-utils.css';
 @import '@ionic/angular/css/display.css';
 
+html {
+  height: 100dvh;
+}
+
+body, ion-app {
+  height: 100%;
+}
+
 :root {
   --app-primary: #1a5276;
   --app-primary-dark: #0e2f44;

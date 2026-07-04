@@ -19,9 +19,9 @@ import type { Lote } from '../../shared/models/lote.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ lote?.medicamento?.nombre_generico }}</h2>
-          <p>Lote: {{ lote?.codigo_qr?.slice(-8) }}</p>
-          <ion-note>Stock actual: {{ lote?.cantidad_actual }}</ion-note>
+          <h2>{{ lote.medicamento?.nombre_generico }}</h2>
+          <p>Lote: {{ lote.codigo_qr.slice(-8) }}</p>
+          <ion-note>Stock actual: {{ lote.cantidad_actual }}</ion-note>
         </ion-label>
       </ion-item>
 
@@ -64,7 +64,7 @@ export class AjusteStockModal {
       this.diferencia.set(null);
       return;
     }
-    this.diferencia.set(this.cantidadReal - (this.lote?.cantidad_actual ?? 0));
+    this.diferencia.set(this.cantidadReal - this.lote.cantidad_actual);
   }
 
   get diferenciaColor(): string {

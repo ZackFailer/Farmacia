@@ -6,17 +6,17 @@ import { appRoutes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './auth/services/auth.service';
-import { MockAuthService } from './auth/services/auth.service.mock';
+import { ApiAuthService } from './auth/services/auth.service.api';
 import { RecepcionService } from './recepcion/services/recepcion.service';
-import { MockRecepcionService } from './recepcion/services/recepcion.service.mock';
+import { ApiRecepcionService } from './recepcion/services/recepcion.service.api';
 import { InventarioService } from './inventario/services/inventario.service';
-import { MockInventarioService } from './inventario/services/inventario.service.mock';
+import { ApiInventarioService } from './inventario/services/inventario.service.api';
 import { DispensacionService } from './dispensacion/services/dispensacion.service';
-import { MockDispensacionService } from './dispensacion/services/dispensacion.service.mock';
+import { ApiDispensacionService } from './dispensacion/services/dispensacion.service.api';
 import { HistorialService } from './historial/services/historial.service';
-import { MockHistorialService } from './historial/services/historial.service.mock';
+import { ApiHistorialService } from './historial/services/historial.service.api';
 import { AdministracionService } from './administracion/services/administracion.service';
-import { MockAdministracionService } from './administracion/services/administracion.service.mock';
+import { ApiAdministracionService } from './administracion/services/administracion.service.api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,11 +24,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideIonicAngular(),
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
-    { provide: AuthService, useClass: MockAuthService },
-    { provide: RecepcionService, useClass: MockRecepcionService },
-    { provide: InventarioService, useClass: MockInventarioService },
-    { provide: DispensacionService, useClass: MockDispensacionService },
-    { provide: HistorialService, useClass: MockHistorialService },
-    { provide: AdministracionService, useClass: MockAdministracionService },
+    { provide: AuthService, useClass: ApiAuthService },
+    { provide: RecepcionService, useClass: ApiRecepcionService },
+    { provide: InventarioService, useClass: ApiInventarioService },
+    { provide: DispensacionService, useClass: ApiDispensacionService },
+    { provide: HistorialService, useClass: ApiHistorialService },
+    { provide: AdministracionService, useClass: ApiAdministracionService },
   ],
 };

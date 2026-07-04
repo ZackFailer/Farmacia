@@ -7,8 +7,9 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
+      "inputs": ["default", "!{projectRoot}/data/**"],
       "options": {
-        "command": "webpack-cli build",
+        "command": "webpack-cli build && if exist certs (xcopy certs ..\\..\\dist\\apps\\backend\\certs /E /I /Y >nul)",
         "env": {
           "NODE_ENV": "production"
         },

@@ -22,29 +22,29 @@ import type { Lote } from '../../shared/models/lote.model';
         <div class="etiqueta-divider"></div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Medicamento:</span>
-          <span class="etiqueta-value">{{ lote?.medicamento?.nombre_generico ?? '—' }} {{ lote?.medicamento?.concentracion }}{{ lote?.medicamento?.unidad_concentracion }}</span>
+          <span class="etiqueta-value">{{ lote.medicamento?.nombre_generico ?? '—' }} {{ lote.medicamento?.concentracion }}{{ lote.medicamento?.unidad_concentracion }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Lote:</span>
-          <span class="etiqueta-value">{{ lote?.codigo_qr }}</span>
+          <span class="etiqueta-value">{{ lote.codigo_qr }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Vencimiento:</span>
-          <span class="etiqueta-value">{{ lote?.fecha_vencimiento | date:'dd/MM/yyyy' }}</span>
+          <span class="etiqueta-value">{{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Cantidad:</span>
-          <span class="etiqueta-value">{{ lote?.cantidad_inicial }} unds</span>
+          <span class="etiqueta-value">{{ lote.cantidad_inicial }} unds</span>
         </div>
-        @if (lote?.donante) {
+        @if (lote.donante) {
           <div class="etiqueta-row">
             <span class="etiqueta-label">Donante:</span>
-            <span class="etiqueta-value">{{ lote?.donante }}</span>
+            <span class="etiqueta-value">{{ lote.donante }}</span>
           </div>
         }
         <div class="etiqueta-divider"></div>
         <div class="etiqueta-qr-placeholder">
-          <div class="qr-box">[QR: {{ lote?.codigo_qr?.slice(-8) }}]</div>
+          <div class="qr-box">[QR: {{ lote.codigo_qr.slice(-8) }}]</div>
         </div>
       </div>
     </ion-content>

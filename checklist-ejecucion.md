@@ -435,18 +435,18 @@
 
 ---
 
-## Fase 9 — Integración y Despliegue ⏳
+## Fase 9 — Integración y Despliegue ✅
 
-> **Estado: PENDIENTE** — No iniciado.
+> **Estado: COMPLETADA** — Integración frontend-backend activa, builds OK y servidor unificado validado en `http://localhost:3000`.
 
-- [ ] Reemplazar `useClass: Mock*Service` por servicios reales en `app.config.ts`
-- [ ] Probar flujo completo: Login → Recepción → Inventario → Dispensación → Historial
-- [ ] `ng build frontend` → genera `dist/frontend/`
-- [ ] `nest build backend` → genera `dist/backend/`
-- [ ] Configurar NestJS para servir estáticos: `app.useStaticAssets(join(__dirname, '../../frontend/browser'))`
-- [ ] Instalar PM2: `npm install -g pm2`
-- [ ] Crear `ecosystem.config.js` para PM2
-- [ ] Probar app en http://localhost:3000 (desde NestJS sirviendo frontend + API)
+- [x] Reemplazar `useClass: Mock*Service` por servicios reales en `app.config.ts`
+- [x] Probar flujo completo: Login → Recepción → Inventario → Dispensación → Historial
+- [x] `ng build frontend` → genera `dist/frontend/`
+- [x] `nest build backend` → genera `dist/backend/`
+- [x] Configurar NestJS para servir estáticos: `app.useStaticAssets(join(__dirname, '../../frontend/browser'))`
+- [x] Instalar PM2: `npm install -g pm2`
+- [x] Crear `ecosystem.config.js` para PM2
+- [x] Probar app en http://localhost:3000 (desde NestJS sirviendo frontend + API)
 
 ---
 
