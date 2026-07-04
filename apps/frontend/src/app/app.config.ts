@@ -17,6 +17,8 @@ import { HistorialService } from './historial/services/historial.service';
 import { ApiHistorialService } from './historial/services/historial.service.api';
 import { PacientesService } from './pacientes/services/pacientes.service';
 import { ApiPacientesService } from './pacientes/services/pacientes.service.api';
+import { RecetasService } from './recetas/services/recetas.service';
+import { ApiRecetasService } from './recetas/services/recetas.service.api';
 import { AdministracionService } from './administracion/services/administracion.service';
 import { ApiAdministracionService } from './administracion/services/administracion.service.api';
 
@@ -31,6 +33,7 @@ export const appConfig: ApplicationConfig = {
     { provide: InventarioService, useClass: ApiInventarioService },
     { provide: DispensacionService, useClass: ApiDispensacionService },
     { provide: PacientesService, useClass: ApiPacientesService },
+    { provide: RecetasService, useClass: ApiRecetasService },
     { provide: HistorialService, useClass: ApiHistorialService },
     { provide: AdministracionService, useClass: ApiAdministracionService },
   ],
