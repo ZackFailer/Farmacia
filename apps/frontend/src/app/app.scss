@@ -1,0 +1,26 @@
+ion-menu ion-item {
+  --padding-start: var(--app-space-md);
+  --padding-end: var(--app-space-md);
+  --min-height: 48px;
+  font-size: var(--app-font-size-md);
+}
+
+ion-menu ion-item.ion-activated {
+  --background: var(--app-primary-light);
+  --color: white;
+}
+
+ion-menu ion-item.ion-activated ion-icon {
+  color: white;
+}
+
+ion-menu ion-icon {
+  color: var(--app-text-secondary);
+  font-size: 1.25rem;
+}
+
+ion-menu ion-footer ion-button {
+  --padding-start: var(--app-space-lg);
+  --padding-end: var(--app-space-lg);
+  font-weight: 500;
+}

@@ -84,7 +84,7 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 export class IngresoLoteModal {
   constructor(private modalCtrl: ModalController) {}
 
-  @Input() medicamentos: Medicamento[] = [];
+  @Input({ required: true }) medicamentos: Medicamento[] = [];
 
   searchTerm = '';
   resultados = signal<Medicamento[]>([]);

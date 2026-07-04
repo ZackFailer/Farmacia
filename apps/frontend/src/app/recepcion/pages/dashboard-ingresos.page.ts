@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, ModalController } from '@ionic/angular/standalone';
 import { TablaIngresosComponent } from '../components/tabla-ingresos.component';
 import { RecepcionService } from '../services/recepcion.service';
 import type { Lote } from '../../shared/models/lote.model';
@@ -8,10 +8,13 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, TablaIngresosComponent, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, TablaIngresosComponent, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-menu-button></ion-menu-button>
+        </ion-buttons>
         <ion-title>Recepción</ion-title>
       </ion-toolbar>
     </ion-header>

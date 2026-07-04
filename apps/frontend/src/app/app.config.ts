@@ -9,6 +9,12 @@ import { AuthService } from './auth/services/auth.service';
 import { MockAuthService } from './auth/services/auth.service.mock';
 import { RecepcionService } from './recepcion/services/recepcion.service';
 import { MockRecepcionService } from './recepcion/services/recepcion.service.mock';
+import { InventarioService } from './inventario/services/inventario.service';
+import { MockInventarioService } from './inventario/services/inventario.service.mock';
+import { DispensacionService } from './dispensacion/services/dispensacion.service';
+import { MockDispensacionService } from './dispensacion/services/dispensacion.service.mock';
+import { HistorialService } from './historial/services/historial.service';
+import { MockHistorialService } from './historial/services/historial.service.mock';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -18,5 +24,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: AuthService, useClass: MockAuthService },
     { provide: RecepcionService, useClass: MockRecepcionService },
+    { provide: InventarioService, useClass: MockInventarioService },
+    { provide: DispensacionService, useClass: MockDispensacionService },
+    { provide: HistorialService, useClass: MockHistorialService },
   ],
 };

@@ -111,7 +111,7 @@ import type { Lote } from '../../shared/models/lote.model';
 export class ImprimirEtiquetaModal {
   constructor(private modalCtrl: ModalController) {}
 
-  @Input() lote!: Lote;
+  @Input({ required: true }) lote!: Lote;
 
   imprimir() {
     window.print();

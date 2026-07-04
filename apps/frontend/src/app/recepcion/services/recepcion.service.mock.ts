@@ -29,7 +29,7 @@ const LOTES: Lote[] = [
 let nextMedId = 11;
 let nextLoteId = 6;
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class MockRecepcionService extends RecepcionService {
   getMedicamentos(search?: string): Observable<Medicamento[]> {
     if (!search) return of([...MEDICAMENTOS]);

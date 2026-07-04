@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Usuario } from '../../shared/models/usuario.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export abstract class AuthService {
   abstract login(pin: string): Observable<{ token: string; usuario: Usuario }>;
   abstract logout(): void;

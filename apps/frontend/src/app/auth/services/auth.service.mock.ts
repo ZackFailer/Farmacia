@@ -16,7 +16,7 @@ const SEED_USUARIO: Usuario = {
 const SEED_PIN = '123456';
 const TOKEN_FAKE = 'mock-jwt-token-apoPharma-2026';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class MockAuthService extends AuthService {
   login(pin: string): Observable<{ token: string; usuario: Usuario }> {
     if (pin === SEED_PIN) {

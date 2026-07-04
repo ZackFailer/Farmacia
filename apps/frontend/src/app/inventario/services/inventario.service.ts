@@ -4,7 +4,7 @@ import type { StockItem, Movimiento } from '../../shared/models/stock-item.model
 import type { Lote } from '../../shared/models/lote.model';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export abstract class InventarioService {
   abstract getStockGeneral(params?: { search?: string; ubicacion?: string }): Observable<StockItem[]>;
   abstract getProximosVencer(): Observable<Lote[]>;

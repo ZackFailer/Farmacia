@@ -3,7 +3,7 @@ import type { Observable } from 'rxjs';
 import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { Lote } from '../../shared/models/lote.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export abstract class RecepcionService {
   abstract getMedicamentos(search?: string): Observable<Medicamento[]>;
   abstract crearMedicamento(dto: Partial<Medicamento>): Observable<Medicamento>;
