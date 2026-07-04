@@ -15,238 +15,97 @@
 
 ---
 
-## Fase 0 — Base Compartida
+## Fase 0 — Base Compartida ✅
+
+> **Estado: COMPLETADA** — Todos los archivos de base creados y build exitoso.
 
 ### 0.1 Modelos Compartidos (`shared/models/`)
 
-- [ ] `medicamento.model.ts`
-  ```typescript
-  export interface Medicamento {
-    id: number;
-    nombre_generico: string;
-    nombre_comercial?: string;
-    presentacion: string;
-    concentracion: number;
-    unidad_concentracion: 'mg' | 'ml' | 'UI';
-    created_at: string;
-    updated_at: string;
-  }
-  ```
-- [ ] `lote.model.ts`
-  ```typescript
-  export interface Lote {
-    id: number;
-    medicamento_id: number;
-    medicamento?: Medicamento;
-    codigo_qr: string;
-    cantidad_inicial: number;
-    cantidad_actual: number;
-    fecha_vencimiento: string;
-    donante?: string;
-    ubicacion?: string;
-    created_at: string;
-    updated_at: string;
-  }
-  ```
-- [ ] `paciente.model.ts`
-  ```typescript
-  export interface Paciente {
-    id: number;
-    id_emergencia: string;
-    sexo: Sexo;
-    edad_estimada: number;
-    peso_estimado: number;
-    es_damnificado: boolean;
-    created_at: string;
-  }
-  ```
-- [ ] `dispensacion.model.ts`
-  ```typescript
-  export interface DispensacionDetalle {
-    id: number;
-    dispensacion_id: number;
-    lote_id: number;
-    medicamento_id: number;
-    cantidad: number;
-    dosis_mg_kg?: number;
-    created_at: string;
-  }
-  
-  export interface Dispensacion {
-    id: number;
-    paciente_id: number;
-    usuario_id: number;
-    fecha_hora: string;
-    observaciones?: string;
-    items: DispensacionDetalle[];
-    despachado_por?: string;
-    paciente?: Paciente;
-  }
-  ```
-- [ ] `usuario.model.ts`
-  ```typescript
-  export interface Usuario {
-    id: number;
-    nombre: string;
-    rol: Rol;
-    created_at: string;
-    updated_at: string;
-  }
-  ```
-- [ ] `configuracion.model.ts`
-  ```typescript
-  export interface Configuracion {
-    id: number;
-    medicamento_id: number;
-    medicamento?: Medicamento;
-    umbral_minimo: number;
-    dosis_maxima_mg_kg?: number;
-    peso_referencia_kg?: number;
-    updated_at: string;
-  }
-  ```
+- [x] `medicamento.model.ts`
+- [x] `lote.model.ts`
+- [x] `paciente.model.ts`
+- [x] `dispensacion.model.ts`
+- [x] `usuario.model.ts`
+- [x] `configuracion.model.ts`
+- [x] `stock-item.model.ts`
 
 ### 0.2 Enumeradores Compartidos (`shared/enums/`)
 
-- [ ] `rol.enum.ts` — `export enum Rol { FARMACEUTICO = 'farmaceutico', DESPACHADOR = 'despachador' }`
-- [ ] `sexo.enum.ts` — `export enum Sexo { M = 'M', F = 'F' }`
-- [ ] `tipo-movimiento.enum.ts` — `export enum TipoMovimiento { INGRESO = 'ingreso', DISPENSACION = 'dispensacion', AJUSTE = 'ajuste' }`
+- [x] `rol.enum.ts`
+- [x] `sexo.enum.ts`
+- [x] `tipo-movimiento.enum.ts`
 
 ### 0.3 Estilos Globales
 
-- [ ] `styles.scss` — Aplicar todas las variables CSS del `design-system.md`:
-  - Colores base (`--app-primary`, `--app-bg`, etc.)
-  - Colores semáforo (`--stock-ok`, `--stock-bajo`, `--stock-agotado`)
-  - Tipografía (`--app-font-family`, tamaños)
-  - Espaciado (`--app-space-*`)
-  - Radios (`--app-radius-*`)
+- [x] `styles.scss` — Variables CSS del design system aplicadas
 
 ### 0.4 Layout Base
 
-- [ ] `app.ts` — Estructura con `<ion-app>` y `<ion-router-outlet>`
-- [ ] `app.routes.ts` — Definir todas las rutas lazy-loaded:
-  ```typescript
-  export const appRoutes: Route[] = [
-    { path: 'login', loadComponent: () => import('./auth/pages/login.page').then(m => m.LoginPage) },
-    { path: 'recepcion', loadChildren: () => import('./recepcion/recepcion.routes').then(m => m.recepcionRoutes) },
-    { path: 'inventario', loadChildren: () => import('./inventario/inventario.routes').then(m => m.inventarioRoutes) },
-    { path: 'dispensacion', loadChildren: () => import('./dispensacion/dispensacion.routes').then(m => m.dispensacionRoutes) },
-    { path: 'historial/:pacienteId', loadChildren: () => import('./historial/historial.routes').then(m => m.historialRoutes) },
-    { path: 'admin', loadChildren: () => import('./administracion/administracion.routes').then(m => m.administracionRoutes) },
-    { path: '', redirectTo: '/login', pathMatch: 'full' },
-  ];
-  ```
-- [ ] `app.config.ts` — Providers:
-  - `provideRouter(appRoutes)`, `provideIonicAngular()`, `provideHttpClient(withInterceptors([authInterceptor, errorInterceptor]))`
-  - Proveer servicios MOCK: `{ provide: AuthService, useClass: MockAuthService }`
+- [x] `app.ts` — Con `<ion-app>` + `<ion-router-outlet>`
+- [x] `app.routes.ts` — Todas las rutas lazy-loaded
+- [x] `app.config.ts` — Providers: Router, Ionic, HttpClient, interceptors
+- [x] `app.html` — Template base
 
 ### 0.5 Estructura de Directorios
 
-- [ ] Crear estructura de carpetas completa:
-  ```
-  src/app/
-    auth/pages/, services/, guards/, auth.routes.ts
-    recepcion/pages/, modals/, services/, components/, recepcion.routes.ts
-    inventario/pages/, modals/, services/, components/, inventario.routes.ts
-    dispensacion/pages/, modals/, services/, components/, guards/, dispensacion.routes.ts
-    historial/pages/, modals/, services/, historial.routes.ts
-    administracion/pages/, modals/, services/, guards/, administracion.routes.ts
-    shared/models/, enums/, components/, pipes/
-    core/interceptors/, services/, guards/
-  ```
+- [x] Directorios creados para todos los módulos
 
 ---
 
-## Fase 1 — Módulo de Autenticación
+
+## Fase 1 — Módulo de Autenticación ✅
+
+> **Estado: COMPLETADA** — Build y tests exitosos (6 tests).
 
 ### Servicios
 
-- [ ] `auth/services/auth.service.ts` — Interfaz abstracta:
-  - `login(pin: string): Observable<{ token: string; usuario: Usuario }>`
-  - `logout(): void`
-  - `getToken(): string | null`
-  - `getUsuario(): Usuario | null`
-  - `isLoggedIn(): boolean`
-  - `getMe(): Observable<Usuario>`
-- [ ] `auth/services/auth.service.mock.ts` — Mock:
-  - Usuario seed: admin / PIN `123456` / rol `farmaceutico`
-  - `login()`: validar PIN hardcodeado, retornar token fake + usuario
-  - `getUsuario()`: leer de `localStorage`
-- [ ] Test: `auth.service.spec.ts`
+- [x] `auth/services/auth.service.ts` — Clase abstracta con métodos login, logout, getToken, getUsuario, isLoggedIn, getMe
+- [x] `auth/services/auth.service.mock.ts` — Mock con seed admin / 123456
+- [x] Test: `auth.service.spec.ts` — 5 tests (PIN inválido, login ok, isLoggedIn, logout, sin sesión)
 
 ### Página
 
-- [ ] `auth/pages/login.page.ts` — Teclado numérico táctil:
-  - Input tipo PIN con `●`, 4-6 dígitos
-  - Teclado numérico virtual (botones 0-9 + ⌫)
-  - Auto-login al completar 4 dígitos
-  - Error "PIN inválido" con `ion-toast`
-  - Redirigir según rol: farmaceutico → `/recepcion`, despachador → `/dispensacion/paso1`
-  - Seguir patrón de página en `design-system.md` sección 5.1
+- [x] `auth/pages/login.page.ts` — Teclado numérico táctil con PIN display, auto-login, toast de error, redirect por rol
 
 ### Guards & Interceptors
 
-- [ ] `auth/guards/auth.guard.ts` — Verificar token en localStorage, redirigir a `/login`
-- [ ] `core/guards/role.guard.ts` — Verificar rol del usuario contra roles permitidos
-- [ ] `core/interceptors/auth.interceptor.ts` — Adjuntar `Authorization: Bearer <token>` a cada request
-- [ ] `core/interceptors/error.interceptor.ts` — Capturar 401 → logout automático
+- [x] `auth/guards/auth.guard.ts` — Verifica token, redirige a /login
+- [x] `core/guards/role.guard.ts` — Verifica rol del usuario
+- [x] `core/interceptors/auth.interceptor.ts` — Adjunta JWT a requests
+- [x] `core/interceptors/error.interceptor.ts` — Captura 401 y hace logout
 
 ### Rutas
 
-- [ ] `auth/auth.routes.ts` — (Login es carga directa, no lazy module)
+- [x] `auth/auth.routes.ts` — Login es carga directa desde app.routes
 
 ---
 
-## Fase 2 — Módulo de Recepción
+## Fase 2 — Módulo de Recepción ✅
+
+> **Estado: COMPLETADA** — Build y tests exitosos.
 
 ### Servicios
 
-- [ ] `recepcion/services/recepcion.service.ts` — Interfaz:
-  - `getMedicamentos(search?: string): Observable<Medicamento[]>`
-  - `crearMedicamento(dto: Partial<Medicamento>): Observable<Medicamento>`
-  - `getLotes(page?: number, limit?: number): Observable<Lote[]>`
-  - `crearLote(dto: Partial<Lote>): Observable<Lote>`
-  - `getLoteQR(id: number): Observable<Blob>`
-- [ ] `recepcion/services/recepcion.service.mock.ts` — Mock con 10 medicamentos y 5 lotes de ejemplo
+- [x] `recepcion/services/recepcion.service.ts` — Interfaz con métodos getMedicamentos, crearMedicamento, getLotes, crearLote, getLoteQR
+- [x] `recepcion/services/recepcion.service.mock.ts` — Mock con 10 medicamentos y 5 lotes de ejemplo
 
 ### Página
 
-- [ ] `recepcion/pages/dashboard-ingresos.page.ts`:
-  - Header con título "Recepción"
-  - `ion-searchbar` para filtrar lotes
-  - Lista de lotes recientes con `TablaIngresosComponent`
-  - FAB "+" para nuevo ingreso
-  - Indicador ⚠️ en lotes próximos a vencer (< 3 meses)
-  - Botón "Reimprimir QR" por lote
+- [x] `recepcion/pages/dashboard-ingresos.page.ts` — Header, searchbar, lista con TablaIngresosComponent, FAB "+", filtro cliente
 
 ### Modales
 
-- [ ] `recepcion/modals/ingreso-lote.modal.ts`:
-  - Autocompletado de medicamento con debounce 300ms
-  - Enlace "Crear nuevo medicamento" → abre `NuevoMedicamentoModal`
-  - Campos: presentación (prellenado), concentración (prellenado), cantidad, fecha venc, donante, ubicación
-  - Alerta visual si fecha < 3 meses
-  - Botón Guardar → POST /lotes → abre `ImprimirEtiquetaModal`
-  - Seguir patrón de modal en `design-system.md` sección 5.2
-- [ ] `recepcion/modals/nuevo-medicamento.modal.ts`:
-  - Campos: nombre genérico*, nombre comercial, presentación*, concentración*, unidad*
-  - Al guardar: seleccionar automáticamente en modal padre
-- [ ] `recepcion/modals/imprimir-etiqueta.modal.ts`:
-  - Template de etiqueta con datos del lote + QR generado con librería `qrcode`
-  - Botón "Imprimir" → `window.print()` con `@media print`
-  - Botón "Cerrar"
+- [x] `recepcion/modals/ingreso-lote.modal.ts` — Autocompletado, alerta vencimiento < 3m, Crear nuevo medicamento, sigue patrón design-system
+- [x] `recepcion/modals/nuevo-medicamento.modal.ts` — Campos: nombre genérico, comercial, presentación, concentración, unidad
+- [x] `recepcion/modals/imprimir-etiqueta.modal.ts` — Template etiqueta, @media print, botón Imprimir
 
 ### Componentes
 
-- [ ] `recepcion/components/tabla-ingresos.component.ts`:
-  - Input: `lotes: Lote[]`
-  - Output: `reimprimir: EventEmitter<number>`
-  - Mostrar medicamento, lote, vencimiento, cantidad, donante
+- [x] `recepcion/components/tabla-ingresos.component.ts` — Input lotes, Output reimprimir, indicador ⚠️ próximo vencimiento
 
 ### Rutas
 
-- [ ] `recepcion/recepcion.routes.ts`:
-  - `/recepcion` → `DashboardIngresosPage` (protegido: farmaceutico, despachador)
+- [x] `recepcion/recepcion.routes.ts` — `/recepcion` → DashboardIngresosPage
 
 ---
 
