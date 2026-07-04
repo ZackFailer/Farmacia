@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { RecetasService } from './recetas.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
+import { Rol } from '../../shared/enums/rol.enum';
 import type { CreateRecetaDto, Receta, RecetaDetalle, RecetaEstado } from '../../shared/models/receta.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
 
@@ -32,7 +33,7 @@ interface ApiReceta {
   id: number;
   pacienteId: number;
   doctorId: number;
-  doctor?: { id: number; nombre: string; rol: string };
+  doctor?: { id: number; nombre: string; rol: Rol };
   fechaHora: string;
   estado: string;
   activo: boolean;

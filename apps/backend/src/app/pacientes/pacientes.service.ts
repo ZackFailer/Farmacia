@@ -46,6 +46,7 @@ export class PacientesService {
           nombre: f.nombre,
           apellido: f.apellido ?? '',
           cedula: f.cedula ?? null,
+          telefono: null,
           sexo: f.sexo,
           edadEstimada: f.edadEstimada,
           pesoEstimado: f.pesoEstimado,
@@ -83,8 +84,8 @@ export class PacientesService {
     return paciente;
   }
 
-  async searchPacientes(query: string) {
-    const q = query.trim().toLowerCase();
+  async searchPacientes(query?: string) {
+    const q = query?.trim().toLowerCase() ?? '';
     if (!q) return [];
     return this.pacienteRepository
       .createQueryBuilder('p')
@@ -94,7 +95,7 @@ export class PacientesService {
       .leftJoinAndSelect('all_members.paciente', 'member_paciente')
       .leftJoinAndSelect('nf.titular', 'titular')
       .where('p.activo = :activo', { activo: true })
-      .andWhere('(LOWER(p.idEmergencia) LIKE :q OR LOWER(p.nombre) LIKE :q OR LOWER(p.apellido) LIKE :q OR p.cedula LIKE :q)', { q: `%${q}%` })
+      .andWhere('(LOWER(p.idEmergencia) LIKE :q OR LOWER(p.nombre) LIKE :q OR LOWER(p.apellido) LIKE :q OR p.cedula LIKE :q OR p.telefono LIKE :q)', { q: `%${q}%` })
       .take(20)
       .getMany();
   }
@@ -110,6 +111,7 @@ export class PacientesService {
     if (dto.nombre !== undefined) paciente.nombre = dto.nombre;
     if (dto.apellido !== undefined) paciente.apellido = dto.apellido;
     if (dto.cedula !== undefined) paciente.cedula = dto.cedula;
+    if (dto.telefono !== undefined) paciente.telefono = dto.telefono;
     if (dto.sexo !== undefined) paciente.sexo = dto.sexo;
     if (dto.edadEstimada !== undefined) paciente.edadEstimada = dto.edadEstimada;
     if (dto.pesoEstimado !== undefined) paciente.pesoEstimado = dto.pesoEstimado;

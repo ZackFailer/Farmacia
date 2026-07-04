@@ -42,6 +42,11 @@ import type { Paciente } from '../../shared/models/paciente.model';
       </ion-item>
 
       <ion-item>
+        <ion-label position="stacked">Teléfono</ion-label>
+        <ion-input [(ngModel)]="telefono" placeholder="04141234567"></ion-input>
+      </ion-item>
+
+      <ion-item>
         <ion-label position="stacked">Sexo *</ion-label>
         <ion-select [(ngModel)]="sexo" interface="action-sheet">
           <ion-select-option [value]="sexoEnum.M">Masculino</ion-select-option>
@@ -86,6 +91,7 @@ export class EditarPacienteModal {
   nombre = '';
   apellido = '';
   cedula = '';
+  telefono = '';
   sexo: Sexo = Sexo.M;
   edad = '';
   peso = '';
@@ -100,6 +106,7 @@ export class EditarPacienteModal {
     this.nombre = p.nombre;
     this.apellido = p.apellido;
     this.cedula = p.cedula ?? '';
+    this.telefono = p.telefono ?? '';
     this.sexo = p.sexo;
     this.edad = String(p.edad_estimada);
     this.peso = String(p.peso_estimado);
@@ -117,6 +124,7 @@ export class EditarPacienteModal {
       nombre: this.nombre.trim(),
       apellido: this.apellido.trim(),
       cedula: this.cedula.trim() || undefined,
+      telefono: this.telefono.trim() || undefined,
       sexo: this.sexo,
       edad_estimada: +this.edad,
       peso_estimado: +this.peso,

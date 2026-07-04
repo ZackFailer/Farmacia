@@ -17,11 +17,15 @@ import type { RecetaItem } from '../services/dispensacion.service';
           <h2 class="med-name">{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
           <p class="med-presentation">{{ item.medicamento.presentacion }}</p>
           <div class="meta-row">
-            <span class="meta-chip">Lote {{ item.lote.codigo_qr }}</span>
+            @if (item.lote) {
+              <span class="meta-chip">Lote {{ item.lote.codigo_qr }}</span>
+              <span class="meta-chip">Stock {{ item.lote.cantidad_actual }}</span>
+              <ion-note>Vence {{ item.lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
+            } @else {
+              <span class="meta-chip" style="border-color: var(--app-warning);">Sin lote asignado</span>
+            }
             <span class="meta-chip">Cant {{ item.cantidad }}</span>
-            <span class="meta-chip">Stock {{ item.lote.cantidad_actual }}</span>
           </div>
-          <ion-note>Vence {{ item.lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
         </ion-label>
         <ion-button slot="end" fill="clear" color="danger" (click)="eliminar.emit($index)">✕</ion-button>
       </ion-item>

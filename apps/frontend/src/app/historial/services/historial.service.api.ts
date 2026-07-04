@@ -65,9 +65,9 @@ export class ApiHistorialService extends HistorialService {
     super();
   }
 
-  getHistorialPaciente(pacienteId: number | string): Observable<Dispensacion[]> {
+  getHistorialPaciente(idEmergencia: string): Observable<Dispensacion[]> {
     return this.http
-      .get<ApiDispensacion[]>(`${API_BASE_URL}/pacientes/${encodeURIComponent(String(pacienteId))}/dispensaciones`)
+      .get<ApiDispensacion[]>(`${API_BASE_URL}/pacientes/${encodeURIComponent(idEmergencia)}/dispensaciones`)
       .pipe(map((items) => items.map((item) => this.toDispensacion(item))));
   }
 

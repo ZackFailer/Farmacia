@@ -14,7 +14,7 @@ describe('HistorialService', () => {
   });
 
   it('debe retornar historial ordenado por fecha DESC', async () => {
-    const results = await firstValueFrom(service.getHistorialPaciente(1));
+    const results = await firstValueFrom(service.getHistorialPaciente('EM-2026-001'));
     expect(results.length).toBe(2);
     expect(results[0].id).toBe(1);
     expect(results[1].id).toBe(2);
@@ -23,14 +23,14 @@ describe('HistorialService', () => {
   });
 
   it('debe incluir items y paciente en cada dispensacion', async () => {
-    const results = await firstValueFrom(service.getHistorialPaciente(1));
+    const results = await firstValueFrom(service.getHistorialPaciente('EM-2026-001'));
     expect(results[0].items.length).toBeGreaterThan(0);
     expect(results[0].paciente).toBeDefined();
     expect(results[0].paciente!.id_emergencia).toBe('EM-2026-001');
   });
 
   it('debe retornar array vacio si no hay dispensaciones', async () => {
-    const results = await firstValueFrom(service.getHistorialPaciente(999));
+    const results = await firstValueFrom(service.getHistorialPaciente('EM-2099-999'));
     expect(results).toEqual([]);
   });
 

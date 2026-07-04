@@ -40,7 +40,7 @@ import type { RecetaItem } from '../services/dispensacion.service';
         <ion-item>
           <ion-label>
             <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-            <p>Lote: {{ item.lote.codigo_qr }} | Cant: {{ item.cantidad }}</p>
+            <p>Lote: {{ item.lote?.codigo_qr ?? 'Sin asignar' }} | Cant: {{ item.cantidad }}</p>
             @if (item.dosisCalculada !== undefined) {
               <ion-note [style.color]="item.dosisValida ? 'var(--stock-ok)' : 'var(--stock-agotado)'">
                 Dosis: {{ item.dosisCalculada.toFixed(2) }} mg/kg

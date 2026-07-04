@@ -87,23 +87,23 @@ export class HistorialPacientePage implements OnInit {
   pacienteInfo = signal<Dispensacion['paciente'] | null>(null);
 
   ngOnInit(): void {
-    const pacienteId = this.route.snapshot.paramMap.get('pacienteId');
-    if (!pacienteId) {
-      this.errorMsg.set('ID de paciente no proporcionado');
+    const idEmergencia = this.route.snapshot.paramMap.get('idEmergencia');
+    if (!idEmergencia) {
+      this.errorMsg.set('ID de emergencia no proporcionado');
       this.cargando.set(false);
       return;
     }
 
-    this.cargarHistorial(pacienteId);
+    this.cargarHistorial(idEmergencia);
   }
 
-  private cargarHistorial(pacienteId: string): void {
+  private cargarHistorial(idEmergencia: string): void {
     this.cargando.set(true);
     this.errorMsg.set('');
     this.dispensaciones.set([]);
     this.pacienteInfo.set(null);
 
-    this.historialService.getHistorialPaciente(pacienteId).subscribe({
+    this.historialService.getHistorialPaciente(idEmergencia).subscribe({
       next: (results) => {
         this.dispensaciones.set(results);
         if (results.length > 0 && results[0].paciente) {
@@ -119,12 +119,12 @@ export class HistorialPacientePage implements OnInit {
   }
 
   reintentar(): void {
-    const pacienteId = this.route.snapshot.paramMap.get('pacienteId');
-    if (!pacienteId) {
-      this.errorMsg.set('ID de paciente no proporcionado');
+    const idEmergencia = this.route.snapshot.paramMap.get('idEmergencia');
+    if (!idEmergencia) {
+      this.errorMsg.set('ID de emergencia no proporcionado');
       return;
     }
-    this.cargarHistorial(pacienteId);
+    this.cargarHistorial(idEmergencia);
   }
 
   async verDetalle(d: Dispensacion): Promise<void> {

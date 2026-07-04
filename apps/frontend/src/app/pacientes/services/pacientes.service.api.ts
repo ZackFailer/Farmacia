@@ -14,6 +14,7 @@ interface ApiPaciente {
   nombre: string;
   apellido: string;
   cedula: string | null;
+  telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
@@ -38,6 +39,7 @@ interface ApiPacienteSimple {
   nombre: string;
   apellido: string;
   cedula: string | null;
+  telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
@@ -52,15 +54,10 @@ export class ApiPacientesService extends PacientesService {
     super();
   }
 
-  buscarPaciente(searchTerm: string): Observable<Paciente> {
+  buscarPaciente(searchTerm: string): Observable<Paciente[]> {
     return this.http
       .get<ApiPaciente[]>(`${API_BASE_URL}/pacientes?q=${encodeURIComponent(searchTerm)}`)
-      .pipe(
-        map((items) => {
-          if (!items.length) throw new Error('Paciente no encontrado');
-          return this.toPaciente(items[0]);
-        }),
-      );
+      .pipe(map((items) => items.map((item) => this.toPaciente(item))));
   }
 
   registrarPaciente(dto: CreatePacienteDto): Observable<Paciente> {
@@ -75,6 +72,7 @@ export class ApiPacientesService extends PacientesService {
     };
     if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
     if (dto.cedula) body['cedula'] = dto.cedula;
+    if (dto.telefono) body['telefono'] = dto.telefono;
     if (dto.familiares?.length) {
       body['familiares'] = dto.familiares.map((f) => ({
         nombre: f.nombre,
@@ -97,6 +95,7 @@ export class ApiPacientesService extends PacientesService {
     if (dto.nombre !== undefined) body['nombre'] = dto.nombre;
     if (dto.apellido !== undefined) body['apellido'] = dto.apellido;
     if (dto.cedula !== undefined) body['cedula'] = dto.cedula;
+    if (dto.telefono !== undefined) body['telefono'] = dto.telefono;
     if (dto.sexo !== undefined) body['sexo'] = dto.sexo;
     if (dto.edad_estimada !== undefined) body['edadEstimada'] = dto.edad_estimada;
     if (dto.peso_estimado !== undefined) body['pesoEstimado'] = dto.peso_estimado;
@@ -163,6 +162,7 @@ export class ApiPacientesService extends PacientesService {
       nombre: pf.paciente.nombre!,
       apellido: pf.paciente.apellido!,
       cedula: pf.paciente.cedula ?? undefined,
+      telefono: pf.paciente.telefono ?? undefined,
       sexo: pf.paciente.sexo!,
       edad_estimada: pf.paciente.edadEstimada!,
       peso_estimado: pf.paciente.pesoEstimado!,
@@ -180,6 +180,7 @@ export class ApiPacientesService extends PacientesService {
       nombre: item.nombre,
       apellido: item.apellido,
       cedula: item.cedula ?? undefined,
+      telefono: item.telefono ?? undefined,
       sexo: item.sexo,
       edad_estimada: item.edadEstimada,
       peso_estimado: item.pesoEstimado,

@@ -193,9 +193,13 @@ export class LoginPage {
     this.authService.login(this.pin()).subscribe({
       next: (res) => {
         this.isProcessing = false;
-        const ruta = res.usuario.rol === Rol.FARMACEUTICO
-          ? '/recepcion'
-          : '/dispensacion/paso1';
+        const ruta = ({
+          [Rol.ADMIN]: '/admin',
+          [Rol.DOCTOR]: '/recetas',
+          [Rol.PHARMACEUTICAL]: '/dispensacion/paso1',
+          [Rol.RECEPTIONIST]: '/pacientes',
+          [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
+        } satisfies Record<Rol, string>)[res.usuario.rol] ?? '/recepcion';
         this.router.navigate([ruta]);
       },
       error: () => {

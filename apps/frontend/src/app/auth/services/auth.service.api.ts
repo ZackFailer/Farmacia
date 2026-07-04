@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { map, tap } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { clearAppSessionStorage } from './auth.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import { Rol } from '../../shared/enums/rol.enum';
 import type { Usuario } from '../../shared/models/usuario.model';
@@ -38,8 +39,7 @@ export class ApiAuthService extends AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('apoPharma_token');
-    localStorage.removeItem('apoPharma_usuario');
+    clearAppSessionStorage();
   }
 
   getToken(): string | null {

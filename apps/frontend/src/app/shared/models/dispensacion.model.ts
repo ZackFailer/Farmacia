@@ -31,6 +31,7 @@ export interface CreateDispensacionDetalleDto {
 
 export interface CreateDispensacionDto {
   paciente_id: number;
+  receta_id?: number;
   observaciones?: string;
   items: CreateDispensacionDetalleDto[];
 }

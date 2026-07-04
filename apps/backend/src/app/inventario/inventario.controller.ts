@@ -12,8 +12,11 @@ import { AjustarStockDto } from './dto/ajustar-stock.dto';
 import { ActualizarUmbralDto } from './dto/actualizar-umbral.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtUser } from '../common/types/jwt-user.type';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../common/enums/role.enum';
 
 @Controller()
+@Roles(UserRole.MEDICATION_RECEPTIONIST, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
 export class InventarioController {
   constructor(private readonly inventarioService: InventarioService) {}
 
@@ -47,11 +50,13 @@ export class InventarioController {
   }
 
   @Get('configuraciones/umbrales')
+  @Roles(UserRole.ADMIN)
   getUmbrales() {
     return this.inventarioService.getUmbrales();
   }
 
   @Patch('configuraciones/:id/umbral')
+  @Roles(UserRole.ADMIN)
   actualizarUmbral(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarUmbralDto,

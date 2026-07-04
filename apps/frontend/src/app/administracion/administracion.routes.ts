@@ -5,12 +5,12 @@ import { Rol } from '../shared/enums/rol.enum';
 export const administracionRoutes: Route[] = [
   {
     path: 'usuarios',
-    canActivate: [roleGuard([Rol.FARMACEUTICO])],
+    canActivate: [roleGuard([Rol.ADMIN])],
     loadComponent: () => import('./pages/gestion-usuarios.page').then(m => m.GestionUsuariosPage),
   },
   {
     path: 'configuracion',
-    canActivate: [roleGuard([Rol.FARMACEUTICO])],
+    canActivate: [roleGuard([Rol.ADMIN])],
     loadComponent: () => import('./pages/configuracion-general.page').then(m => m.ConfiguracionGeneralPage),
   },
   { path: '', redirectTo: 'usuarios', pathMatch: 'full' },

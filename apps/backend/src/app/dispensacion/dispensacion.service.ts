@@ -6,6 +6,7 @@ import {
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Paciente } from '../common/entities/paciente.entity';
+import { Receta } from '../common/entities/receta.entity';
 import { Lote } from '../common/entities/lote.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { Dispensacion } from '../common/entities/dispensacion.entity';
@@ -53,11 +54,26 @@ export class DispensacionService {
         throw new NotFoundException('Patient not found');
       }
 
+      if (dto.recetaId) {
+        const receta = await manager.findOne(Receta, {
+          where: { id: dto.recetaId, activo: true },
+        });
+        if (!receta) {
+          throw new NotFoundException('Receta not found');
+        }
+        if (receta.estado !== 'pendiente') {
+          throw new BadRequestException('Receta is not pending');
+        }
+        receta.estado = 'despachada';
+        await manager.save(Receta, receta);
+      }
+
       const dispensacion = manager.create(Dispensacion, {
         pacienteId: paciente.id,
         usuarioId,
         fechaHora: new Date(),
         observaciones: dto.observaciones ?? null,
+        recetaId: dto.recetaId ?? null,
       });
       const savedDispensacion = await manager.save(Dispensacion, dispensacion);
 

@@ -3,32 +3,37 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonNote, IonIcon,
-  IonBackButton, IonSpinner, ModalController,
+  IonMenuButton, IonSpinner, ModalController,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../services/pacientes.service';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
 import { EditarPacienteModal } from '../modals/editar-paciente.modal';
 import { AgregarFamiliarModal } from '../modals/agregar-familiar.modal';
+import { PacienteQrModal } from '../modals/paciente-qr.modal';
+import { AuthService } from '../../auth/services/auth.service';
+import { Rol } from '../../shared/enums/rol.enum';
 
 @Component({
   standalone: true,
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonLabel, IonNote, IonIcon,
-    IonBackButton, IonSpinner,
+    IonMenuButton, IonSpinner,
   ],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button defaultHref="/pacientes"></ion-back-button>
+          <ion-menu-button></ion-menu-button>
         </ion-buttons>
         <ion-title>Detalle Paciente</ion-title>
         <ion-buttons slot="end">
-          <ion-button (click)="editar()">
-            <ion-icon name="create-outline"></ion-icon>
-          </ion-button>
+          @if (puedeEditar()) {
+            <ion-button (click)="editar()">
+              <ion-icon name="create-outline"></ion-icon>
+            </ion-button>
+          }
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -47,14 +52,27 @@ import { AgregarFamiliarModal } from '../modals/agregar-familiar.modal';
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
+            @if (p.telefono) { <p>Teléfono: {{ p.telefono }}</p> }
             <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
             <ion-note>@if (p.es_damnificado) { Damnificado } @else { No damnificado }@if (p.es_titular) { · Titular de núcleo }</ion-note>
           </ion-label>
         </ion-item>
 
-        <ion-button expand="block" fill="outline" (click)="verHistorial()">
-          Ver historial de dispensaciones
+        <ion-button expand="block" fill="outline" (click)="verQrPaciente()">
+          Ver QR del paciente
         </ion-button>
+
+        @if (puedeVerHistorial()) {
+          <ion-button expand="block" fill="outline" (click)="verHistorial()">
+            Ver historial de dispensaciones
+          </ion-button>
+        }
+
+        @if (puedeCrearReceta()) {
+          <ion-button expand="block" (click)="crearReceta()">
+            Crear receta
+          </ion-button>
+        }
 
         <h3>Núcleo familiar</h3>
         @if (familiares(); as f) {
@@ -76,9 +94,11 @@ import { AgregarFamiliarModal } from '../modals/agregar-familiar.modal';
           + Agregar familiar
         </ion-button>
 
-        <ion-button expand="block" fill="clear" color="danger" (click)="eliminar()">
-          Dar de baja paciente
-        </ion-button>
+        @if (puedeEliminar()) {
+          <ion-button expand="block" fill="clear" color="danger" (click)="eliminar()">
+            Dar de baja paciente
+          </ion-button>
+        }
       }
     </ion-content>
   `,
@@ -94,9 +114,30 @@ export class DetallePacientePage {
     private router: Router,
     private pacientesService: PacientesService,
     private modalCtrl: ModalController,
+    private authService: AuthService,
   ) {
     this.pacienteId = Number(this.route.snapshot.paramMap.get('id'));
     this.cargar();
+  }
+
+  private get currentRole(): Rol | null {
+    return this.authService.getUsuario()?.rol ?? null;
+  }
+
+  puedeVerHistorial(): boolean {
+    return this.currentRole === Rol.DOCTOR || this.currentRole === Rol.ADMIN;
+  }
+
+  puedeCrearReceta(): boolean {
+    return this.currentRole === Rol.DOCTOR || this.currentRole === Rol.ADMIN;
+  }
+
+  puedeEditar(): boolean {
+    return this.currentRole === Rol.RECEPTIONIST || this.currentRole === Rol.ADMIN;
+  }
+
+  puedeEliminar(): boolean {
+    return this.currentRole === Rol.RECEPTIONIST || this.currentRole === Rol.ADMIN;
   }
 
   private cargar(): void {
@@ -115,6 +156,14 @@ export class DetallePacientePage {
     const p = this.paciente();
     if (!p) return;
     this.router.navigate(['/historial', p.id_emergencia]);
+  }
+
+  crearReceta(): void {
+    const p = this.paciente();
+    if (!p) return;
+    this.router.navigate(['/recetas'], {
+      queryParams: { pacienteId: p.id, idEmergencia: p.id_emergencia },
+    });
   }
 
   async editar(): Promise<void> {
@@ -145,6 +194,20 @@ export class DetallePacientePage {
         next: () => this.cargar(),
       });
     }
+  }
+
+  async verQrPaciente(): Promise<void> {
+    const p = this.paciente();
+    if (!p) return;
+
+    const modal = await this.modalCtrl.create({
+      component: PacienteQrModal,
+      componentProps: {
+        idEmergencia: p.id_emergencia,
+        nombre: `${p.nombre} ${p.apellido}`,
+      },
+    });
+    await modal.present();
   }
 
   eliminar(): void {

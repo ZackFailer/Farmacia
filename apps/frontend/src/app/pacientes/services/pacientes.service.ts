@@ -5,7 +5,7 @@ import type { Familiar } from '../../shared/models/familiar.model';
 
 @Injectable()
 export abstract class PacientesService {
-  abstract buscarPaciente(searchTerm: string): Observable<Paciente>;
+  abstract buscarPaciente(searchTerm: string): Observable<Paciente[]>;
   abstract registrarPaciente(dto: CreatePacienteDto): Observable<Paciente>;
   abstract actualizarPaciente(id: number, dto: Partial<CreatePacienteDto>): Observable<Paciente>;
   abstract eliminarPaciente(id: number): Observable<{ success: boolean }>;

@@ -5,11 +5,13 @@ import type { Observable } from 'rxjs';
 import { DispensacionService } from './dispensacion.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import { Sexo } from '../../shared/enums/sexo.enum';
+import { Rol } from '../../shared/enums/rol.enum';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { CreateDispensacionDto, Dispensacion } from '../../shared/models/dispensacion.model';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { CreatePacienteDto, Paciente } from '../../shared/models/paciente.model';
+import type { Receta } from '../../shared/models/receta.model';
 
 interface ApiMedicamento {
   id: number;
@@ -49,6 +51,7 @@ interface ApiPacienteSimple {
   nombre: string;
   apellido: string;
   cedula: string | null;
+  telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
@@ -63,6 +66,7 @@ interface ApiPaciente {
   nombre: string;
   apellido: string;
   cedula: string | null;
+  telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
@@ -71,6 +75,30 @@ interface ApiPaciente {
   esTitular?: boolean;
   familiares?: ApiNucleoMiembro[];
   createdAt: string;
+}
+
+interface ApiRecetaDetalle {
+  id: number;
+  recetaId: number;
+  medicamentoId: number;
+  cantidadRecetada: number;
+  dias: number;
+  dosisIndicada: string | null;
+  createdAt: string;
+  medicamento?: ApiMedicamento;
+}
+
+interface ApiReceta {
+  id: number;
+  pacienteId: number;
+  doctorId: number;
+  fechaHora: string;
+  estado: string;
+  activo: boolean;
+  createdAt: string;
+  paciente?: ApiPaciente;
+  doctor?: { id: number; nombre: string; rol: Rol };
+  detalles?: ApiRecetaDetalle[];
 }
 
 interface ApiDispensacionDetalle {
@@ -122,6 +150,7 @@ export class ApiDispensacionService extends DispensacionService {
     };
     if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
     if (dto.cedula) body['cedula'] = dto.cedula;
+    if (dto.telefono) body['telefono'] = dto.telefono;
     if (dto.familiares?.length) {
       body['familiares'] = dto.familiares.map((f) => ({
         nombre: f.nombre,
@@ -184,18 +213,50 @@ export class ApiDispensacionService extends DispensacionService {
       .pipe(map((item) => this.toConfiguracion(item)));
   }
 
-  crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion> {
+  getRecetasPendientes(): Observable<Receta[]> {
     return this.http
-      .post<ApiDispensacion>(`${API_BASE_URL}/dispensaciones`, {
-        pacienteId: dto.paciente_id,
-        observaciones: dto.observaciones,
-        detalles: dto.items.map((item) => ({
-          loteId: item.lote_id,
-          medicamentoId: item.medicamento_id,
-          cantidad: item.cantidad,
-        })),
-      })
+      .get<ApiReceta[]>(`${API_BASE_URL}/dispensaciones/pendientes`)
+      .pipe(map((items) => items.map((item) => this.toReceta(item))));
+  }
+
+  crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion> {
+    const body: Record<string, unknown> = {
+      pacienteId: dto.paciente_id,
+      observaciones: dto.observaciones,
+      detalles: dto.items.map((item) => ({
+        loteId: item.lote_id,
+        medicamentoId: item.medicamento_id,
+        cantidad: item.cantidad,
+      })),
+    };
+    if (dto.receta_id) body['recetaId'] = dto.receta_id;
+    return this.http
+      .post<ApiDispensacion>(`${API_BASE_URL}/dispensaciones`, body)
       .pipe(map((item) => this.toDispensacion(item)));
+  }
+
+  private toReceta(item: ApiReceta): Receta {
+    return {
+      id: item.id,
+      paciente_id: item.pacienteId,
+      paciente: item.paciente ? this.toPaciente(item.paciente) : undefined,
+      doctor_id: item.doctorId,
+      doctor: item.doctor,
+      fecha_hora: item.fechaHora,
+      estado: item.estado as Receta['estado'],
+      activo: item.activo,
+      created_at: item.createdAt,
+      detalles: (item.detalles ?? []).map((d) => ({
+        id: d.id,
+        receta_id: d.recetaId,
+        medicamento_id: d.medicamentoId,
+        medicamento: d.medicamento ? this.toMedicamento(d.medicamento) : undefined,
+        cantidad_recetada: d.cantidadRecetada,
+        dias: d.dias,
+        dosis_indicada: d.dosisIndicada ?? undefined,
+        created_at: d.createdAt,
+      })),
+    };
   }
 
   private toMedicamento(item: ApiMedicamento): Medicamento {
@@ -251,6 +312,7 @@ export class ApiDispensacionService extends DispensacionService {
       nombre: item.nombre,
       apellido: item.apellido,
       cedula: item.cedula ?? undefined,
+      telefono: item.telefono ?? undefined,
       sexo: item.sexo,
       edad_estimada: item.edadEstimada,
       peso_estimado: item.pesoEstimado,

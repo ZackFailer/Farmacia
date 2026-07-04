@@ -2,7 +2,15 @@ import { inject } from '@angular/core';
 import type { CanActivateFn } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthService } from '../../auth/services/auth.service';
-import type { Rol } from '../../shared/enums/rol.enum';
+import { Rol } from '../../shared/enums/rol.enum';
+
+const HOME_BY_ROLE: Record<Rol, string> = {
+  [Rol.ADMIN]: '/admin',
+  [Rol.DOCTOR]: '/recetas',
+  [Rol.PHARMACEUTICAL]: '/dispensacion/paso1',
+  [Rol.RECEPTIONIST]: '/pacientes',
+  [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
+};
 
 export function roleGuard(allowedRoles: Rol[]): CanActivateFn {
   return () => {
@@ -12,6 +20,11 @@ export function roleGuard(allowedRoles: Rol[]): CanActivateFn {
 
     if (usuario && allowedRoles.includes(usuario.rol)) {
       return true;
+    }
+
+    if (usuario) {
+      router.navigate([HOME_BY_ROLE[usuario.rol] ?? '/login']);
+      return false;
     }
 
     router.navigate(['/login']);

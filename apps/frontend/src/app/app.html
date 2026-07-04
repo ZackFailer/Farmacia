@@ -8,6 +8,18 @@
 
     <ion-content class="menu-content">
       <div class="menu-shell">
+        @if (usuario; as u) {
+          <div class="menu-user-info">
+            <div class="menu-user-avatar">
+              <ion-icon name="person-circle-outline"></ion-icon>
+            </div>
+            <div class="menu-user-details">
+              <span class="menu-user-name">{{ u.nombre }}</span>
+              <span class="menu-user-role">{{ rolLabels[u.rol] }}</span>
+            </div>
+          </div>
+        }
+
         <ion-list class="menu-list">
           @for (item of menuItems; track item.ruta) {
             <ion-item

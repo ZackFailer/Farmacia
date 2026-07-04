@@ -1,335 +1,301 @@
 # Base de Referencia — ApoPharma
 
-Documento raíz de arquitectura y convenciones del Sistema de Gestión de Farmacia de Emergencia.
+Documento canónico de arquitectura funcional y operativa del sistema.
 
 ---
 
-## Stack Tecnológico
+## 1. Propósito del sistema
 
-| Capa | Tecnología | Versión |
+ApoPharma es un sistema para operación de farmacia en contexto de emergencia. Su objetivo es:
+
+- registrar pacientes y su núcleo familiar,
+- formalizar recetas médicas,
+- controlar la dispensación contra stock real,
+- mantener trazabilidad por lote y QR,
+- operar inventario con alertas y vencimientos,
+- administrar usuarios y configuraciones clínicas.
+
+El sistema trabaja bajo un flujo principal:
+
+1. Se identifica o registra al paciente.
+2. El doctor crea una receta.
+3. La receta entra a una cola pendiente.
+4. El farmacéutico selecciona la receta, asigna lotes y dispensa.
+5. El stock se descuenta y la entrega queda en historial.
+
+---
+
+## 2. Roles oficiales
+
+| Rol | Responsabilidad principal |
+|---|---|
+| `recepcionista` | Registro y mantenimiento de pacientes y núcleo familiar |
+| `doctor` | Evaluación clínica, consulta de historial y creación de recetas |
+| `farmaceutico` | Dispensación, validación de dosis, cola de recetas, historial e inventario operativo |
+| `recepcionista_med` | Catálogo de medicamentos, lotes, QR e inventario operativo |
+| `admin` | Acceso transversal, usuarios y configuración global |
+
+### Principios por rol
+
+- `recepcionista` no opera medicamentos, lotes ni inventario.
+- `doctor` no realiza dispensación.
+- `farmaceutico` no gestiona usuarios.
+- `recepcionista_med` no trabaja con pacientes ni recetas clínicas.
+- `admin` puede operar todos los módulos, pero su uso principal es supervisión y mantenimiento.
+
+---
+
+## 3. Módulos funcionales
+
+| Módulo | Propósito | Roles permitidos |
 |---|---|---|
-| Monorepo | Nx | 23 |
-| Frontend | Angular (standalone) + Ionic 8 | 21 |
-| Backend | NestJS | 11 |
-| Lenguaje | TypeScript (strict) | ~5.9 |
-| Estilos | SCSS | — |
-| Test unitarios (FE) | Vitest | 4 |
-| Test unitarios (BE) | Jest + ts-jest | 30 |
-| E2E (FE) | Playwright | — |
-| E2E (BE) | Jest + Axios | — |
-| Linter | ESLint v9 (flat config) | — |
-| Formateo | Prettier | singleQuote, 2 spaces |
+| Autenticación | Iniciar sesión, mantener sesión, proteger acceso | todos |
+| Pacientes | Buscar, registrar, editar y vincular familiares | `recepcionista`, `doctor`, `admin` |
+| Recepción | Crear medicamentos, registrar lotes y generar QR | `recepcionista_med`, `admin` |
+| Recetas | Crear recetas y revisar antecedentes del paciente | `doctor`, `admin` |
+| Dispensación | Atender cola de recetas, asignar lotes y entregar | `farmaceutico`, `admin` |
+| Inventario | Ver stock, vencimientos y movimientos | `recepcionista_med`, `farmaceutico`, `admin` |
+| Umbrales | Gestionar umbrales operativos por medicamento | `admin` |
+| Historial | Consultar dispensaciones previas por paciente | `doctor`, `farmaceutico`, `admin` |
+| Administración | Usuarios y configuración global | `admin` |
 
 ---
 
-## Estructura del Proyecto
+## 4. Flujo operativo oficial
 
-```
-Farmacia/
-├── apps/
-│   ├── frontend/          Angular 21 + Ionic 8 (standalone)
-│   │   └── src/app/
-│   │       ├── auth/          Módulo de autenticación
-│   │       ├── recepcion/     Módulo de recepción
-│   │       ├── inventario/    Módulo de inventario
-│   │       ├── dispensacion/  Módulo de dispensación
-│   │       ├── historial/     Módulo de historial
-│   │       ├── administracion/ Módulo de administración
-│   │       ├── shared/        Componentes, pipes, directivas compartidas
-│   │       └── core/          Servicios singleton, guards, interceptors
-│   ├── backend/           NestJS 11
-│   │   └── src/app/
-│   │       ├── auth/          Módulo de autenticación
-│   │       ├── recepcion/     Módulo de recepción
-│   │       ├── inventario/    Módulo de inventario
-│   │       ├── dispensacion/  Módulo de dispensación
-│   │       ├── historial/     Módulo de historial
-│   │       ├── administracion/ Módulo de administración
-│   │       └── common/        Guards, decoradores, filtros compartidos
-│   ├── frontend-e2e/
-│   └── backend-e2e/
-└── documents/             Documentación del proyecto
-```
+### 4.1 Flujo principal
+
+1. `recepcionista` o `doctor` identifica al paciente por QR, ID de emergencia, nombre o cédula.
+2. Si no existe, se registra paciente y, si aplica, su núcleo familiar.
+2.1. Al registrar paciente se captura teléfono (si está disponible) y se muestra su QR para compartirlo por WhatsApp.
+3. `doctor` revisa el historial completo del paciente: recetas previas, pendientes, despachadas y medicamentos recetados anteriormente.
+4. Si corresponde, crea una nueva receta seleccionando medicamentos en stock e indicando cantidad y dias.
+5. La receta queda con estado `pendiente` y entra a cola de despacho.
+6. `farmaceutico` entra a la cola de recetas pendientes.
+7. Selecciona una receta y asigna lotes disponibles por medicamento.
+8. El sistema valida stock, FEFO y dosis maxima.
+9. Se confirma la dispensación.
+10. Se descuenta stock, se registra movimiento y la receta pasa a `despachada`.
+11. El historial del paciente queda actualizado.
+
+### 4.2 Flujos alternos
+
+- `recepcionista_med` puede crear medicamentos nuevos durante el registro de lotes.
+- `farmaceutico` puede realizar una dispensación manual sin receta. En ese caso debe identificar al paciente y adjuntar explicitamente los medicamentos entregados.
+- `doctor` debe ver disponibilidad clínica desde el propio módulo de recetas, usando una lista filtrable de medicamentos en stock, sin depender del módulo operativo de umbrales.
 
 ---
 
-## Base de Datos — Esquema Relacional (7 tablas)
-
-```sql
--- 1. medicamento
-medicamento (id, nombre_generico, nombre_comercial, presentacion, concentracion, created_at, updated_at)
-
--- 2. lote
-lote (id, medicamento_id FK, codigo_qr, cantidad_inicial, cantidad_actual,
-      fecha_vencimiento, donante, ubicacion, created_at, updated_at)
-
--- 3. paciente
-paciente (id, id_emergencia UNIQUE, sexo, edad_estimada, peso_estimado,
-          es_damnificado BOOLEAN, created_at)
-
--- 4. dispensacion
-dispensacion (id, paciente_id FK, usuario_id FK, fecha_hora, observaciones)
-
--- 5. dispensacion_detalle
-dispensacion_detalle (id, dispensacion_id FK, lote_id FK, medicamento_id FK,
-                      cantidad, dosis_mg_kg, created_at)
-
--- 6. usuario
-usuario (id, nombre, rol ENUM('farmaceutico','despachador'), pin_hash, created_at, updated_at)
-
--- 7. configuracion
-configuracion (id, medicamento_id FK, umbral_minimo INT,
-               dosis_maxima_mg_kg DECIMAL, peso_referencia_kg DECIMAL,
-               updated_at)
-```
-
----
-
-## Convenciones
-
-### Frontend
-- **Selector componente**: `app-` prefijo, kebab-case
-- **Selector directiva**: `app` prefijo, camelCase
-- **Estilos**: SCSS (global en `styles.scss`, encapsulado por componente)
-- **Rutas**: lazy-loading por módulo funcional
-- **Estado**: servicios con `BehaviorSubject` o señales de Angular
-
-### Backend
-- **Módulos NestJS**: uno por módulo funcional
-- **Endpoint path**: versionado (`/api/v1/...`)
-- **DTOs**: clases con decoradores `class-validator`
-- **ORM**: TypeORM con entidades decoradas
-- **Autenticación**: PIN + JWT
-
-### General
-- **Idioma**: español en UI, inglés en código (variables, funciones, tablas DB)
-- **Commits**: convencional (`feat:`, `fix:`, `docs:`, `refactor:`)
-- **Tests**: unitarios obligatorios en servicios, E2E en flujos críticos
-
----
-
-## API — Diseño General
-
-```
-Base URL: /api/v1
-
-Autenticación: POST /auth/login -> JWT token
-
-Protección: Guards JWT en todas las rutas excepto /auth/login
-
-Recursos:
-  /medicamentos          CRUD completo
-  /lotes                 CRUD + ajuste stock
-  /pacientes             CRUD
-  /dispensaciones        Create + Read (historial)
-  /usuarios              CRUD (solo admin)
-  /configuraciones       CRUD (solo admin)
-```
-
----
-
-## Flujo de Datos (Frontend → Backend)
-
-```
-[Ionic Component] --> [Service (HttpClient)] --> [NestJS Controller]
-                                                       |
-                                                  [Service Layer]
-                                                       |
-                                                  [TypeORM Repository]
-                                                       |
-                                                   [SQLite/Postgres]
-```
-
-Respuesta estándar API:
-```json
-// Éxito
-{ "data": ..., "message": "ok" }
-
-// Error
-{ "error": "...", "statusCode": 400 }
-```
-
----
-
-## Pantallas y Rutas (Frontend)
+## 5. Rutas de aplicación
 
 | Ruta | Pantalla | Módulo |
 |---|---|---|
-| `/login` | Inicio de Sesión | Autenticación |
-| `/recepcion` | Dashboard de Ingresos | Recepción |
-| `/inventario` | Panel de Stock General | Inventario |
-| `/inventario/umbrales` | Configuración de Umbrales | Inventario |
-| `/dispensacion/paso1` | Escanear Paciente | Dispensación |
-| `/dispensacion/paso2` | Seleccionar Medicamentos | Dispensación |
-| `/dispensacion/paso3` | Escaneo de Lote y Confirmación | Dispensación |
-| `/historial/:pacienteId` | Historial de Paciente | Historial |
-| `/admin/usuarios` | Gestión de Usuarios | Administración |
-| `/admin/configuracion` | Configuración General | Administración |
+| `/login` | Inicio de sesión | Autenticación |
+| `/recepcion` | Dashboard de recepción | Recepción |
+| `/pacientes` | Lista y búsqueda de pacientes | Pacientes |
+| `/pacientes/:id` | Detalle del paciente | Pacientes |
+| `/recetas` | Flujo de receta médica | Recetas |
+| `/dispensacion/cola` | Cola de recetas pendientes | Dispensación |
+| `/dispensacion/paso1` | Identificar paciente (contingencia/manual) | Dispensación |
+| `/dispensacion/paso2` | Selección de lotes/medicamentos | Dispensación |
+| `/dispensacion/paso3` | Confirmación de entrega | Dispensación |
+| `/inventario` | Stock general | Inventario |
+| `/inventario/umbrales` | Configuración de umbrales | Umbrales |
+| `/historial` | Búsqueda de historial (QR/ID/cédula/nombre) | Historial |
+| `/historial/:idEmergencia` | Historial del paciente | Historial |
+| `/admin/usuarios` | Gestión de usuarios | Administración |
+| `/admin/configuracion` | Configuración general | Administración |
 
 ---
 
-## Modales Transversales
+## 6. Esquema funcional de datos
 
-| Modal | Disparado desde | Propósito |
-|---|---|---|
-| Registro Rápido de Lote | Recepción | Ingresar nuevo lote + QR |
-| Nuevo Medicamento (anidado) | Recepción | Crear medicamento al vuelo |
-| Impresión de Etiqueta | Recepción | Imprimir QR del lote |
-| Ajuste Rápido (Conteo Físico) | Inventario | Corregir stock |
-| Detalle de Lote | Inventario | Ver movimientos del lote |
-| Alerta de Stock | Inventario | Notificación umbral bajo |
-| Edición de Umbral | Inventario | Configurar umbral mínimo |
-| Registro Rápido de Paciente | Dispensación | Crear paciente al vuelo |
-| Búsqueda Manual de Paciente | Dispensación | Buscar paciente sin QR |
-| Búsqueda de Medicamento | Dispensación | Agregar medicamento a receta |
-| Validación de Dosis | Dispensación | Alerta de dosis máxima |
-| Confirmación de Entrega | Dispensación | Confirmar dispensación |
-| Detalle de Dispensación | Historial | Ver detalle de entrega |
-| Creación/Edición de Usuario | Administración | CRUD de usuarios |
-| Configuración de Límites de Dosis | Administración | Definir dosis máximas |
+### Entidades principales
+
+```sql
+medicamento (
+  id,
+  nombre_generico,
+  nombre_comercial,
+  presentacion,
+  concentracion,
+  activo,
+  created_at,
+  updated_at
+)
+
+lote (
+  id,
+  medicamento_id FK,
+  codigo_qr,
+  cantidad_inicial,
+  cantidad_actual,
+  fecha_vencimiento,
+  donante,
+  ubicacion,
+  activo,
+  created_at,
+  updated_at
+)
+
+lote_movimiento (
+  id,
+  lote_id FK,
+  tipo,
+  cantidad,
+  motivo,
+  activo,
+  created_at
+)
+
+paciente (
+  id,
+  id_emergencia UNIQUE,
+  nombre,
+  apellido,
+  cedula,
+  telefono,
+  sexo,
+  edad_estimada,
+  peso_estimado,
+  es_damnificado,
+  tiene_carga_familiar,
+  activo,
+  created_at
+)
+
+nucleo_familiar (
+  id,
+  titular_id FK,
+  activo,
+  created_at
+)
+
+nucleo_familiar_miembro (
+  id,
+  nucleo_familiar_id FK,
+  paciente_id FK,
+  relacion,
+  activo,
+  created_at
+)
+
+receta (
+  id,
+  paciente_id FK,
+  doctor_id FK,
+  fecha_hora,
+  estado,
+  activo,
+  created_at
+)
+
+receta_detalle (
+  id,
+  receta_id FK,
+  medicamento_id FK,
+  cantidad_recetada,
+  dias,
+  dosis_indicada,
+  activo,
+  created_at
+)
+
+dispensacion (
+  id,
+  paciente_id FK,
+  usuario_id FK,
+  receta_id FK NULL,
+  fecha_hora,
+  observaciones,
+  activo,
+  created_at
+)
+
+dispensacion_detalle (
+  id,
+  dispensacion_id FK,
+  lote_id FK,
+  medicamento_id FK,
+  cantidad,
+  dosis_mg_kg,
+  activo,
+  created_at
+)
+
+usuario (
+  id,
+  nombre,
+  rol,
+  pin_hash,
+  activo,
+  created_at,
+  updated_at
+)
+
+configuracion (
+  id,
+  medicamento_id FK,
+  umbral_minimo,
+  dosis_maxima_mg_kg,
+  peso_referencia_kg,
+  activo,
+  updated_at
+)
+```
+
+### Reglas globales
+
+- Todas las tablas funcionales usan `activo` para borrado lógico.
+- `id_emergencia` es el identificador operativo del paciente en QR e historial.
+- La receta es el documento clínico previo a la dispensación.
+- La dispensación es el acto de entrega y puede vincularse a una receta.
 
 ---
 
-## Despliegue y Operación
+## 7. Convenciones generales
 
-### Requisitos
+### Frontend
 
-| Requisito | Detalle |
-|---|---|
-| Node.js | v18, v20 o v22 LTS |
-| npm | Se incluye con Node.js |
-| Memoria RAM | Mínimo 512 MB libres |
-| Red | Conexión WiFi local (no requiere internet) |
-| Dispositivos | Cualquier dispositivo con navegador moderno (Chrome, Edge, Safari) |
+- Angular standalone + Ionic.
+- Guards por rol en rutas principales.
+- Menú lateral filtrado por rol.
+- UI en español.
+- Estado con signals.
+- Formularios reactivos o signals según el caso.
 
-El proyecto se sirve completo desde un solo proceso (backend + frontend estático) en el puerto 3000.
+### Backend
 
----
+- NestJS + TypeORM.
+- API bajo `/api/v1`.
+- JWT para autenticación.
+- `@Roles()` para autorización por módulo.
+- Soft delete como comportamiento por defecto.
 
-### HTTPS (obligatorio para escáner QR)
+### Operación
 
-La cámara para escanear QR solo funciona en contextos seguros (HTTPS o `localhost`).  
-Al acceder desde un celular por IP local, se necesita HTTPS con certificado autofirmado.
-
-El certificado se genera automáticamente al ejecutar `npx nx build backend`.  
-Si se necesita regenerar manualmente:
-
-```powershell
-# 1. Crear certificado autofirmado en Windows
-$cert = New-SelfSignedCertificate -DnsName "192.168.X.X" -CertStoreLocation "Cert:\CurrentUser\My" -FriendlyName "ApoPharma" -NotAfter (Get-Date).AddYears(5)
-
-# 2. Exportar a PFX
-$pwd = ConvertTo-SecureString -String "apopharma" -Force -AsPlainText
-Export-PfxCertificate -Cert $cert -FilePath "apps/backend/certs/cert.pfx" -Password $pwd
-```
-
-> **Importante**: Reemplazar `192.168.X.X` por la IP real de la PC.  
-> En el celular, el navegador mostrará "Conexión no segura" → tocar **"Avanzado" → "Continuar igual"**.
+- El flujo principal de dispensación parte de una receta pendiente.
+- La visibilidad de historial debe usar `idEmergencia`.
+- Las validaciones clínicas del backend son la autoridad final en dosis y stock.
 
 ---
 
-### Inicio del Servidor (guía paso a paso para no técnicas)
+## 8. Decisiones funcionales vigentes
 
-#### Primera vez en una PC nueva
-
-```powershell
-# 1. Abrir PowerShell como administrador y ubicarse en la carpeta del proyecto
-cd C:\Proyectos\Farmacia
-
-# 2. Instalar dependencias (solo la primera vez)
-npm install
-
-# 3. Construir la aplicación (backend + frontend)
-npx nx build backend
-npx nx build frontend
-```
-
-#### Iniciar el servidor (todos los días)
-
-```powershell
-# 1. Abrir PowerShell (sin necesidad de administrador)
-cd C:\Proyectos\Farmacia
-
-# 2. Iniciar el servidor
-npx nx serve backend
-```
-
-Luego de unos segundos aparecerá:
-
-```
-🚀 Application is running on: https://localhost:3000/api/v1
-```
-
-#### Acceder desde cualquier dispositivo
-
-1. **Anotar la IP de la PC**: Abrir PowerShell y ejecutar `ipconfig`. Buscar la línea `Dirección IPv4` (ej: `192.168.0.112`).
-2. **Conectar el celular**: Misma red WiFi que la PC.
-3. **Abrir navegador**: Ingresar `https://192.168.0.112:3000` (usar la IP real).
-4. **Aceptar advertencia**: El navegador mostrará "Conexión no segura" → tocar **"Avanzado" → "Continuar igual"**.
-5. **Iniciar sesión**: PIN `123456` (usuario admin).
-
-#### Detener el servidor
-
-Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo el servidor.
+1. El módulo `Pacientes` es independiente de `Dispensación`.
+2. El módulo `Recetas` es independiente y pertenece al `doctor`.
+3. La cola de recetas es el punto principal de entrada para `farmaceutico`.
+4. `Inventario` es un módulo operativo; cualquier consulta clínica de disponibilidad debe exponerse desde `Recetas`, no necesariamente desde la pantalla completa de inventario.
+5. `Administración` es exclusivo de `admin`.
+6. La gestión de umbrales es exclusiva de `admin`.
+7. Los usuarios inactivos permanecen en el sistema pero no pueden acceder a la aplicación.
 
 ---
 
-### PM2 (inicio automático en producción)
+## 9. Documentos relacionados
 
-PM2 mantiene el servidor corriendo aunque se cierre la terminal y lo reinicia si falla.
-
-#### Comandos básicos
-
-```powershell
-# Iniciar el servidor con PM2
-pm2 start ecosystem.config.js
-
-# Verificar que está corriendo
-pm2 status
-
-# Ver registros (logs)
-pm2 logs apopharma-backend
-
-# Detener
-pm2 stop apopharma-backend
-
-# Reiniciar (después de actualizar código)
-pm2 restart apopharma-backend
-```
-
-#### Inicio automático al encender la PC
-
-Ejecutar **una vez** como Administrador:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Proyectos\Farmacia\scripts\register-pm2-startup.ps1"
-```
-
-Esto crea una tarea programada que inicia PM2 automáticamente al encender la PC.
-
----
-
-### Actualizar la aplicación después de cambios
-
-```powershell
-cd C:\Proyectos\Farmacia
-
-# Reconstruir frontend y backend
-npx nx build backend
-npx nx build frontend
-
-# Reiniciar PM2
-pm2 restart apopharma-backend
-```
-
----
-
-### Solución de problemas comunes
-
-| Problema | Causa probable | Solución |
-|---|---|---|
-| `EADDRINUSE` al iniciar | Puerto 3000 ocupado | `pm2 stop apopharma-backend` o matar proceso con `taskkill /F /PID <ID>` |
-| Pantalla en blanco en el celular | Accediendo por HTTP en lugar de HTTPS | Usar `https://` en lugar de `http://` |
-| "No se puede acceder al sitio" | PC apagada o red diferente | Verificar que ambas estén en la misma WiFi |
-| Escáner QR no funciona | HTTPS no habilitado | Asegurar que la URL comience con `https://` |
-| Contenido se sale de la pantalla | Viewport incorrecto | Ya corregido con `height: 100dvh` en `styles.scss` |
+- `documents/frontend-plan.md`
+- `documents/backend-plan.md`
+- `documents/modules/*/proposito.md`
+- `documents/modules/*/diseño.md`
+- `documents/modules/*/tareas.md`

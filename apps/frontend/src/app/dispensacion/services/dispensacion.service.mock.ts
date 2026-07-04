@@ -8,7 +8,9 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { Dispensacion, CreateDispensacionDto } from '../../shared/models/dispensacion.model';
+import type { Receta } from '../../shared/models/receta.model';
 import { Sexo } from '../../shared/enums/sexo.enum';
+import { Rol } from '../../shared/enums/rol.enum';
 
 interface NucleoSeed {
   id: number;
@@ -79,6 +81,38 @@ const SEED_CONFIGS: Configuracion[] = [
 
 let nextDispensacionId = 1;
 const dispensaciones: Dispensacion[] = [];
+
+const SEED_RECETAS: Receta[] = [
+  {
+    id: 1,
+    paciente_id: 1,
+    paciente: { ...SEED_PACIENTES[0], familiares: [] },
+    doctor_id: 1,
+    doctor: { id: 1, nombre: 'Dr. Garcia', rol: Rol.DOCTOR },
+    fecha_hora: new Date(Date.now() - 3600000).toISOString(),
+    estado: 'pendiente',
+    activo: true,
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+    detalles: [
+      { id: 1, receta_id: 1, medicamento_id: 1, medicamento: SEED_MEDICAMENTOS[0], cantidad_recetada: 30, dias: 10, created_at: '' },
+      { id: 2, receta_id: 1, medicamento_id: 2, medicamento: SEED_MEDICAMENTOS[1], cantidad_recetada: 15, dias: 5, created_at: '' },
+    ],
+  },
+  {
+    id: 2,
+    paciente_id: 3,
+    paciente: { ...SEED_PACIENTES[2], familiares: [] },
+    doctor_id: 1,
+    doctor: { id: 1, nombre: 'Dr. Garcia', rol: Rol.DOCTOR },
+    fecha_hora: new Date(Date.now() - 7200000).toISOString(),
+    estado: 'pendiente',
+    activo: true,
+    created_at: new Date(Date.now() - 7200000).toISOString(),
+    detalles: [
+      { id: 3, receta_id: 2, medicamento_id: 3, medicamento: SEED_MEDICAMENTOS[2], cantidad_recetada: 20, dias: 7, created_at: '' },
+    ],
+  },
+];
 
 function findNucleo(pacienteId: number): NucleoSeed | undefined {
   return SEED_NUCLEOS.find((n) =>
@@ -230,6 +264,10 @@ export class MockDispensacionService extends DispensacionService {
   getLimiteDosis(medicamentoId: number): Observable<Configuracion | null> {
     const config = SEED_CONFIGS.find(c => c.medicamento_id === medicamentoId) ?? null;
     return of(config);
+  }
+
+  getRecetasPendientes(): Observable<Receta[]> {
+    return of(SEED_RECETAS.filter(r => r.estado === 'pendiente' && r.activo));
   }
 
   crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion> {

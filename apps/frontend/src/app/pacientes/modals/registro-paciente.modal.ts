@@ -52,6 +52,11 @@ interface FamiliarForm {
       </ion-item>
 
       <ion-item>
+        <ion-label position="stacked">Teléfono</ion-label>
+        <ion-input [(ngModel)]="telefono" placeholder="04141234567 (opcional)"></ion-input>
+      </ion-item>
+
+      <ion-item>
         <ion-label position="stacked">Sexo *</ion-label>
         <ion-select [(ngModel)]="sexo" interface="action-sheet">
           <ion-select-option [value]="sexoEnum.M">Masculino</ion-select-option>
@@ -194,6 +199,7 @@ export class RegistroPacienteModal {
   nombre = '';
   apellido = '';
   cedula = '';
+  telefono = '';
   sexo: Sexo = Sexo.M;
   edad = '';
   peso = '';
@@ -233,13 +239,14 @@ export class RegistroPacienteModal {
     this.familiares.splice(index, 1);
   }
 
-  guardar(): void {
+  async guardar(): Promise<void> {
     if (!this.formValido()) return;
 
     const dto = {
       nombre: this.nombre.trim(),
       apellido: this.apellido.trim(),
       cedula: this.cedula.trim() || undefined,
+      telefono: this.telefono.trim() || undefined,
       sexo: this.sexo,
       edad_estimada: +this.edad,
       peso_estimado: +this.peso,
@@ -259,7 +266,7 @@ export class RegistroPacienteModal {
         : undefined,
     };
 
-    this.modalCtrl.dismiss(dto, 'confirm');
+    await this.modalCtrl.dismiss(dto, 'confirm');
   }
 
   dismiss(): void {

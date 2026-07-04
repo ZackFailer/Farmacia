@@ -4,6 +4,6 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
 
 @Injectable()
 export abstract class HistorialService {
-  abstract getHistorialPaciente(pacienteId: number | string): Observable<Dispensacion[]>;
+  abstract getHistorialPaciente(idEmergencia: string): Observable<Dispensacion[]>;
   abstract getDetalleDispensacion(id: number): Observable<Dispensacion>;
 }

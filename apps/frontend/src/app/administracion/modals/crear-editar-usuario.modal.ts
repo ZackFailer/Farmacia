@@ -34,8 +34,11 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
       <ion-item>
         <ion-label position="stacked">Rol *</ion-label>
         <ion-select [(ngModel)]="rol" interface="action-sheet">
-          <ion-select-option [value]="rolEnum.FARMACEUTICO">Farmacéutico</ion-select-option>
-          <ion-select-option [value]="rolEnum.DESPACHADOR">Despachador</ion-select-option>
+          <ion-select-option [value]="rolEnum.ADMIN">Administrador</ion-select-option>
+          <ion-select-option [value]="rolEnum.PHARMACEUTICAL">Farmacéutico</ion-select-option>
+          <ion-select-option [value]="rolEnum.DOCTOR">Doctor</ion-select-option>
+          <ion-select-option [value]="rolEnum.RECEPTIONIST">Recepcionista</ion-select-option>
+          <ion-select-option [value]="rolEnum.MEDICATION_RECEPTIONIST">Recepcionista Med.</ion-select-option>
         </ion-select>
       </ion-item>
 
@@ -85,7 +88,7 @@ export class CrearEditarUsuarioModal {
   editando = signal(false);
   usuarioId = 0;
   nombre = '';
-  rol: Rol = Rol.DESPACHADOR;
+  rol: Rol = Rol.RECEPTIONIST;
   pin = '';
   confirmarPin = '';
   errorMsg = signal('');

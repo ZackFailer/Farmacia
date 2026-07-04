@@ -15,6 +15,10 @@ export class CrearDispensacionDto {
   pacienteId!: number;
 
   @IsOptional()
+  @IsInt()
+  recetaId?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(1000)
   observaciones?: string;

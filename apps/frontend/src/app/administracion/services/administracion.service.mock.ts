@@ -7,9 +7,9 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
 import { Rol } from '../../shared/enums/rol.enum';
 
 let usuarios: Usuario[] = [
-  { id: 1, nombre: 'Administrador', rol: Rol.FARMACEUTICO, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 2, nombre: 'Carlos Ruiz', rol: Rol.DESPACHADOR, created_at: '2026-06-15T00:00:00Z', updated_at: '2026-06-15T00:00:00Z' },
-  { id: 3, nombre: 'María López', rol: Rol.DESPACHADOR, created_at: '2026-06-20T00:00:00Z', updated_at: '2026-06-20T00:00:00Z' },
+  { id: 1, nombre: 'Administrador', rol: Rol.ADMIN, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 2, nombre: 'Carlos Ruiz', rol: Rol.RECEPTIONIST, created_at: '2026-06-15T00:00:00Z', updated_at: '2026-06-15T00:00:00Z' },
+  { id: 3, nombre: 'María López', rol: Rol.RECEPTIONIST, created_at: '2026-06-20T00:00:00Z', updated_at: '2026-06-20T00:00:00Z' },
 ];
 
 const configuraciones: Configuracion[] = [
@@ -90,9 +90,9 @@ export class MockAdministracionService extends AdministracionService {
   eliminarUsuario(id: number): Observable<void> {
     const idx = usuarios.findIndex(u => u.id === id);
     if (idx === -1) return throwError(() => new Error('Usuario no encontrado'));
+    const admins = usuarios.filter(u => u.rol === Rol.ADMIN);
 
-    const admins = usuarios.filter(u => u.rol === Rol.FARMACEUTICO);
-    if (admins.length <= 1 && usuarios[idx].rol === Rol.FARMACEUTICO) {
+    if (admins.length <= 1 && usuarios[idx].rol === Rol.ADMIN) {
       return throwError(() => new Error('No se puede eliminar el último administrador'));
     }
 

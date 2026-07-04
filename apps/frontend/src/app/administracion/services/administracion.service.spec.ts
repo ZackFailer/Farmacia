@@ -22,7 +22,7 @@ describe('AdministracionService', () => {
   it('debe crear un usuario', async () => {
     const u = await firstValueFrom(service.crearUsuario({
       nombre: 'Test User',
-      rol: Rol.DESPACHADOR,
+      rol: Rol.RECEPTIONIST,
       pin: '1234',
     }));
     expect(u.id).toBeGreaterThan(0);
@@ -32,7 +32,7 @@ describe('AdministracionService', () => {
   it('debe rechazar creacion con PIN invalido', async () => {
     await expect(firstValueFrom(service.crearUsuario({
       nombre: 'Test',
-      rol: Rol.DESPACHADOR,
+      rol: Rol.RECEPTIONIST,
       pin: '12',
     }))).rejects.toThrow('PIN');
   });

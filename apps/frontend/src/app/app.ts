@@ -16,13 +16,27 @@ import {
   MenuController,
 } from '@ionic/angular/standalone';
 import { AuthService } from './auth/services/auth.service';
+import { Rol, ROL_LABELS } from './shared/enums/rol.enum';
+import type { Usuario } from './shared/models/usuario.model';
 
 interface MenuItem {
   ruta: string;
   label: string;
   icon: string;
   activePrefix: string;
+  roles: Rol[];
 }
+
+const ALL_MENU_ITEMS: MenuItem[] = [
+  { ruta: '/recepcion', label: 'Recepción', icon: 'download-outline', activePrefix: '/recepcion', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.ADMIN] },
+  { ruta: '/pacientes', label: 'Pacientes', icon: 'people-outline', activePrefix: '/pacientes', roles: [Rol.RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN] },
+  { ruta: '/recetas', label: 'Recetas', icon: 'document-text-outline', activePrefix: '/recetas', roles: [Rol.DOCTOR, Rol.ADMIN] },
+  { ruta: '/dispensacion', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion', roles: [Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/historial', label: 'Historial', icon: 'time-outline', activePrefix: '/historial', roles: [Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline', activePrefix: '/inventario/umbrales', roles: [Rol.ADMIN] },
+  { ruta: '/admin/usuarios', label: 'Admin', icon: 'shield-outline', activePrefix: '/admin', roles: [Rol.ADMIN] },
+];
 
 @Component({
   standalone: true,
@@ -36,17 +50,20 @@ interface MenuItem {
   styleUrl: './app.scss',
 })
 export class AppComponent {
+  readonly rolLabels = ROL_LABELS;
   private authService = inject(AuthService);
   private router = inject(Router);
   private menuCtrl = inject(MenuController);
 
-  readonly menuItems: MenuItem[] = [
-    { ruta: '/recepcion', label: 'Recepción', icon: 'download-outline', activePrefix: '/recepcion' },
-    { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario' },
-    { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline', activePrefix: '/inventario/umbrales' },
-    { ruta: '/dispensacion/paso1', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion' },
-    { ruta: '/admin/usuarios', label: 'Admin', icon: 'people-outline', activePrefix: '/admin' },
-  ];
+  get usuario(): Usuario | null {
+    return this.authService.getUsuario();
+  }
+
+  get menuItems(): MenuItem[] {
+    const usuario = this.authService.getUsuario();
+    if (!usuario) return [];
+    return ALL_MENU_ITEMS.filter((item) => item.roles.includes(usuario.rol));
+  }
 
   isActive(item: MenuItem): boolean {
     const current = this.router.url;

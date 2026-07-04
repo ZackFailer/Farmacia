@@ -1,3 +1,37 @@
+.menu-user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--app-space-md);
+  padding: var(--app-space-lg) var(--app-space-lg) var(--app-space-sm);
+  border-bottom: 1px solid var(--app-divider);
+  margin-bottom: var(--app-space-sm);
+}
+
+.menu-user-avatar ion-icon {
+  font-size: 40px;
+  color: var(--app-primary);
+}
+
+.menu-user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.menu-user-name {
+  font-size: var(--app-font-size-md);
+  font-weight: 600;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-user-role {
+  font-size: var(--app-font-size-sm);
+  color: var(--app-text-secondary);
+}
+
 .menu-list {
   padding: var(--app-space-sm);
   margin: 0;

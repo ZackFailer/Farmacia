@@ -28,6 +28,9 @@ export class Paciente {
   @Column({ type: 'varchar', length: 30, nullable: true })
   cedula!: string | null;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  telefono!: string | null;
+
   @Column({ type: 'varchar', length: 1 })
   sexo!: Sex;
 

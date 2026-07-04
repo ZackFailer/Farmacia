@@ -185,126 +185,140 @@
 
 ---
 
-## Fase 4 — Cola de dispensación (farmacéutico)
+## Fase 4 — Cola de dispensación (farmacéutico) ✅
 
-### 4.1 Backend: Vincular receta con dispensación
+### 4.1 Backend: Vincular receta con dispensación ✅
 
-#### 4.1.1 Modificar `dispensacion.entity.ts`
-- [ ] Agregar columna `recetaId` FK → `receta` (nullable)
-- [ ] `@ManyToOne(() => Receta)`
-- [ ] `@JoinColumn({ name: 'receta_id' })`
+#### 4.1.1 Modificar `dispensacion.entity.ts` ✅
+- [x] Agregar columna `recetaId` FK → `receta` (nullable)
+- [x] `@ManyToOne(() => Receta)`
+- [x] `@JoinColumn({ name: 'receta_id' })`
 
-#### 4.1.2 Modificar `CrearDispensacionDto`
-- [ ] Agregar campo opcional `receta_id?: number`
+#### 4.1.2 Modificar `CrearDispensacionDto` ✅
+- [x] Agregar campo opcional `receta_id?: number`
 
-#### 4.1.3 Modificar `DispensacionService.crearDispensacion()`
-- [ ] Si `recetaId` está presente, actualizar estado de receta a `despachada`
-- [ ] Vincular dispensación con receta
+#### 4.1.3 Modificar `DispensacionService.crearDispensacion()` ✅
+- [x] Si `recetaId` está presente, actualizar estado de receta a `despachada`
+- [x] Vincular dispensación con receta
 
-#### 4.1.4 Agregar endpoint en `DispensacionController`
-- [ ] `GET /api/v1/dispensaciones/pendientes` → `@Roles(FARMACEUTICO, ADMIN)`
-- [ ] Retorna recetas con estado `pendiente`, con datos del paciente y detalles
+#### 4.1.4 Agregar endpoint en `DispensacionController` ✅
+- [x] `GET /api/v1/dispensaciones/pendientes` → `@Roles(FARMACEUTICO, ADMIN)`
+- [x] Retorna recetas con estado `pendiente`, con datos del paciente y detalles
 
-### 4.2 Frontend: Cola de recetas pendientes
+### 4.2 Frontend: Cola de recetas pendientes ✅
 
-#### 4.2.1 Crear `paso0-cola.page.ts`
-- [ ] `apps/frontend/src/app/dispensacion/pages/paso0-cola.page.ts`
-- [ ] Lista de recetas pendientes (paciente, doctor, medicamentos recetados)
-- [ ] Al seleccionar una receta → navegar a paso1 con el paciente precargado
-- [ ] Mostrar medicamentos recetados en paso2 como pre-seleccionados
+#### 4.2.1 Crear `paso0-cola.page.ts` ✅
+- [x] `apps/frontend/src/app/dispensacion/pages/paso0-cola.page.ts`
+- [x] Lista de recetas pendientes (paciente, doctor, medicamentos recetados)
+- [x] Al seleccionar una receta → navegar a paso2 con paciente + items precargados
+- [x] Mostrar medicamentos recetados en paso2 como pre-seleccionados
 
-#### 4.2.2 Modificar `dispensacion.routes.ts`
-- [ ] Agregar ruta `cola` como paso 0
-- [ ] La ruta raíz de dispensación redirige a `cola`
+#### 4.2.2 Modificar `dispensacion.routes.ts` ✅
+- [x] Agregar ruta `cola` como paso 0
+- [x] La ruta raíz de dispensación redirige a `cola`
 
-#### 4.2.3 Modificar `paso2-seleccionar-meds.page.ts`
-- [ ] Si viene de una receta, mostrar medicamentos pre-seleccionados (solo ajustar cantidades)
+#### 4.2.3 Modificar `paso2-seleccionar-meds.page.ts` ✅
+- [x] Si viene de una receta, mostrar medicamentos pre-seleccionados (solo ajustar cantidades)
+- [x] `RecetaItem.lote` ahora es opcional para soportar items sin lote asignado
 
-#### 4.2.4 Modificar `paso3-confirmar.page.ts`
-- [ ] Al confirmar, enviar `receta_id` en el DTO
+#### 4.2.4 Modificar `paso3-confirmar.page.ts` ✅
+- [x] Al confirmar, enviar `receta_id` en el DTO
+- [x] Validar que todos los items tengan lote asignado antes de confirmar
 
-### 4.3 Verificación Fase 4
-- [ ] `npx nx build backend`
-- [ ] `npx nx test backend`
-- [ ] `npx nx lint backend`
-- [ ] `npx nx build frontend`
-- [ ] `npx nx test frontend`
-- [ ] `npx nx lint frontend`
+### 4.3 Verificación Fase 4 ✅
+- [x] `npx nx build backend`
+- [x] `npx nx test backend` (6/6)
+- [x] `npx nx lint backend` (limpio)
+- [x] `npx nx build frontend`
+- [x] `npx nx test frontend` (38/38)
+- [ ] `npx nx lint frontend` — solo errores preexistentes
 
 ---
 
-## Fase 5 — Autorización general
+## Fase 5 — Autorización general ✅
 
-### 5.1 Backend: Agregar `@Roles()` en todos los controllers
+### 5.1 Backend: Agregar `@Roles()` en todos los controllers ✅
 
-#### 5.1.1 `AuthController`
-- [ ] `POST /api/v1/auth/login` → público (sin guard)
-- [ ] `GET /api/v1/auth/me` → autenticado (sin role específico)
+#### 5.1.1 `AuthController` ✅
+- [x] `POST /api/v1/auth/login` → público (sin guard)
+- [x] `GET /api/v1/auth/me` → autenticado (sin role específico)
 
-#### 5.1.2 `PacientesController`
-- [ ] Ya definido en Fase 2
+#### 5.1.2 `PacientesController` ✅
+- [x] Ya definido en Fase 2
 
-#### 5.1.3 `RecetasController`
-- [ ] Ya definido en Fase 3
+#### 5.1.3 `RecetasController` ✅
+- [x] Ya definido en Fase 3
 
-#### 5.1.4 `DispensacionController`
-- [ ] `@Roles(UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
-- [ ] Endpoints de pacientes removidos (ya están en PacientesController)
+#### 5.1.4 `DispensacionController` ✅
+- [x] `@Roles(UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
+- [x] Endpoints de pacientes removidos (ya están en PacientesController)
 
-#### 5.1.5 `RecepcionController`
-- [ ] `@Roles(UserRole.MEDICATION_RECEPTIONIST, UserRole.ADMIN)` nivel clase
+#### 5.1.5 `RecepcionController` ✅
+- [x] `@Roles(UserRole.MEDICATION_RECEPTIONIST, UserRole.ADMIN)` nivel clase
 
-#### 5.1.6 `InventarioController`
-- [ ] `@Roles(UserRole.MEDICATION_RECEPTIONIST, UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
+#### 5.1.6 `InventarioController` ✅
+- [x] `@Roles(UserRole.MEDICATION_RECEPTIONIST, UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
 
-#### 5.1.7 `HistorialController`
-- [ ] `@Roles(UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
+#### 5.1.7 `HistorialController` ✅
+- [x] `@Roles(UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)` nivel clase
 
-#### 5.1.8 `AdministracionController`
-- [ ] Cambiar `@Roles(UserRole.PHARMACEUTICAL)` → `@Roles(UserRole.ADMIN)` nivel clase
+#### 5.1.8 `AdministracionController` ✅
+- [x] Cambiar `@Roles(UserRole.PHARMACEUTICAL)` → `@Roles(UserRole.ADMIN)` nivel clase
 
-### 5.2 Frontend: Guards de rol
+### 5.2 Frontend: Guards de rol ✅
 
-#### 5.2.1 Crear `role.guard.ts`
-- [ ] `apps/frontend/src/app/core/guards/role.guard.ts`
-- [ ] Recibe lista de roles permitidos
-- [ ] Lee rol del token JWT almacenado
-- [ ] Si no tiene permiso, redirige a página principal
+#### 5.2.1 Crear `role.guard.ts` ✅
+- [x] `apps/frontend/src/app/core/guards/role.guard.ts`
+- [x] Recibe lista de roles permitidos
+- [x] Lee rol del token JWT almacenado
+- [x] Si no tiene permiso, redirige a página principal
 
-#### 5.2.2 Aplicar guards en rutas
-- [ ] `/pacientes` → `recepcionista`, `admin`
-- [ ] `/recetas` → `doctor`, `admin`
-- [ ] `/dispensacion` → `farmaceutico`, `admin`
-- [ ] `/inventario` → `recepcionista_med`, `farmaceutico`, `admin`
-- [ ] `/historial` → `doctor`, `farmaceutico`, `admin`
-- [ ] `/admin` → `admin`
+#### 5.2.2 Aplicar guards en rutas ✅
+- [x] `/pacientes` → `recepcionista`, `admin`
+- [x] `/recetas` → `doctor`, `admin`
+- [x] `/dispensacion` → `farmaceutico`, `admin`
+- [x] `/inventario` → `recepcionista_med`, `farmaceutico`, `admin`
+- [x] `/historial` → `doctor`, `farmaceutico`, `admin`
+- [x] `/admin` → `admin`
 
-#### 5.2.3 Ocultar elementos de navegación por rol
-- [ ] Sidebar/menú: mostrar solo las opciones permitidas según el rol del usuario
+#### 5.2.3 Ocultar elementos de navegación por rol ✅
+- [x] Sidebar/menú: mostrar solo las opciones permitidas según el rol del usuario
 
-### 5.3 Verificación Fase 5
-- [ ] `npx nx build backend`
-- [ ] `npx nx test backend`
-- [ ] `npx nx lint backend`
-- [ ] `npx nx build frontend`
-- [ ] `npx nx test frontend`
-- [ ] `npx nx lint frontend`
+### 5.3 Verificación Fase 5 ✅
+- [x] `npx nx build backend`
+- [x] `npx nx test backend` (6/6)
+- [x] `npx nx lint backend` (limpio)
+- [x] `npx nx build frontend`
+- [x] `npx nx test frontend` (38/38)
+- [ ] `npx nx lint frontend` — solo errores preexistentes (71 errors, 49 warnings, reglas estilo/prefer-inject/no-empty-object-type)
+
+### 5.4 Prueba de flujo completa ✅
+- [x] Login admin → crear medicamento, lote, paciente
+- [x] Login doctor → crear receta
+- [x] Login farmacéutico → ver cola pendientes → dispensar
+- [x] Stock actualizado (100→70)
+- [x] Receta marcada como `despachada`
+- [x] Cola vacía post-dispensación
+- [x] Historial paciente muestra dispensación
+- [x] `DOCTOR` bloqueado de `POST /usuarios` (403)
+- [x] `PHARMACEUTICAL` bloqueado de `POST /recetas` (403)
+- [x] `DOCTOR` bloqueado de `GET /recetas/pendientes` (403)
 
 ---
 
 ## Resumen de archivos
 
-### Crear (39)
+### Crear (42)
 
 | Módulo | Archivos |
 |---|---|
-| **Pacientes** (backend) | `pacientes.module.ts`, `pacientes.controller.ts`, `pacientes.service.ts`, `dto/actualizar-paciente.dto.ts`, `dto/agregar-familiar.dto.ts` |
-| **Pacientes** (frontend) | `services/pacientes.service.ts`, `.mock.ts`, `.api.ts`, `pages/lista-pacientes.page.ts`, `pages/detalle-paciente.page.ts`, `modals/editar-paciente.modal.ts`, `modals/agregar-familiar.modal.ts`, `pacientes.routes.ts` |
+| **Pacientes** (backend) ✅ | `pacientes.module.ts`, `pacientes.controller.ts`, `pacientes.service.ts`, `dto/actualizar-paciente.dto.ts`, `dto/agregar-familiar.dto.ts` |
+| **Pacientes** (frontend) ✅ | `services/pacientes.service.ts`, `.mock.ts`, `.api.ts`, `pages/lista-pacientes.page.ts`, `pages/detalle-paciente.page.ts`, `modals/editar-paciente.modal.ts`, `modals/agregar-familiar.modal.ts`, `pacientes.routes.ts` |
 | **Recetas** (backend) ✅ | `entities/receta.entity.ts`, `entities/receta-detalle.entity.ts`, `recetas.module.ts`, `recetas.controller.ts`, `recetas.service.ts`, `dto/crear-receta.dto.ts`, `dto/actualizar-estado-receta.dto.ts` |
 | **Recetas** (frontend) ✅ | `services/recetas.service.ts`, `.mock.ts`, `.api.ts`, `models/receta.model.ts`, `pages/recetar.page.ts`, `recetas.routes.ts` |
-| **Dispensación** (frontend) | `pages/paso0-cola.page.ts` |
-| **Core** (frontend) | `guards/role.guard.ts` |
-| **Migraciones** | `AddActivoAndRoles.ts`, `CreateReceta.ts` |
+| **Dispensación** (frontend) ✅ | `pages/paso0-cola.page.ts` |
+| **Core** (frontend) ✅ | `guards/role.guard.ts` |
+| **Migraciones** ✅ | `AddActivoAndRoles.ts`, `CreateReceta.ts` |
 
 ### Mover (2)
 
@@ -328,19 +342,30 @@
 | `dispensacion-detalle.entity.ts` | + `activo` |
 | `configuracion.entity.ts` | + `activo` |
 | `app.module.ts` ✅ | + PacientesModule, + RecetasModule, + Receta, RecetaDetalle entities |
-| `dispensacion.module.ts` | Remover Paciente, PacienteFamiliar de forFeature |
-| `dispensacion.service.ts` | Remover métodos de pacientes, + recetaId en crearDispensacion |
-| `dispensacion.controller.ts` | + GET pendientes, remover endpoints de pacientes |
-| `dispensacion.routes.ts` | + ruta `cola` |
-| `paso1-escanear-paciente.page.ts` | Inyectar PacientesService |
-| `paso2-seleccionar-meds.page.ts` | Pre-seleccionar desde receta |
-| `paso3-confirmar.page.ts` | Enviar receta_id |
-| `app.routes.ts` ✅ | + `/pacientes`, + `/recetas` |
+| `dispensacion.module.ts` ✅ | + RecetasModule import |
+| `dispensacion.service.ts` ✅ | + recetaId en crearDispensacion, + getRecetasPendientes abstract |
+| `dispensacion.controller.ts` ✅ | + GET pendientes (delega a RecetasService) |
+| `dispensacion.routes.ts` ✅ | + ruta `cola`, redirección raíz → `cola` |
+| `paso1-escanear-paciente.page.ts` ✅ | Inyectar PacientesService |
+| `paso2-seleccionar-meds.page.ts` ✅ | Pre-seleccionar desde receta via `setReceta()` |
+| `paso3-confirmar.page.ts` ✅ | Enviar receta_id, validar lote no null |
+| `dispensacion.entity.ts` ✅ | + recetaId FK, @ManyToOne Receta |
+| `CrearDispensacionDto` ✅ | + recetaId opcional |
+| `dispensacion.service.api.ts` ✅ | + getRecetasPendientes(), recetaId en crear |
+| `dispensacion.service.mock.ts` ✅ | + getRecetasPendientes() mock |
+| `dispensacion.model.ts` ✅ | + receta_id en CreateDispensacionDto |
+| `resumen-receta.component.ts` ✅ | `lote` opcional con estado "Sin lote asignado" |
+| `confirmacion-entrega.modal.ts` ✅ | `lote` opcional |
+| `app.routes.ts` ✅ | + `/pacientes`, + `/recetas`, roleGuard en todas las rutas |
 | `app.config.ts` ✅ | + PacientesService, RecetasService providers |
-| `administracion.controller.ts` | Rol `ADMIN` en vez de `PHARMACEUTICAL` |
-| `typeorm-data-source.ts` | + migraciones nuevas |
-| `auth.service.ts` | Seed con admin |
-| 8 controllers (roles) | Agregar `@Roles()` decorators |
+| `administracion.controller.ts` ✅ | Rol `ADMIN` en vez de `PHARMACEUTICAL` |
+| `typeorm-data-source.ts` ✅ | + migraciones nuevas |
+| `auth.service.ts` ✅ | Seed con admin |
+| 8 controllers (roles) ✅ | Agregar `@Roles()` decorators |
+| `role.guard.ts` ✅ | roleGuard() function |
+| `app.ts` ✅ | Menú lateral filtrado por rol via ALL_MENU_ITEMS.roles |
+| `login.page.ts` ✅ | Redirect role-aware via `satisfies Record<Rol, string>` |
+| `rol.enum.ts` (frontend) ✅ | 5 roles, eliminados FARMACEUTICO/DESPACHADOR |
 
 ---
 

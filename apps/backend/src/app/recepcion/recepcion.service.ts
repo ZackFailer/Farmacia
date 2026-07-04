@@ -9,6 +9,7 @@ import { CrearLoteDto } from './dto/crear-lote.dto';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { LoteMovimiento } from '../common/entities/lote-movimiento.entity';
 import { MovementType } from '../common/enums/movement-type.enum';
+import { Brackets } from 'typeorm';
 
 @Injectable()
 export class RecepcionService {
@@ -27,11 +28,15 @@ export class RecepcionService {
     const qb = this.medicamentoRepository.createQueryBuilder('m');
     qb.where('m.activo = :activo', { activo: true });
     if (search?.trim()) {
-      qb.andWhere('LOWER(m.nombre_generico) LIKE :search', {
-        search: `%${search.toLowerCase()}%`,
-      }).orWhere('LOWER(m.nombre_comercial) LIKE :search', {
-        search: `%${search.toLowerCase()}%`,
-      });
+      qb.andWhere(new Brackets((subQb) => {
+        subQb
+          .where('LOWER(m.nombre_generico) LIKE :search', {
+            search: `%${search.toLowerCase()}%`,
+          })
+          .orWhere('LOWER(m.nombre_comercial) LIKE :search', {
+            search: `%${search.toLowerCase()}%`,
+          });
+      }));
     }
     qb.orderBy('m.nombre_generico', 'ASC');
     return qb.getMany();

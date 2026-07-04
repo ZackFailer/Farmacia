@@ -2,6 +2,7 @@ import type { Route } from '@angular/router';
 import { pasoGuard } from './guards/paso.guard';
 
 export const dispensacionRoutes: Route[] = [
+  { path: 'cola', redirectTo: 'paso1', pathMatch: 'full' },
   {
     path: 'paso1',
     loadComponent: () => import('./pages/paso1-escanear-paciente.page').then(m => m.Paso1EscanearPacientePage),

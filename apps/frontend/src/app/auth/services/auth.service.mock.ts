@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { clearAppSessionStorage } from './auth.service';
 import type { Usuario } from '../../shared/models/usuario.model';
 import { Rol } from '../../shared/enums/rol.enum';
 
 const SEED_USUARIO: Usuario = {
   id: 1,
   nombre: 'Administrador',
-  rol: Rol.FARMACEUTICO,
+  rol: Rol.PHARMACEUTICAL,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 };
@@ -29,8 +30,7 @@ export class MockAuthService extends AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('apoPharma_token');
-    localStorage.removeItem('apoPharma_usuario');
+    clearAppSessionStorage();
   }
 
   getToken(): string | null {

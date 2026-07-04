@@ -5,6 +5,7 @@ import {
   ModalController, AlertController,
 } from '@ionic/angular/standalone';
 import { AdministracionService } from '../services/administracion.service';
+import { ROL_LABELS } from '../../shared/enums/rol.enum';
 import { CrearEditarUsuarioModal } from '../modals/crear-editar-usuario.modal';
 import type { Usuario } from '../../shared/models/usuario.model';
 
@@ -47,7 +48,7 @@ import type { Usuario } from '../../shared/models/usuario.model';
           <ion-item>
             <ion-label>
               <h2>{{ u.nombre }}</h2>
-              <ion-note>{{ u.rol === 'farmaceutico' ? 'Farmacéutico' : 'Despachador' }}</ion-note>
+              <ion-note>{{ rolLabels[u.rol] }}</ion-note>
             </ion-label>
             <ion-button slot="end" fill="clear" (click)="editarUsuario(u)">Editar</ion-button>
             <ion-button slot="end" fill="clear" color="danger" (click)="eliminarUsuario(u)">Eliminar</ion-button>
@@ -66,6 +67,7 @@ import type { Usuario } from '../../shared/models/usuario.model';
   `,
 })
 export class GestionUsuariosPage implements OnInit {
+  readonly rolLabels = ROL_LABELS;
   private adminService = inject(AdministracionService);
   private modalCtrl = inject(ModalController);
   private alertCtrl = inject(AlertController);

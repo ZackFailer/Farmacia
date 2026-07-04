@@ -27,6 +27,11 @@ export class ActualizarPacienteDto {
   cedula?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  telefono?: string;
+
+  @IsOptional()
   @IsEnum(Sex)
   sexo?: Sex;
 

@@ -110,7 +110,7 @@ export class BusquedaPacienteModal {
     this.resultados.set(null);
 
     this.pacientesService.buscarPaciente(term).subscribe({
-      next: (p) => this.resultados.set([p]),
+      next: (items) => this.resultados.set(items),
       error: () => this.error.set('Paciente no encontrado'),
     });
   }

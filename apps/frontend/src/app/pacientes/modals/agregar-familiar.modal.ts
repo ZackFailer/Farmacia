@@ -88,9 +88,12 @@ export class AgregarFamiliarModal {
 
   buscar(): void {
     const term = this.searchTerm.trim();
-    if (!term) return;
+    if (!term) {
+      this.resultados.set(null);
+      return;
+    }
     this.pacientesService.buscarPaciente(term).subscribe({
-      next: (p) => this.resultados.set([p]),
+      next: (items) => this.resultados.set(items),
       error: () => this.resultados.set(null),
     });
   }

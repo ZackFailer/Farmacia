@@ -15,7 +15,7 @@ import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { ActualizarConfiguracionDto } from './dto/actualizar-configuracion.dto';
 
-@Roles(UserRole.PHARMACEUTICAL)
+@Roles(UserRole.ADMIN)
 @Controller()
 export class AdministracionController {
   constructor(private readonly administracionService: AdministracionService) {}

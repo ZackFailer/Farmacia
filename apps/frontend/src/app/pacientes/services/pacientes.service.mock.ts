@@ -36,12 +36,12 @@ const SEED_NUCLEOS: NucleoSeed[] = [
 ];
 
 const SEED_PACIENTES: Paciente[] = [
-  { id: 1, id_emergencia: 'EM-2026-001', nombre: 'Juan', apellido: 'Perez', sexo: Sexo.M, edad_estimada: 35, peso_estimado: 70, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T10:00:00Z' },
-  { id: 2, id_emergencia: 'EM-2026-002', nombre: 'Maria', apellido: 'Gonzalez', sexo: Sexo.F, edad_estimada: 28, peso_estimado: 55, es_damnificado: false, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:30:00Z' },
-  { id: 3, id_emergencia: 'EM-2026-003', nombre: 'Pedro', apellido: 'Ramirez', sexo: Sexo.M, edad_estimada: 60, peso_estimado: 80, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T11:00:00Z' },
+  { id: 1, id_emergencia: 'EM-2026-001', nombre: 'Juan', apellido: 'Perez', telefono: '04141234567', sexo: Sexo.M, edad_estimada: 35, peso_estimado: 70, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T10:00:00Z' },
+  { id: 2, id_emergencia: 'EM-2026-002', nombre: 'Maria', apellido: 'Gonzalez', telefono: '04145551212', sexo: Sexo.F, edad_estimada: 28, peso_estimado: 55, es_damnificado: false, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:30:00Z' },
+  { id: 3, id_emergencia: 'EM-2026-003', nombre: 'Pedro', apellido: 'Ramirez', telefono: '04140001122', sexo: Sexo.M, edad_estimada: 60, peso_estimado: 80, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T11:00:00Z' },
   { id: 4, id_emergencia: 'EM-2026-004', nombre: 'Lucía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 8, peso_estimado: 25, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:01Z' },
   { id: 5, id_emergencia: 'EM-2026-005', nombre: 'Sofía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 5, peso_estimado: 18, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:02Z' },
-  { id: 6, id_emergencia: 'EM-2026-006', nombre: 'Ana', apellido: 'Ramirez', sexo: Sexo.F, edad_estimada: 55, peso_estimado: 65, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T11:00:01Z' },
+  { id: 6, id_emergencia: 'EM-2026-006', nombre: 'Ana', apellido: 'Ramirez', telefono: '04148889900', sexo: Sexo.F, edad_estimada: 55, peso_estimado: 65, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T11:00:01Z' },
 ];
 
 function findNucleo(pacienteId: number): NucleoSeed | undefined {
@@ -72,6 +72,7 @@ function buildFamiliares(pacienteId: number, nucleo?: NucleoSeed): Familiar[] {
         created_at: familiar.created_at,
       };
       if (familiar.cedula) f.cedula = familiar.cedula;
+      if (familiar.telefono) f.telefono = familiar.telefono;
       return f;
     })
     .filter((f): f is Familiar => f !== null);
@@ -86,7 +87,7 @@ function attachFamiliares(paciente: Paciente): Paciente {
 
 @Injectable()
 export class MockPacientesService extends PacientesService {
-  buscarPaciente(searchTerm: string): Observable<Paciente> {
+  buscarPaciente(searchTerm: string): Observable<Paciente[]> {
     const term = searchTerm.trim().toLowerCase();
     const results = SEED_PACIENTES.filter((pac) => {
       const fullName = `${pac.nombre} ${pac.apellido}`.toLowerCase();
@@ -94,10 +95,11 @@ export class MockPacientesService extends PacientesService {
         || fullName.includes(term)
         || pac.nombre.toLowerCase().includes(term)
         || pac.apellido.toLowerCase().includes(term)
-        || (pac.cedula?.toLowerCase().includes(term) ?? false);
+        || (pac.cedula?.toLowerCase().includes(term) ?? false)
+        || (pac.telefono?.toLowerCase().includes(term) ?? false);
     });
     if (results.length === 0) return throwError(() => new Error('Paciente no encontrado'));
-    return of(attachFamiliares(results[0]));
+    return of(results.map((item) => attachFamiliares(item)));
   }
 
   registrarPaciente(dto: CreatePacienteDto): Observable<Paciente> {
@@ -120,6 +122,7 @@ export class MockPacientesService extends PacientesService {
       nombre: dto.nombre,
       apellido: dto.apellido,
       cedula: dto.cedula,
+      telefono: dto.telefono,
       sexo: dto.sexo,
       edad_estimada: dto.edad_estimada,
       peso_estimado: dto.peso_estimado,
@@ -146,6 +149,7 @@ export class MockPacientesService extends PacientesService {
           nombre: f.nombre,
           apellido: f.apellido ?? '',
           cedula: f.cedula,
+          telefono: undefined,
           sexo: f.sexo,
           edad_estimada: f.edad_estimada,
           peso_estimado: f.peso_estimado,

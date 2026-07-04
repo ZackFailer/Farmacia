@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Paciente } from './paciente.entity';
+import { Receta } from './receta.entity';
 import { Usuario } from './usuario.entity';
 import { DispensacionDetalle } from './dispensacion-detalle.entity';
 
@@ -42,6 +43,13 @@ export class Dispensacion {
 
   @Column({ type: 'text', nullable: true })
   observaciones!: string | null;
+
+  @ManyToOne(() => Receta, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'receta_id' })
+  receta!: Receta | null;
+
+  @Column({ name: 'receta_id', nullable: true })
+  recetaId!: number | null;
 
   @Column({ type: 'boolean', default: true })
   activo!: boolean;

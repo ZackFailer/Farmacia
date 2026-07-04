@@ -47,10 +47,9 @@ const SEED: Dispensacion[] = [
 
 @Injectable()
 export class MockHistorialService extends HistorialService {
-  getHistorialPaciente(pacienteId: number | string): Observable<Dispensacion[]> {
-    const id = typeof pacienteId === 'string' ? parseInt(pacienteId, 10) : pacienteId;
+  getHistorialPaciente(idEmergencia: string): Observable<Dispensacion[]> {
     const results = SEED
-      .filter(d => d.paciente_id === id)
+      .filter((d) => d.paciente?.id_emergencia === idEmergencia)
       .sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
     return of(results);
   }

@@ -22,16 +22,19 @@ export class PacientesController {
   constructor(private readonly pacientesService: PacientesService) {}
 
   @Post()
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
   createPaciente(@Body() dto: CrearPacienteDto) {
     return this.pacientesService.createPaciente(dto);
   }
 
   @Get()
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
   searchPacientes(@Query('q') query: string) {
     return this.pacientesService.searchPacientes(query);
   }
 
   @Get('emergencia/:idEmergencia')
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
   getPacienteByIdEmergencia(@Param('idEmergencia') idEmergencia: string) {
     return this.pacientesService.getPacienteByIdEmergencia(idEmergencia);
   }

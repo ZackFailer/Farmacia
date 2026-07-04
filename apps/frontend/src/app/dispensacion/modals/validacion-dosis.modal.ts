@@ -36,11 +36,8 @@ import {
 
     <ion-footer>
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button fill="clear" color="medium" (click)="cancelar()">Cancelar</ion-button>
-        </ion-buttons>
         <ion-buttons slot="end">
-          <ion-button fill="solid" color="warning" (click)="continuar()">Continuar de todas formas</ion-button>
+          <ion-button fill="solid" color="warning" (click)="cerrar()">Cerrar</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-footer>
@@ -53,11 +50,7 @@ export class ValidacionDosisModal {
 
   constructor(private modalCtrl: ModalController) {}
 
-  continuar(): void {
-    this.modalCtrl.dismiss(true, 'continuar');
-  }
-
-  cancelar(): void {
-    this.modalCtrl.dismiss(false, 'cancelar');
+  cerrar(): void {
+    this.modalCtrl.dismiss(false, 'cerrar');
   }
 }

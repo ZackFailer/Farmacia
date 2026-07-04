@@ -7,6 +7,7 @@ export interface Paciente {
   nombre: string;
   apellido: string;
   cedula?: string;
+  telefono?: string;
   sexo: Sexo;
   edad_estimada: number;
   peso_estimado: number;
@@ -22,6 +23,7 @@ export interface CreatePacienteDto {
   nombre: string;
   apellido: string;
   cedula?: string;
+  telefono?: string;
   sexo: Sexo;
   edad_estimada: number;
   peso_estimado: number;

@@ -33,7 +33,7 @@ import type { CreateDispensacionDto } from '../../shared/models/dispensacion.mod
         <ion-item>
           <ion-label>
             <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-            <p>Lote: {{ item.lote.codigo_qr }} | Cant: {{ item.cantidad }}</p>
+            <p>Lote: {{ item.lote?.codigo_qr ?? 'Sin asignar' }} | Cant: {{ item.cantidad }}</p>
             @if (item.dosisCalculada !== undefined) {
               <ion-note [style.color]="item.dosisValida ? 'var(--stock-ok)' : 'var(--stock-agotado)'">
                 Dosis: {{ item.dosisCalculada.toFixed(2) }} mg/kg
@@ -121,9 +121,8 @@ export class Paso3ConfirmarPage implements OnInit {
           },
         });
         modal.present();
-        const { data } = await modal.onWillDismiss();
-        if (data !== true) return;
-        item.dosisValida = true;
+        await modal.onWillDismiss();
+        return;
       }
     }
 
@@ -138,10 +137,18 @@ export class Paso3ConfirmarPage implements OnInit {
     const { data } = await modalConfirm.onWillDismiss();
 
     if (data === true) {
+      if (estado.items.some(i => !i.lote)) {
+        this.showToast.set(true);
+        this.toastMsg.set('Todos los items deben tener un lote asignado');
+        this.toastColor.set('danger');
+        return;
+      }
+
       const dto: CreateDispensacionDto = {
         paciente_id: estado.paciente.id,
+        receta_id: estado.recetaId,
         items: estado.items.map(i => ({
-          lote_id: i.lote.id,
+          lote_id: i.lote!.id,
           medicamento_id: i.medicamento.id,
           cantidad: i.cantidad,
         })),

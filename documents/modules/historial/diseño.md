@@ -1,112 +1,31 @@
 # Módulo de Historial — Diseño
 
-## Pantallas
+## Flujo principal
 
-### 1. Historial de Paciente (`/historial/:pacienteId`)
+1. Llegar a historial desde paciente, receta o dispensación.
+2. Buscar paciente por QR, cédula, nombre o `idEmergencia`.
+3. Seleccionar paciente de resultados y abrir `/historial/:idEmergencia`.
+4. Ver lista de dispensaciones previas.
+5. Abrir detalle de una dispensación.
 
-```
-┌─────────────────────────────┐
-│  ← Volver    Historial      │
-├─────────────────────────────┤
-│ Paciente: Juan Pérez        │
-│ ID: EM-2026-001             │
-│ Damnificado: Sí             │
-├─────────────────────────────┤
-│ Dispensaciones (ordenadas   │
-│ por fecha descendente)      │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ 03/07/2026 14:30        │ │
-│ │ Amoxicilina 250mg/5ml   │ │
-│ │ Lote: L-002   Cant: 2   │ │
-│ │ Dosis: 7.14 mg/kg       │ │
-│ │ Despachó: María López   │ │
-│ │ [Ver detalle →]         │ │
-│ ├─────────────────────────┤ │
-│ │ 01/07/2026 09:15        │ │
-│ │ Paracetamol 500mg       │ │
-│ │ Lote: L-001   Cant: 1   │ │
-│ │ Dosis: 7.14 mg/kg       │ │
-│ │ Despachó: Carlos Ruiz   │ │
-│ │ [Ver detalle →]         │ │
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
+## Pantalla
 
-### Modal Detalle de Dispensación
+- `/historial`
+- `/historial/:idEmergencia`
 
-```
-┌─ Detalle de Dispensación ──┐
-│                             │
-│ Fecha: 03/07/2026 14:30    │
-│ Despachó: María López      │
-│                             │
-│ Paciente: Juan Pérez        │
-│ ID: EM-2026-001             │
-│ Peso: 70 kg                 │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ Amoxicilina 250mg/5ml   │ │
-│ │ Lote: L-002             │ │
-│ │ Cantidad: 2             │ │
-│ │ Dosis: 7.14 mg/kg       │ │
-│ ├─────────────────────────┤ │
-│ │ Paracetamol 500mg       │ │
-│ │ Lote: L-001             │ │
-│ │ Cantidad: 1             │ │
-│ │ Dosis: 7.14 mg/kg       │ │
-│ └─────────────────────────┘ │
-│                             │
-│ Observaciones: [___________]│
-│                             │
-│            [Cerrar]        │
-└─────────────────────────────┘
-```
+## Endpoints
 
-## Componentes Frontend
+- `GET /api/v1/pacientes/:idEmergencia/dispensaciones`
+- `GET /api/v1/dispensaciones/:id`
 
-| Componente | Tipo | Descripción |
-|---|---|---|
-| `HistorialPacientePage` | Page | Lista de dispensaciones del paciente |
-| `DetalleDispensacionModal` | Modal | Detalle completo de una dispensación |
+## Reglas
 
-## API Backend
+- La ruta funcional debe usar `idEmergencia` de forma explícita.
+- La búsqueda previa puede usar QR, cédula o nombre, pero la navegación final siempre usa `idEmergencia`.
+- El historial no crea ni modifica datos.
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/v1/pacientes/:idEmergencia/dispensaciones` | Historial de dispensaciones (ordenado por fecha DESC) |
-| GET | `/api/v1/dispensaciones/:id` | Detalle de una dispensación con sus items |
+## Roles permitidos
 
-## Flujo de Acceso
-
-```
-Desde Paso 1 Dispensación:
-  └── Botón "Ver historial" → GET /pacientes/:id/dispensaciones
-        └── Lista → [Seleccionar] → GET /dispensaciones/:id → Modal detalle
-
-Desde ruta directa:
-  └── /historial/:pacienteId → misma página
-```
-
-## Response API
-
-### GET /pacientes/:idEmergencia/dispensaciones
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "fecha_hora": "2026-07-03T14:30:00Z",
-      "items": [
-        {
-          "medicamento": "Amoxicilina 250mg/5ml",
-          "lote_codigo": "L-002",
-          "cantidad": 2,
-          "dosis_mg_kg": 7.14
-        }
-      ],
-      "despachado_por": "María López"
-    }
-  ]
-}
-```
+- `doctor`
+- `farmaceutico`
+- `admin`

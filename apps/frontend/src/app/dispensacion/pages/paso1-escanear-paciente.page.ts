@@ -1,29 +1,58 @@
 import { Component, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon, ModalController, ViewWillEnter } from '@ionic/angular/standalone';
+import {
+  IonContent,
+  IonButton,
+  IonItem,
+  IonLabel,
+  IonNote,
+  IonSearchbar,
+  IonIcon,
+  IonList,
+  IonSpinner,
+  ModalController,
+  ViewWillEnter,
+} from '@ionic/angular/standalone';
 import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import { DispensacionService } from '../services/dispensacion.service';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
 import { BusquedaPacienteModal } from '../../pacientes/modals/busqueda-paciente.modal';
 import { RegistroPacienteModal } from '../../pacientes/modals/registro-paciente.modal';
+import { PacienteQrModal } from '../../pacientes/modals/paciente-qr.modal';
 import type { Paciente } from '../../shared/models/paciente.model';
+import type { Receta } from '../../shared/models/receta.model';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonContent, IonButton, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon, EncabezadoPasoComponent, EscanerQrComponent],
+  imports: [
+    FormsModule,
+    IonContent,
+    IonButton,
+    IonItem,
+    IonLabel,
+    IonNote,
+    IonSearchbar,
+    IonIcon,
+    IonList,
+    IonSpinner,
+    EncabezadoPasoComponent,
+    EscanerQrComponent,
+  ],
   template: `
     <app-encabezado-paso [paso]="1"></app-encabezado-paso>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Paso 1 de 3: identificar al paciente por QR, ID o nombre antes de dispensar.</p>
+      <p class="page-subtitle">Paso 1 de 3: seleccionar paciente por QR, cédula/ID o receta pendiente.</p>
+
+      <h3>Identificación manual</h3>
       @if (!pacienteIdentificado()) {
         <div style="text-align: center; padding: var(--app-space-2xl) 0;">
           <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
           <p style="margin: var(--app-space-lg) 0 var(--app-space-xl);">Escanee el código del paciente (brazalete / receta)</p>
 
-          <ion-searchbar [(ngModel)]="codigoBuscado" (ionInput)="buscarPorCodigo()" placeholder="Buscar por ID o nombre..." debounce="500"></ion-searchbar>
+          <ion-searchbar [(ngModel)]="codigoBuscado" (ionInput)="buscarPorCodigo()" placeholder="Buscar por ID emergencia o cédula..." debounce="500"></ion-searchbar>
 
           <div style="display: flex; flex-direction: column; gap: var(--app-space-md); margin-top: var(--app-space-xl);">
             <ion-button expand="block" fill="outline" (click)="abrirBusquedaManual()">
@@ -73,8 +102,31 @@ import type { Paciente } from '../../shared/models/paciente.model';
 
         <div style="display: flex; gap: var(--app-space-md); margin-top: var(--app-space-md);">
           <ion-button expand="block" fill="outline" color="medium" (click)="cancelar()">Cancelar</ion-button>
-          <ion-button expand="block" (click)="siguiente()">Siguiente →</ion-button>
+          <ion-button expand="block" (click)="siguiente()">Validar medicamentos →</ion-button>
         </div>
+      }
+
+      <h3 style="margin-top: var(--app-space-xl);">Recetas pendientes</h3>
+      @if (cargandoRecetas()) {
+        <div class="app-loading app-loading-compact">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Cargando recetas pendientes...</p>
+        </div>
+      } @else if (recetasPendientes().length === 0) {
+        <p class="app-text-secondary">No hay recetas pendientes para dispensación.</p>
+      } @else {
+        <ion-list>
+          @for (receta of recetasPendientes(); track receta.id) {
+            <ion-item button (click)="seleccionarRecetaPendiente(receta)">
+              <ion-label>
+                <h2>{{ receta.paciente?.nombre }} {{ receta.paciente?.apellido }}</h2>
+                <p>{{ receta.paciente?.id_emergencia }} @if (receta.paciente?.cedula) { · C.I.: {{ receta.paciente?.cedula }} }</p>
+                <ion-note>{{ receta.detalles.length }} medicamento(s) · Dr. {{ receta.doctor?.nombre ?? 'N/A' }}</ion-note>
+              </ion-label>
+              <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+            </ion-item>
+          }
+        </ion-list>
       }
     </ion-content>
   `,
@@ -83,6 +135,8 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   codigoBuscado = '';
   pacienteIdentificado = signal<Paciente | null>(null);
   errorMsg = signal('');
+  recetasPendientes = signal<Receta[]>([]);
+  cargandoRecetas = signal(false);
 
   constructor(
     private dispensacionService: DispensacionService,
@@ -95,6 +149,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     this.pacienteIdentificado.set(null);
     this.codigoBuscado = '';
     this.errorMsg.set('');
+    this.cargarRecetasPendientes();
   }
 
   onCodigoEscaneado(codigo: string): void {
@@ -103,17 +158,41 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   }
 
   buscarPorCodigo(): void {
-    const id = this.codigoBuscado.trim().toUpperCase();
-    if (!id) return;
-    this.pacientesService.buscarPaciente(id).subscribe({
+    const term = this.codigoBuscado.trim();
+    if (!term) return;
+
+    this.pacientesService.buscarPaciente(term).subscribe({
       next: (p) => {
-        this.pacienteIdentificado.set(p);
+        if (p.length === 0) {
+          this.errorMsg.set('Paciente no encontrado con ese criterio');
+          return;
+        }
+        this.pacienteIdentificado.set(p[0]);
         this.errorMsg.set('');
       },
       error: () => {
-        this.errorMsg.set('Paciente no encontrado con ese código');
+        this.errorMsg.set('Paciente no encontrado con ese criterio');
       },
     });
+  }
+
+  private cargarRecetasPendientes(): void {
+    this.cargandoRecetas.set(true);
+    this.dispensacionService.getRecetasPendientes().subscribe({
+      next: (items) => {
+        this.recetasPendientes.set(items);
+        this.cargandoRecetas.set(false);
+      },
+      error: () => {
+        this.recetasPendientes.set([]);
+        this.cargandoRecetas.set(false);
+      },
+    });
+  }
+
+  seleccionarRecetaPendiente(receta: Receta): void {
+    this.dispensacionService.setReceta(receta);
+    this.router.navigate(['/dispensacion/paso2']);
   }
 
   async abrirBusquedaManual(): Promise<void> {
@@ -123,11 +202,9 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     modal.present();
     const { data, role } = await modal.onWillDismiss();
 
-    if (role === 'buscar' && data?.idEmergencia) {
-      this.pacientesService.buscarPaciente(data.idEmergencia).subscribe({
-        next: (p) => this.pacienteIdentificado.set(p),
-        error: () => this.errorMsg.set('Paciente no encontrado'),
-      });
+    if (role === 'seleccionar' && data?.paciente) {
+      this.pacienteIdentificado.set(data.paciente);
+      this.errorMsg.set('');
     } else if (role === 'registrar') {
       this.abrirRegistroPaciente();
     }
@@ -142,10 +219,24 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
     if (role === 'confirm' && data) {
       this.pacientesService.registrarPaciente(data).subscribe({
-        next: (p) => this.pacienteIdentificado.set(p),
+        next: (p) => {
+          this.pacienteIdentificado.set(p);
+          this.mostrarQrPaciente(p);
+        },
         error: (err) => this.errorMsg.set(err.message),
       });
     }
+  }
+
+  private async mostrarQrPaciente(p: Paciente): Promise<void> {
+    const modal = await this.modalCtrl.create({
+      component: PacienteQrModal,
+      componentProps: {
+        idEmergencia: p.id_emergencia,
+        nombre: `${p.nombre} ${p.apellido}`,
+      },
+    });
+    await modal.present();
   }
 
   verHistorial(): void {
@@ -156,7 +247,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
   cancelar(): void {
     this.dispensacionService.reiniciar();
-    this.router.navigate(['/recepcion']);
+    this.router.navigate(['/dispensacion/paso1']);
   }
 
   siguiente(): void {

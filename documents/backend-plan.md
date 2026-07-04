@@ -1,223 +1,227 @@
 # Plan de Implementación — Backend (NestJS 11)
 
-## 1. Stack y Herramientas
+Documento de referencia para módulos, endpoints y permisos backend según el modelo funcional vigente.
 
-| Concepto | Decisión |
-|---|---|
-| Framework | NestJS 11 |
-| ORM | TypeORM |
-| Base de datos | SQLite (local/embebido, sin dependencia externa) |
-| Autenticación | PIN + JWT (`@nestjs/jwt`, `@nestjs/passport`) |
-| Validación | `class-validator` + `class-transformer` |
-| Documentación API | Swagger (`@nestjs/swagger`) |
-| Test | Jest + ts-jest |
-| E2E | Jest + Axios |
-| Compilación | Webpack + TSC |
+---
 
-## 2. Estructura de Archivos por Módulo
+## 1. Principios
 
-```
+- API bajo `/api/v1`.
+- Autenticación por PIN + JWT.
+- Autorización por rol mediante `@Roles()`.
+- Soft delete por `activo` en entidades funcionales.
+- La dispensación valida stock, lote, FEFO y dosis desde backend.
+
+---
+
+## 2. Módulos backend
+
+```text
 src/app/
 ├── auth/
-│   ├── auth.module.ts
-│   ├── auth.controller.ts
-│   ├── auth.service.ts
-│   ├── auth.service.spec.ts
-│   ├── dto/
-│   │   └── login.dto.ts
-│   ├── strategies/
-│   │   └── jwt.strategy.ts
-│   └── guards/
-│       └── jwt-auth.guard.ts
-│
+├── pacientes/
 ├── recepcion/
-│   ├── recepcion.module.ts
-│   ├── recepcion.controller.ts
-│   ├── recepcion.service.ts
-│   ├── recepcion.service.spec.ts
-│   ├── dto/
-│   │   ├── crear-lote.dto.ts
-│   │   └── crear-medicamento.dto.ts
-│   └── guards/  (roles)
-│
-├── inventario/
-│   ├── inventario.module.ts
-│   ├── inventario.controller.ts
-│   ├── inventario.service.ts
-│   ├── inventario.service.spec.ts
-│   ├── dto/
-│   │   ├── ajustar-stock.dto.ts
-│   │   └── actualizar-umbral.dto.ts
-│   └── guards/
-│
+├── recetas/
 ├── dispensacion/
-│   ├── dispensacion.module.ts
-│   ├── dispensacion.controller.ts
-│   ├── dispensacion.service.ts
-│   ├── dispensacion.service.spec.ts
-│   ├── dto/
-│   │   ├── crear-paciente.dto.ts
-│   │   ├── crear-dispensacion.dto.ts
-│   │   └── crear-dispensacion-detalle.dto.ts
-│   └── guards/
-│
+├── inventario/
 ├── historial/
-│   ├── historial.module.ts
-│   ├── historial.controller.ts
-│   ├── historial.service.ts
-│   ├── historial.service.spec.ts
-│   └── dto/  (solo response, read-only)
-│
 ├── administracion/
-│   ├── administracion.module.ts
-│   ├── administracion.controller.ts
-│   ├── administracion.service.ts
-│   ├── administracion.service.spec.ts
-│   ├── dto/
-│   │   ├── crear-usuario.dto.ts
-│   │   ├── actualizar-usuario.dto.ts
-│   │   └── actualizar-configuracion.dto.ts
-│   └── guards/
-│       └── roles.guard.ts
-│
-├── common/
-│   ├── entities/
-│   │   ├── medicamento.entity.ts
-│   │   ├── lote.entity.ts
-│   │   ├── paciente.entity.ts
-│   │   ├── dispensacion.entity.ts
-│   │   ├── dispensacion-detalle.entity.ts
-│   │   ├── usuario.entity.ts
-│   │   └── configuracion.entity.ts
-│   ├── decorators/
-│   │   ├── roles.decorator.ts
-│   │   └── current-user.decorator.ts
-│   ├── guards/
-│   │   └── roles.guard.ts
-│   └── filters/
-│       └── http-exception.filter.ts
-│
-├── app.module.ts       (importa todos los módulos funcionales)
-├── app.controller.ts
-└── app.service.ts
+└── common/
 ```
 
-## 3. Entidades TypeORM
+---
 
-Cada entidad se mapea a su tabla correspondiente.
+## 3. Roles y permisos
 
-### Relaciones Clave
-- `Lote` N:1 `Medicamento`
-- `DispensacionDetalle` N:1 `Dispensacion`, N:1 `Lote`, N:1 `Medicamento`
-- `Dispensacion` N:1 `Paciente`, N:1 `Usuario`
-- `Configuracion` 1:1 `Medicamento`
+| Rol | Áreas backend |
+|---|---|
+| `recepcionista` | pacientes |
+| `doctor` | pacientes, recetas, historial |
+| `farmaceutico` | dispensación, recetas pendientes, historial, inventario |
+| `recepcionista_med` | recepción, inventario |
+| `admin` | acceso total |
 
-### Índices
-- `lote.codigo_qr` UNIQUE
-- `paciente.id_emergencia` UNIQUE
-- `dispensacion.fecha_hora` DESC (para consultas de historial)
+---
 
-## 4. Endpoints por Módulo
+## 4. Endpoints por módulo
 
 ### Auth
-| Método | Ruta | Descripción |
+
+| Método | Ruta | Roles |
 |---|---|---|
-| POST | `/api/v1/auth/login` | Autenticar usuario, retorna JWT |
+| POST | `/api/v1/auth/login` | público |
+| GET | `/api/v1/auth/me` | autenticado |
+
+### Pacientes
+
+| Método | Ruta | Roles |
+|---|---|---|
+| POST | `/api/v1/pacientes` | `recepcionista`, `doctor`, `admin` |
+| GET | `/api/v1/pacientes?q=...` | `recepcionista`, `doctor`, `admin` |
+| GET | `/api/v1/pacientes/emergencia/:idEmergencia` | `recepcionista`, `doctor`, `admin` |
+| GET | `/api/v1/pacientes/:id` | `recepcionista`, `doctor`, `admin` |
+| PATCH | `/api/v1/pacientes/:id` | `recepcionista`, `doctor`, `admin` |
+| DELETE | `/api/v1/pacientes/:id` | `recepcionista`, `doctor`, `admin` |
+| GET | `/api/v1/pacientes/:id/nucleo` | `recepcionista`, `doctor`, `admin` |
+| POST | `/api/v1/pacientes/:id/nucleo` | `recepcionista`, `doctor`, `admin` |
+| DELETE | `/api/v1/pacientes/:id/nucleo/:miembroId` | `recepcionista`, `doctor`, `admin` |
 
 ### Recepción
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/v1/medicamentos` | Listar medicamentos (autocompletado) |
-| POST | `/api/v1/medicamentos` | Crear medicamento |
-| GET | `/api/v1/lotes` | Listar ingresos recientes |
-| POST | `/api/v1/lotes` | Crear lote + generar código QR |
-| GET | `/api/v1/lotes/:id` | Detalle de lote |
-| GET | `/api/v1/lotes/:id/qr` | Obtener QR del lote |
 
-### Inventario
-| Método | Ruta | Descripción |
+| Método | Ruta | Roles |
 |---|---|---|
-| GET | `/api/v1/inventario` | Stock general con semáforo y filtros |
-| GET | `/api/v1/inventario/proximos-vencer` | Lotes próximos a vencer |
-| PATCH | `/api/v1/lotes/:id/ajustar-stock` | Conteo físico (ajuste) |
-| GET | `/api/v1/configuraciones/umbrales` | Listar umbrales |
-| PATCH | `/api/v1/configuraciones/:id/umbral` | Actualizar umbral |
+| GET | `/api/v1/medicamentos` | `recepcionista_med`, `admin` |
+| POST | `/api/v1/medicamentos` | `recepcionista_med`, `admin` |
+| GET | `/api/v1/lotes` | `recepcionista_med`, `admin` |
+| POST | `/api/v1/lotes` | `recepcionista_med`, `admin` |
+| GET | `/api/v1/lotes/:id` | `recepcionista_med`, `admin` |
+| GET | `/api/v1/lotes/:id/qr` | `recepcionista_med`, `admin` |
+
+### Recetas
+
+| Método | Ruta | Roles |
+|---|---|---|
+| POST | `/api/v1/recetas` | `doctor`, `admin` |
+| GET | `/api/v1/recetas/pendientes` | `farmaceutico`, `admin` |
+| GET | `/api/v1/recetas/paciente/:pacienteId` | `doctor`, `farmaceutico`, `admin` |
+| GET | `/api/v1/recetas/:id` | `doctor`, `farmaceutico`, `admin` |
+| PATCH | `/api/v1/recetas/:id/estado` | `farmaceutico`, `admin` |
 
 ### Dispensación
-| Método | Ruta | Descripción |
+
+| Método | Ruta | Roles |
 |---|---|---|
-| POST | `/api/v1/pacientes` | Registrar paciente de emergencia |
-| GET | `/api/v1/pacientes/:idEmergencia` | Buscar paciente por ID |
-| GET | `/api/v1/medicamentos?search=` | Buscar medicamentos |
-| GET | `/api/v1/lotes/disponibles/:medicamentoId` | Lotes disponibles de un medicamento |
-| GET | `/api/v1/configuraciones/:medicamentoId/dosis` | Obtener límite de dosis |
-| POST | `/api/v1/dispensaciones` | Crear dispensación (descuenta stock) |
+| GET | `/api/v1/dispensaciones/pendientes` | `farmaceutico`, `admin` |
+| GET | `/api/v1/lotes/disponibles/:medicamentoId` | `farmaceutico`, `admin` |
+| GET | `/api/v1/configuraciones/:medicamentoId/dosis` | `farmaceutico`, `admin` |
+| POST | `/api/v1/dispensaciones` | `farmaceutico`, `admin` |
+
+### Inventario
+
+| Método | Ruta | Roles |
+|---|---|---|
+| GET | `/api/v1/inventario` | `recepcionista_med`, `farmaceutico`, `admin` |
+| GET | `/api/v1/inventario/proximos-vencer` | `recepcionista_med`, `farmaceutico`, `admin` |
+| PATCH | `/api/v1/lotes/:id/ajustar-stock` | `recepcionista_med`, `farmaceutico`, `admin` |
+| GET | `/api/v1/lotes/:id/movimientos` | `recepcionista_med`, `farmaceutico`, `admin` |
+| GET | `/api/v1/configuraciones/umbrales` | `admin` |
+| PATCH | `/api/v1/configuraciones/:id/umbral` | `admin` |
 
 ### Historial
-| Método | Ruta | Descripción |
+
+| Método | Ruta | Roles |
 |---|---|---|
-| GET | `/api/v1/pacientes/:idEmergencia/dispensaciones` | Historial de dispensaciones |
-| GET | `/api/v1/dispensaciones/:id` | Detalle de dispensación |
+| GET | `/api/v1/pacientes/:idEmergencia/dispensaciones` | `doctor`, `farmaceutico`, `admin` |
+| GET | `/api/v1/dispensaciones/:id` | `doctor`, `farmaceutico`, `admin` |
 
 ### Administración
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/v1/usuarios` | Listar usuarios |
-| POST | `/api/v1/usuarios` | Crear usuario |
-| PATCH | `/api/v1/usuarios/:id` | Actualizar usuario |
-| DELETE | `/api/v1/usuarios/:id` | Eliminar usuario |
-| GET | `/api/v1/configuraciones` | Listar configuraciones |
-| PATCH | `/api/v1/configuraciones/:id` | Actualizar configuración |
 
-## 5. Autenticación
+| Método | Ruta | Roles |
+|---|---|---|
+| GET | `/api/v1/usuarios` | `admin` |
+| POST | `/api/v1/usuarios` | `admin` |
+| PATCH | `/api/v1/usuarios/:id` | `admin` |
+| DELETE | `/api/v1/usuarios/:id` | `admin` |
+| GET | `/api/v1/configuraciones` | `admin` |
+| PATCH | `/api/v1/configuraciones/:id` | `admin` |
+
+---
+
+## 5. Estructura de entidades
+
+### Entidades de catálogo y stock
+
+- `Medicamento`
+- `Lote`
+- `LoteMovimiento`
+- `Configuracion`
+
+### Entidades clínicas y operativas
+
+- `Paciente`
+- `NucleoFamiliar`
+- `NucleoFamiliarMiembro`
+- `Receta`
+- `RecetaDetalle`
+- `Dispensacion`
+- `DispensacionDetalle`
+
+### Entidades de seguridad
+
+- `Usuario`
+
+---
+
+## 6. Reglas backend clave
+
+### Pacientes
+
+- El identificador operativo es `idEmergencia`.
+- Debe persistirse `telefono` como dato de contacto opcional del paciente.
+- El borrado funcional es lógico (`activo = false`).
+- El historial familiar se modela por núcleo y miembros.
+
+### Recetas
+
+- Una receta siempre pertenece a un paciente y a un doctor.
+- Estados válidos: `pendiente`, `despachada`, `cancelada`.
+- El doctor entra al módulo de recetas, identifica paciente, revisa historial completo y luego puede crear una nueva receta.
+- La receta representa medicamentos en stock, cantidad y dias indicados.
+- El flujo principal es crear receta y dejarla pendiente para farmacia.
+
+### Dispensación
+
+- Puede vincularse a `recetaId`.
+- Si hay receta, debe actualizarse a `despachada` al completar la entrega.
+- La selección de lotes debe respetar FEFO.
+- La validación de dosis se hace en backend.
+- El descuento de stock y el movimiento de lote deben quedar registrados en la misma operación lógica.
+- La dispensación manual sin receta sigue existiendo y debe vincular siempre paciente + medicamentos entregados.
+
+### Inventario
+
+- Ajustes de stock deben registrar motivo y trazabilidad.
+- Umbrales son configuración administrativa por medicamento.
+
+### Administración
+
+- Usuarios activos/inactivos; un usuario inactivo permanece en base de datos pero no puede autenticarse.
+- El último administrador no debe quedar eliminado o inutilizado por accidente.
+- Configuraciones globales y clínicas se mantienen aquí.
+
+---
+
+## 7. Autenticación y autorización
 
 ### Flujo
-1. Usuario ingresa PIN en pantalla de login
-2. Backend busca usuario por PIN + rol, genera JWT
-3. Frontend almacena token en `localStorage`
-4. `JwtAuthGuard` protege todas las rutas excepto `/auth/login`
-5. `RolesGuard` verifica rol en rutas de administración
 
-### JWT Payload
+1. Usuario envía PIN.
+2. Backend valida usuario activo.
+3. Se emite JWT con `sub`, `nombre` y `rol`.
+4. `JwtAuthGuard` protege las rutas.
+5. `RolesGuard` aplica permisos de negocio.
+
+### Política de sesión
+
+- No existe expiración operativa obligatoria del JWT por ahora.
+- Si se activa expiración, la duración objetivo será de 15 dias.
+
+### Payload esperado
+
 ```json
 {
-  "sub": "usuario_id",
-  "nombre": "...",
-  "rol": "farmaceutico | despachador",
-  "iat": 1234567890,
-  "exp": 1234567890
+  "sub": 1,
+  "nombre": "Usuario",
+  "rol": "doctor",
+  "iat": 1234567890
 }
 ```
 
-## 6. Base de Datos (SQLite)
+---
 
-- Configuración en `app.module.ts` con TypeORM `forRoot()`
-- `synchronize: true` en desarrollo (genera tablas automáticamente)
-- Base de datos guardada en `apps/backend/data/farmacia.sqlite`
-- Migraciones manuales para producción
+## 8. Pendientes de alineación funcional
 
-## 7. Manejo de Errores
-
-```typescript
-// HttpExceptionFilter global
-@Catch(HttpException)
-catch(exception: HttpException, host: ArgumentsHost) {
-  const ctx = host.switchToHttp();
-  const response = ctx.getResponse<Response>();
-  const status = exception.getStatus();
-  response.status(status).json({
-    error: exception.message,
-    statusCode: status,
-    timestamp: new Date().toISOString(),
-  });
-}
-```
-
-## 8. Validación de Dosis (Lógica de Negocio)
-
-Servicio `DispensacionService.validarDosis(medicamentoId, pesoKg, dosisMg)`:
-1. Buscar `configuracion` por `medicamentoId`
-2. Si no existe configuración -> retorna `{ valido: true }` (sin restricción)
-3. Calcular dosisReal = dosisMg / pesoKg
-4. Si dosisReal > configuracion.dosis_maxima_mg_kg -> retorna `{ valido: false, calculado: dosisReal, maximo: configuracion.dosis_maxima_mg_kg }`
-5. Si no -> retorna `{ valido: true }`
+- Exponer disponibilidad clínica suficiente dentro del flujo de recetas.
+- Mantener soportada la dispensación manual sin receta, asociada siempre a paciente.
+- Revalidar en backend cualquier operación donde receta y paciente deban corresponder exactamente.
+- Unificar nomenclatura de rutas de historial con `idEmergencia`.

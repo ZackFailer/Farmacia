@@ -5,9 +5,10 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { Dispensacion, CreateDispensacionDto } from '../../shared/models/dispensacion.model';
+import type { Receta } from '../../shared/models/receta.model';
 
 export interface RecetaItem {
-  lote: Lote;
+  lote?: Lote;
   medicamento: Medicamento;
   cantidad: number;
   dosisCalculada?: number;
@@ -19,6 +20,7 @@ export interface EstadoDispensacion {
   paciente: Paciente | null;
   items: RecetaItem[];
   paso: 1 | 2 | 3;
+  recetaId?: number;
 }
 
 @Injectable()
@@ -33,13 +35,41 @@ export abstract class DispensacionService {
   abstract getLoteByQR(codigoQR: string): Observable<Lote>;
   abstract getLimiteDosis(medicamentoId: number): Observable<Configuracion | null>;
   abstract crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion>;
+  abstract getRecetasPendientes(): Observable<Receta[]>;
 
   setPaciente(p: Paciente): void {
-    this._estado.update(e => ({ ...e, paciente: p, paso: 2 }));
+    this._estado.update((e) => ({
+      ...e,
+      paciente: p,
+      items: [],
+      recetaId: undefined,
+      paso: 2,
+    }));
+  }
+
+  setReceta(r: Receta): void {
+    const items: RecetaItem[] = (r.detalles ?? []).map(d => ({
+      medicamento: d.medicamento!,
+      cantidad: d.cantidad_recetada,
+    }));
+    this._estado.update(e => ({
+      ...e,
+      paciente: r.paciente ?? null,
+      items,
+      paso: 2,
+      recetaId: r.id,
+    }));
   }
 
   agregarItem(item: RecetaItem): void {
     this._estado.update(e => ({ ...e, items: [...e.items, item] }));
+  }
+
+  actualizarItem(index: number, patch: Partial<RecetaItem>): void {
+    this._estado.update((e) => ({
+      ...e,
+      items: e.items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    }));
   }
 
   eliminarItem(index: number): void {
@@ -50,7 +80,11 @@ export abstract class DispensacionService {
     this._estado.update(e => ({ ...e, paciente: null, paso: 1 }));
   }
 
+  resetRecetaContext(): void {
+    this._estado.update((e) => ({ ...e, items: [], recetaId: undefined, paso: 1 }));
+  }
+
   reiniciar(): void {
-    this._estado.set({ paciente: null, items: [], paso: 1 });
+    this._estado.set({ paciente: null, items: [], paso: 1, recetaId: undefined });
   }
 }
