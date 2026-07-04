@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonContent, IonButton, IonItem, IonLabel, ModalController } from '@ionic/angular/standalone';
+import { IonContent, IonButton, IonItem, IonLabel, IonToast, ModalController } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
 import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { ResumenRecetaComponent } from '../components/resumen-receta.component';
@@ -11,15 +11,17 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 
 @Component({
   standalone: true,
-  imports: [IonContent, IonButton, IonItem, IonLabel, EncabezadoPasoComponent, ResumenRecetaComponent, EscanerQrComponent],
+  imports: [IonContent, IonButton, IonItem, IonLabel, IonToast, EncabezadoPasoComponent, ResumenRecetaComponent, EscanerQrComponent],
   template: `
     <app-encabezado-paso [paso]="2"></app-encabezado-paso>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Paso 2 de 3: agregar medicamentos, lote y cantidad para la receta del paciente.</p>
       @if (estado().paciente; as p) {
         <ion-item lines="none">
           <ion-label>
-            <p>Paciente: <strong>{{ p.id_emergencia }}</strong></p>
+            <p>Paciente: <strong>{{ p.nombre }} {{ p.apellido }}</strong></p>
+            <p>ID: <strong>{{ p.id_emergencia }}</strong></p>
           </ion-label>
         </ion-item>
       }
@@ -42,6 +44,15 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
         </ion-button>
       </div>
     </ion-content>
+
+    <ion-toast
+      [isOpen]="showAddedToast()"
+      message="Medicamento agregado a la receta"
+      duration="1400"
+      color="success"
+      position="bottom"
+      (didDismiss)="showAddedToast.set(false)"
+    ></ion-toast>
   `,
 })
 export class Paso2SeleccionarMedsPage {
@@ -52,6 +63,12 @@ export class Paso2SeleccionarMedsPage {
   ) {}
 
   get estado() { return this.dispensacionService.estado; }
+  showAddedToast = signal(false);
+
+  private notifyAdded(): void {
+    this.showAddedToast.set(false);
+    setTimeout(() => this.showAddedToast.set(true), 0);
+  }
 
   onCodigoEscaneado(codigo: string): void {
     this.dispensacionService.getLoteByQR(codigo).subscribe({
@@ -62,6 +79,7 @@ export class Paso2SeleccionarMedsPage {
           lote,
           cantidad: 1,
         });
+        this.notifyAdded();
       },
       error: () => {
         // lote no encontrado por QR
@@ -77,6 +95,7 @@ export class Paso2SeleccionarMedsPage {
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data) {
       this.dispensacionService.agregarItem(data);
+      this.notifyAdded();
     }
   }
 

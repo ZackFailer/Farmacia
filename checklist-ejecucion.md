@@ -376,62 +376,62 @@
 
 ---
 
-## Fase 8 — Backend (Post-Frontend) ⏳
+## Fase 8 — Backend (Post-Frontend) ✅
 
-> **Estado: PENDIENTE** — No iniciado.
+> **Estado: COMPLETADA** — Implementación base finalizada con build y tests backend exitosos.
 
 > ⚠️ Esta fase se ejecuta DESPUÉS de completar todo el frontend con mocks.
 
 ### Autenticación
 
-- [ ] Entidad `Usuario` con `pin_hash` (bcrypt)
-- [ ] Seed: usuario `admin` / PIN `123456`
-- [ ] `POST /api/v1/auth/login` → valida PIN, firma JWT (sin expiración)
-- [ ] `GET /api/v1/auth/me` → retorna usuario desde token
+- [x] Entidad `Usuario` con `pin_hash` (bcrypt)
+- [x] Seed: usuario `admin` / PIN `123456`
+- [x] `POST /api/v1/auth/login` → valida PIN, firma JWT (sin expiración)
+- [x] `GET /api/v1/auth/me` → retorna usuario desde token
 
 ### Recepción
 
-- [ ] Entidad `Medicamento`
-- [ ] Entidad `Lote` con FK → Medicamento
-- [ ] `GET /api/v1/medicamentos?search=`
-- [ ] `POST /api/v1/medicamentos`
-- [ ] `GET /api/v1/lotes` (paginado, DESC)
-- [ ] `POST /api/v1/lotes` (genera UUID QR)
-- [ ] `GET /api/v1/lotes/:id/qr`
+- [x] Entidad `Medicamento`
+- [x] Entidad `Lote` con FK → Medicamento
+- [x] `GET /api/v1/medicamentos?search=`
+- [x] `POST /api/v1/medicamentos`
+- [x] `GET /api/v1/lotes` (paginado, DESC)
+- [x] `POST /api/v1/lotes` (genera UUID QR)
+- [x] `GET /api/v1/lotes/:id/qr`
 
 ### Inventario
 
-- [ ] `GET /api/v1/inventario` (stock agrupado por medicamento)
-- [ ] `GET /api/v1/inventario/proximos-vencer`
-- [ ] `PATCH /api/v1/lotes/:id/ajustar-stock`
-- [ ] `GET /api/v1/lotes/:id/movimientos`
-- [ ] `GET /api/v1/configuraciones/umbrales`
-- [ ] `PATCH /api/v1/configuraciones/:id/umbral`
+- [x] `GET /api/v1/inventario` (stock agrupado por medicamento)
+- [x] `GET /api/v1/inventario/proximos-vencer`
+- [x] `PATCH /api/v1/lotes/:id/ajustar-stock`
+- [x] `GET /api/v1/lotes/:id/movimientos`
+- [x] `GET /api/v1/configuraciones/umbrales`
+- [x] `PATCH /api/v1/configuraciones/:id/umbral`
 
 ### Dispensación
 
-- [ ] Entidad `Paciente`
-- [ ] Entidad `Dispensacion` + `DispensacionDetalle`
-- [ ] `POST /api/v1/pacientes`
-- [ ] `GET /api/v1/pacientes/:idEmergencia`
-- [ ] `GET /api/v1/lotes/disponibles/:medicamentoId` (FEFO)
-- [ ] `GET /api/v1/configuraciones/:medicamentoId/dosis`
-- [ ] `POST /api/v1/dispensaciones` (transacción: crea + descuenta stock)
+- [x] Entidad `Paciente`
+- [x] Entidad `Dispensacion` + `DispensacionDetalle`
+- [x] `POST /api/v1/pacientes`
+- [x] `GET /api/v1/pacientes/:idEmergencia`
+- [x] `GET /api/v1/lotes/disponibles/:medicamentoId` (FEFO)
+- [x] `GET /api/v1/configuraciones/:medicamentoId/dosis`
+- [x] `POST /api/v1/dispensaciones` (transacción: crea + descuenta stock)
 
 ### Historial
 
-- [ ] `GET /api/v1/pacientes/:idEmergencia/dispensaciones`
-- [ ] `GET /api/v1/dispensaciones/:id`
+- [x] `GET /api/v1/pacientes/:idEmergencia/dispensaciones`
+- [x] `GET /api/v1/dispensaciones/:id`
 
 ### Administración
 
-- [ ] `GET /api/v1/usuarios`
-- [ ] `POST /api/v1/usuarios`
-- [ ] `PATCH /api/v1/usuarios/:id`
-- [ ] `DELETE /api/v1/usuarios/:id` (validar último admin)
-- [ ] `GET /api/v1/configuraciones`
-- [ ] `PATCH /api/v1/configuraciones/:id`
-- [ ] Hook: crear `Configuracion` por defecto al crear `Medicamento`
+- [x] `GET /api/v1/usuarios`
+- [x] `POST /api/v1/usuarios`
+- [x] `PATCH /api/v1/usuarios/:id`
+- [x] `DELETE /api/v1/usuarios/:id` (validar último admin)
+- [x] `GET /api/v1/configuraciones`
+- [x] `PATCH /api/v1/configuraciones/:id`
+- [x] Hook: crear `Configuracion` por defecto al crear `Medicamento`
 
 ---
 

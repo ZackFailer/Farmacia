@@ -28,7 +28,7 @@ import type { RecetaItem } from '../services/dispensacion.service';
       <h3>Paciente</h3>
       <ion-item>
         <ion-label>
-          <h2>{{ paciente.id_emergencia }}</h2>
+          <h2>{{ paciente.nombre }} {{ paciente.apellido }}</h2>
           <p>ID: {{ paciente.id_emergencia }}</p>
           <p>Peso: {{ paciente.peso_estimado }} kg</p>
           <ion-note>{{ paciente.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>

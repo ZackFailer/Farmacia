@@ -27,7 +27,7 @@ export abstract class DispensacionService {
   readonly estado = this._estado.asReadonly();
 
   abstract registrarPaciente(dto: CreatePacienteDto): Observable<Paciente>;
-  abstract buscarPaciente(idEmergencia: string): Observable<Paciente>;
+  abstract buscarPaciente(searchTerm: string): Observable<Paciente>;
   abstract buscarMedicamentos(search: string): Observable<Medicamento[]>;
   abstract getLotesDisponibles(medicamentoId: number): Observable<Lote[]>;
   abstract getLoteByQR(codigoQR: string): Observable<Lote>;

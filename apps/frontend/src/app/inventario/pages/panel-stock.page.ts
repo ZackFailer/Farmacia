@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
 import { TarjetaMedicamentoComponent } from '../components/tarjeta-medicamento.component';
 import { InventarioService } from '../services/inventario.service';
 import { RecepcionService } from '../../recepcion/services/recepcion.service';
@@ -9,7 +9,7 @@ import type { Lote } from '../../shared/models/lote.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, TarjetaMedicamentoComponent, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, TarjetaMedicamentoComponent, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -21,10 +21,23 @@ import type { Lote } from '../../shared/models/lote.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Monitorear stock, identificar medicamentos vitales y revisar lotes disponibles.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrar()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
 
       @if (cargando()) {
-        <div class="app-loading"><p>Cargando inventario...</p></div>
+        <div class="app-loading"><ion-spinner name="crescent"></ion-spinner><p>Cargando inventario...</p></div>
+      } @else if (errorMsg()) {
+        <div class="app-error-state">
+          <ion-icon name="cloud-offline-outline"></ion-icon>
+          <p>{{ errorMsg() }}</p>
+          <ion-button fill="outline" (click)="reintentarCarga()">Reintentar</ion-button>
+        </div>
+      } @else if (stockItems().length === 0) {
+        <div class="app-empty">
+          <ion-icon name="file-tray-outline" class="app-empty-icon"></ion-icon>
+          <h3>Sin resultados</h3>
+          <p>{{ searchTerm ? 'No hay medicamentos que coincidan con la búsqueda.' : 'No hay stock cargado.' }}</p>
+        </div>
       } @else {
         <h3>Vitales</h3>
         @for (item of vitales; track item.medicamento.id) {
@@ -34,8 +47,6 @@ import type { Lote } from '../../shared/models/lote.model';
         <h3>Todos los medicamentos</h3>
         @for (item of otros; track item.medicamento.id) {
           <app-tarjeta-medicamento [item]="item" (verLotes)="verDetalleLote(item)"></app-tarjeta-medicamento>
-        } @empty {
-          <p class="ion-text-center">Sin resultados</p>
         }
       }
     </ion-content>
@@ -58,6 +69,7 @@ export class PanelStockPage implements OnInit {
 
   searchTerm = '';
   cargando = signal(true);
+  errorMsg = signal('');
   showAlerta = signal(false);
   stockItems = signal<StockItem[]>([]);
   lotesCache: Lote[] = [];
@@ -75,6 +87,11 @@ export class PanelStockPage implements OnInit {
   }
 
   ngOnInit() {
+    this.cargarDatos();
+  }
+
+  private cargarDatos(): void {
+    this.errorMsg.set('');
     this.inventarioService.getStockGeneral().subscribe({
       next: (data) => {
         this.stockItems.set(data);
@@ -82,7 +99,10 @@ export class PanelStockPage implements OnInit {
         const bajos = data.filter(i => i.color === 'yellow' && this.esVital(i.medicamento.id));
         if (bajos.length > 0) this.showAlerta.set(true);
       },
-      error: () => this.cargando.set(false),
+      error: () => {
+        this.cargando.set(false);
+        this.errorMsg.set('No fue posible cargar el inventario.');
+      },
     });
     this.recepcionService.getLotes().subscribe({
       next: (data) => { this.lotesCache = data; },
@@ -92,7 +112,13 @@ export class PanelStockPage implements OnInit {
   filtrar() {
     this.inventarioService.getStockGeneral({ search: this.searchTerm }).subscribe({
       next: (data) => this.stockItems.set(data),
+      error: () => this.errorMsg.set('No fue posible aplicar el filtro de inventario.'),
     });
+  }
+
+  reintentarCarga(): void {
+    this.cargando.set(true);
+    this.cargarDatos();
   }
 
   async verDetalleLote(item: StockItem) {

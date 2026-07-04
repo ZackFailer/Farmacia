@@ -32,6 +32,16 @@ import type { CreatePacienteDto } from '../../shared/models/paciente.model';
       </ion-item>
 
       <ion-item>
+        <ion-label position="stacked">Nombre *</ion-label>
+        <ion-input [(ngModel)]="nombre" placeholder="Juan"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Apellido *</ion-label>
+        <ion-input [(ngModel)]="apellido" placeholder="Perez"></ion-input>
+      </ion-item>
+
+      <ion-item>
         <ion-label position="stacked">Sexo *</ion-label>
         <ion-select [(ngModel)]="sexo" interface="action-sheet">
           <ion-select-option [value]="sexoEnum.M">Masculino</ion-select-option>
@@ -74,6 +84,8 @@ export class RegistroPacienteModal {
   readonly sexoEnum = Sexo;
 
   idEmergencia = '';
+  nombre = '';
+  apellido = '';
   sexo: Sexo = Sexo.M;
   edad = '';
   peso = '';
@@ -83,6 +95,8 @@ export class RegistroPacienteModal {
 
   formValido(): boolean {
     return this.idEmergencia.trim().length > 0
+      && this.nombre.trim().length > 0
+      && this.apellido.trim().length > 0
       && this.edad.length > 0 && +this.edad > 0
       && this.peso.length > 0 && +this.peso > 0;
   }
@@ -91,6 +105,8 @@ export class RegistroPacienteModal {
     if (!this.formValido()) return;
     const dto: CreatePacienteDto = {
       id_emergencia: this.idEmergencia.trim(),
+      nombre: this.nombre.trim(),
+      apellido: this.apellido.trim(),
       sexo: this.sexo,
       edad_estimada: +this.edad,
       peso_estimado: +this.peso,

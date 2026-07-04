@@ -10,9 +10,9 @@ import type { Dispensacion, CreateDispensacionDto } from '../../shared/models/di
 import { Sexo } from '../../shared/enums/sexo.enum';
 
 const SEED_PACIENTES: Paciente[] = [
-  { id: 1, id_emergencia: 'EM-2026-001', sexo: Sexo.M, edad_estimada: 35, peso_estimado: 70, es_damnificado: true, created_at: '2026-07-03T10:00:00Z' },
-  { id: 2, id_emergencia: 'EM-2026-002', sexo: Sexo.F, edad_estimada: 28, peso_estimado: 55, es_damnificado: false, created_at: '2026-07-03T10:30:00Z' },
-  { id: 3, id_emergencia: 'EM-2026-003', sexo: Sexo.M, edad_estimada: 60, peso_estimado: 80, es_damnificado: true, created_at: '2026-07-03T11:00:00Z' },
+  { id: 1, id_emergencia: 'EM-2026-001', nombre: 'Juan', apellido: 'Perez', sexo: Sexo.M, edad_estimada: 35, peso_estimado: 70, es_damnificado: true, created_at: '2026-07-03T10:00:00Z' },
+  { id: 2, id_emergencia: 'EM-2026-002', nombre: 'Maria', apellido: 'Gonzalez', sexo: Sexo.F, edad_estimada: 28, peso_estimado: 55, es_damnificado: false, created_at: '2026-07-03T10:30:00Z' },
+  { id: 3, id_emergencia: 'EM-2026-003', nombre: 'Pedro', apellido: 'Ramirez', sexo: Sexo.M, edad_estimada: 60, peso_estimado: 80, es_damnificado: true, created_at: '2026-07-03T11:00:00Z' },
 ];
 
 const SEED_MEDICAMENTOS: Medicamento[] = [
@@ -63,8 +63,15 @@ export class MockDispensacionService extends DispensacionService {
     return of(nuevo);
   }
 
-  buscarPaciente(idEmergencia: string): Observable<Paciente> {
-    const p = SEED_PACIENTES.find(pac => pac.id_emergencia === idEmergencia);
+  buscarPaciente(searchTerm: string): Observable<Paciente> {
+    const term = searchTerm.trim().toLowerCase();
+    const p = SEED_PACIENTES.find((pac) => {
+      const fullName = `${pac.nombre} ${pac.apellido}`.toLowerCase();
+      return pac.id_emergencia.toLowerCase() === term
+        || fullName.includes(term)
+        || pac.nombre.toLowerCase().includes(term)
+        || pac.apellido.toLowerCase().includes(term);
+    });
     if (!p) return throwError(() => new Error('Paciente no encontrado'));
     return of(p);
   }

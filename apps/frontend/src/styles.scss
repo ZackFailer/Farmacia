@@ -59,6 +59,28 @@ ion-button, ion-fab-button, ion-item button {
   --min-height: 48px;
 }
 
+ion-button {
+  --transition: transform 120ms ease, box-shadow 180ms ease, opacity 120ms ease;
+}
+
+ion-button::part(native),
+ion-fab-button::part(native) {
+  transition: transform 120ms ease, box-shadow 180ms ease, opacity 120ms ease;
+}
+
+ion-button:active::part(native),
+ion-fab-button:active::part(native) {
+  transform: scale(0.98);
+}
+
+ion-item {
+  transition: transform 120ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+ion-item[button]:active {
+  transform: translateY(1px);
+}
+
 ion-item {
   --border-radius: var(--app-radius-sm);
   --padding-start: var(--app-space-md);
@@ -75,10 +97,50 @@ ion-item {
   text-align: center;
   min-height: 200px;
   color: var(--app-text-secondary);
+  animation: appFadeIn 180ms ease-out;
 }
 
 .app-empty-icon {
   font-size: 64px;
   margin-bottom: var(--app-space-lg);
   color: var(--app-border);
+}
+
+.app-error-state ion-icon {
+  font-size: 44px;
+  margin-bottom: var(--app-space-sm);
+  color: var(--app-error);
+}
+
+.app-error-compact {
+  min-height: 0;
+  margin: var(--app-space-md) 0;
+  padding: var(--app-space-md);
+  border: 1px solid color-mix(in srgb, var(--app-error) 35%, transparent);
+  border-radius: var(--app-radius-sm);
+  background: color-mix(in srgb, var(--app-error-bg) 65%, var(--app-surface));
+}
+
+.app-inline-error {
+  margin: var(--app-space-xs) 0 0;
+  color: var(--app-error);
+  font-size: var(--app-font-size-sm);
+}
+
+.page-subtitle {
+  margin: 0 0 var(--app-space-lg);
+  color: var(--app-text-secondary);
+  font-size: var(--app-font-size-sm);
+  line-height: 1.35;
+}
+
+@keyframes appFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

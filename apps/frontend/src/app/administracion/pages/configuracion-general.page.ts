@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
-  IonItem, IonLabel, IonButton, IonSpinner, IonToast,
+  IonItem, IonLabel, IonButton, IonSpinner, IonToast, IonIcon,
   ModalController,
 } from '@ionic/angular/standalone';
 import { AdministracionService } from '../services/administracion.service';
@@ -12,7 +12,7 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
   standalone: true,
   imports: [
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
-    IonItem, IonLabel, IonButton, IonSpinner, IonToast,
+    IonItem, IonLabel, IonButton, IonSpinner, IonToast, IonIcon,
   ],
   template: `
     <ion-header>
@@ -25,8 +25,21 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Definir umbrales y limites de dosis para controles clinicos y de inventario.</p>
       @if (cargando()) {
-        <div class="app-loading"><ion-spinner></ion-spinner><p>Cargando...</p></div>
+        <div class="app-loading"><ion-spinner name="crescent"></ion-spinner><p>Cargando configuraciones...</p></div>
+      } @else if (errorMsg()) {
+        <div class="app-error-state">
+          <ion-icon name="cloud-offline-outline"></ion-icon>
+          <p>{{ errorMsg() }}</p>
+          <ion-button fill="outline" (click)="reintentarCarga()">Reintentar</ion-button>
+        </div>
+      } @else if (configuraciones().length === 0) {
+        <div class="app-empty">
+          <ion-icon name="settings-outline" class="app-empty-icon"></ion-icon>
+          <h3>Sin configuraciones</h3>
+          <p>No hay configuraciones clínicas registradas.</p>
+        </div>
       } @else {
         <h3>Umbrales de Stock</h3>
         @for (c of configuraciones(); track c.id) {
@@ -70,6 +83,7 @@ export class ConfiguracionGeneralPage implements OnInit {
 
   configuraciones = signal<Configuracion[]>([]);
   cargando = signal(true);
+  errorMsg = signal('');
   showToast = signal(false);
   toastMsg = signal('');
   toastColor = signal('success');
@@ -79,10 +93,20 @@ export class ConfiguracionGeneralPage implements OnInit {
   }
 
   private cargarConfiguraciones(): void {
+    this.errorMsg.set('');
     this.adminService.getConfiguraciones().subscribe({
       next: (c) => { this.configuraciones.set(c); this.cargando.set(false); },
-      error: () => { this.cargando.set(false); this.mostrarError('Error al cargar configuraciones'); },
+      error: () => {
+        this.cargando.set(false);
+        this.errorMsg.set('No fue posible cargar las configuraciones.');
+        this.mostrarError('Error al cargar configuraciones');
+      },
     });
+  }
+
+  reintentarCarga(): void {
+    this.cargando.set(true);
+    this.cargarConfiguraciones();
   }
 
   async editarLimite(config: Configuracion): Promise<void> {

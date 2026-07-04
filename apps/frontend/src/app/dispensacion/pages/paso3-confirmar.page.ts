@@ -15,11 +15,13 @@ import type { CreateDispensacionDto } from '../../shared/models/dispensacion.mod
     <app-encabezado-paso [paso]="3"></app-encabezado-paso>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Paso 3 de 3: validar dosis, confirmar entrega y registrar la dispensacion.</p>
       @if (estado().paciente; as p) {
         <h3>Resumen de Entrega</h3>
         <ion-item>
           <ion-label>
-            <h2>{{ p.id_emergencia }}</h2>
+            <h2>{{ p.nombre }} {{ p.apellido }}</h2>
+            <p>ID: {{ p.id_emergencia }}</p>
             <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
             <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
           </ion-label>

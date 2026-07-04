@@ -1,12 +1,12 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
 import { InventarioService } from '../services/inventario.service';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -18,10 +18,23 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Configurar umbrales minimos por medicamento para alertas tempranas de reposicion.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrar()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
 
       @if (cargando()) {
-        <div class="app-loading"><p>Cargando...</p></div>
+        <div class="app-loading"><ion-spinner name="crescent"></ion-spinner><p>Cargando umbrales...</p></div>
+      } @else if (errorMsg()) {
+        <div class="app-error-state">
+          <ion-icon name="cloud-offline-outline"></ion-icon>
+          <p>{{ errorMsg() }}</p>
+          <ion-button fill="outline" (click)="reintentarCarga()">Reintentar</ion-button>
+        </div>
+      } @else if (configuracionesFiltradas().length === 0) {
+        <div class="app-empty">
+          <ion-icon name="file-tray-outline" class="app-empty-icon"></ion-icon>
+          <h3>Sin resultados</h3>
+          <p>{{ searchTerm ? 'No hay medicamentos que coincidan con la búsqueda.' : 'No hay umbrales configurados.' }}</p>
+        </div>
       } @else {
         @for (conf of configuracionesFiltradas(); track conf.id) {
           <ion-item>
@@ -31,8 +44,6 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
             </ion-label>
             <ion-button slot="end" fill="outline" (click)="editarUmbral(conf)">Editar</ion-button>
           </ion-item>
-        } @empty {
-          <p class="ion-text-center">Sin resultados</p>
         }
       }
     </ion-content>
@@ -46,18 +57,32 @@ export class ConfigurarUmbralesPage implements OnInit {
 
   searchTerm = '';
   cargando = signal(true);
+  errorMsg = signal('');
   configuraciones = signal<Configuracion[]>([]);
   configuracionesFiltradas = signal<Configuracion[]>([]);
 
   ngOnInit() {
+    this.cargarUmbrales();
+  }
+
+  private cargarUmbrales(): void {
+    this.errorMsg.set('');
     this.inventarioService.getUmbrales().subscribe({
       next: (data) => {
         this.configuraciones.set(data);
         this.configuracionesFiltradas.set(data);
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false),
+      error: () => {
+        this.cargando.set(false);
+        this.errorMsg.set('No fue posible cargar los umbrales.');
+      },
     });
+  }
+
+  reintentarCarga(): void {
+    this.cargando.set(true);
+    this.cargarUmbrales();
   }
 
   filtrar() {

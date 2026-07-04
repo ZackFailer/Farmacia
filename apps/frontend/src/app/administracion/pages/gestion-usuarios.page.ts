@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
-  IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast,
+  IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast, IonIcon,
   ModalController, AlertController,
 } from '@ionic/angular/standalone';
 import { AdministracionService } from '../services/administracion.service';
@@ -12,7 +12,7 @@ import type { Usuario } from '../../shared/models/usuario.model';
   standalone: true,
   imports: [
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
-    IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast,
+    IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast, IonIcon,
   ],
   template: `
     <ion-header>
@@ -25,10 +25,23 @@ import type { Usuario } from '../../shared/models/usuario.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Administrar usuarios del sistema y sus permisos operativos.</p>
       <ion-button expand="block" (click)="crearUsuario()">+ Nuevo Usuario</ion-button>
 
       @if (cargando()) {
-        <div class="app-loading"><ion-spinner></ion-spinner><p>Cargando...</p></div>
+        <div class="app-loading"><ion-spinner name="crescent"></ion-spinner><p>Cargando usuarios...</p></div>
+      } @else if (errorMsg()) {
+        <div class="app-error-state">
+          <ion-icon name="cloud-offline-outline"></ion-icon>
+          <p>{{ errorMsg() }}</p>
+          <ion-button fill="outline" (click)="reintentarCarga()">Reintentar</ion-button>
+        </div>
+      } @else if (usuarios().length === 0) {
+        <div class="app-empty">
+          <ion-icon name="people-outline" class="app-empty-icon"></ion-icon>
+          <h3>Sin usuarios</h3>
+          <p>No hay usuarios registrados en el sistema.</p>
+        </div>
       } @else {
         @for (u of usuarios(); track u.id) {
           <ion-item>
@@ -39,8 +52,6 @@ import type { Usuario } from '../../shared/models/usuario.model';
             <ion-button slot="end" fill="clear" (click)="editarUsuario(u)">Editar</ion-button>
             <ion-button slot="end" fill="clear" color="danger" (click)="eliminarUsuario(u)">Eliminar</ion-button>
           </ion-item>
-        } @empty {
-          <p class="ion-text-center ion-padding">No hay usuarios registrados</p>
         }
       }
     </ion-content>
@@ -61,6 +72,7 @@ export class GestionUsuariosPage implements OnInit {
 
   usuarios = signal<Usuario[]>([]);
   cargando = signal(true);
+  errorMsg = signal('');
   showToast = signal(false);
   toastMsg = signal('');
   toastColor = signal('success');
@@ -71,10 +83,19 @@ export class GestionUsuariosPage implements OnInit {
 
   private cargarUsuarios(): void {
     this.cargando.set(true);
+    this.errorMsg.set('');
     this.adminService.getUsuarios().subscribe({
       next: (u) => { this.usuarios.set(u); this.cargando.set(false); },
-      error: () => { this.cargando.set(false); this.mostrarError('Error al cargar usuarios'); },
+      error: () => {
+        this.cargando.set(false);
+        this.errorMsg.set('No fue posible cargar los usuarios.');
+        this.mostrarError('Error al cargar usuarios');
+      },
     });
+  }
+
+  reintentarCarga(): void {
+    this.cargarUsuarios();
   }
 
   async crearUsuario(): Promise<void> {

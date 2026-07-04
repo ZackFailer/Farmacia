@@ -1,11 +1,49 @@
 import { Component, Input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSearchbar, IonList, IonFooter, IonBadge, ModalController } from '@ionic/angular/standalone';
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonButton,
+  IonContent,
+  IonItem,
+  IonLabel,
+  IonInput,
+  IonSearchbar,
+  IonList,
+  IonFooter,
+  IonBadge,
+  IonDatetime,
+  IonDatetimeButton,
+  IonModal,
+  ModalController,
+} from '@ionic/angular/standalone';
 import type { Medicamento } from '../../shared/models/medicamento.model';
+import { RecepcionService } from '../services/recepcion.service';
+import { NuevoMedicamentoModal } from './nuevo-medicamento.modal';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSearchbar, IonList, IonFooter, IonBadge, FormsModule],
+  imports: [
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonButton,
+    IonContent,
+    IonItem,
+    IonLabel,
+    IonInput,
+    IonSearchbar,
+    IonList,
+    IonFooter,
+    IonBadge,
+    IonDatetime,
+    IonDatetimeButton,
+    IonModal,
+    FormsModule,
+  ],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -17,10 +55,18 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     </ion-header>
 
     <ion-content class="ion-padding">
-      <ion-item>
-        <ion-label position="stacked">Medicamento *</ion-label>
-        <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="onSearch()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
-      </ion-item>
+      <p class="form-help">Complete los datos del lote y verifique vencimiento antes de guardar.</p>
+
+      <div class="filter-field">
+        <ion-label class="filter-label">Medicamento *</ion-label>
+        <ion-searchbar
+          class="search-field"
+          [(ngModel)]="searchTerm"
+          (ionInput)="onSearch()"
+          placeholder="Buscar medicamento..."
+          debounce="300"
+        ></ion-searchbar>
+      </div>
 
       @if (resultados().length > 0) {
         <ion-list>
@@ -38,15 +84,34 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
         </p>
       }
 
-      <ion-item>
-        <ion-label position="stacked">Cantidad *</ion-label>
-        <ion-input type="number" [(ngModel)]="cantidad"></ion-input>
-      </ion-item>
+      <ion-button expand="block" fill="clear" color="primary" (click)="abrirNuevoMedicamento()">
+        + Nuevo medicamento
+      </ion-button>
 
       <ion-item>
-        <ion-label position="stacked">Fecha de Vencimiento *</ion-label>
-        <ion-input type="date" [(ngModel)]="fechaVencimiento" (ionChange)="onFechaChange()"></ion-input>
+        <ion-label position="stacked">Cantidad *</ion-label>
+        <ion-input type="number" [(ngModel)]="cantidad" min="1" placeholder="Ej: 250"></ion-input>
       </ion-item>
+
+      <div class="datetime-field">
+        <ion-label class="datetime-label">Fecha de Vencimiento *</ion-label>
+        <ion-datetime-button class="datetime-button" datetime="loteVencimiento"></ion-datetime-button>
+        <ion-modal [keepContentsMounted]="true">
+          <ng-template>
+            <ion-datetime
+              id="loteVencimiento"
+              presentation="date"
+              preferWheel="true"
+              [value]="fechaVencimiento || null"
+              (ionChange)="onFechaChange($event)"
+            ></ion-datetime>
+          </ng-template>
+        </ion-modal>
+      </div>
+
+      @if (fechaVencimiento) {
+        <p class="form-meta">Fecha seleccionada: {{ fechaVencimiento }}</p>
+      }
 
       @if (alertaVencimiento()) {
         <ion-item lines="none" color="warning">
@@ -57,13 +122,17 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 
       <ion-item>
         <ion-label position="stacked">Donante</ion-label>
-        <ion-input [(ngModel)]="donante"></ion-input>
+        <ion-input [(ngModel)]="donante" placeholder="Ej: Cruz Roja"></ion-input>
       </ion-item>
 
       <ion-item>
         <ion-label position="stacked">Ubicación</ion-label>
-        <ion-input [(ngModel)]="ubicacion"></ion-input>
+        <ion-input [(ngModel)]="ubicacion" placeholder="Ej: Estante A-1"></ion-input>
       </ion-item>
+
+      @if (errorFormulario()) {
+        <p class="form-error">{{ errorFormulario() }}</p>
+      }
     </ion-content>
 
     <ion-footer>
@@ -79,10 +148,80 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
   `,
   styles: [`
     .selected { --background: var(--stock-ok-bg); }
+
+    .form-help {
+      margin: 0 0 var(--app-space-md);
+      color: var(--app-text-secondary);
+      font-size: var(--app-font-size-sm);
+    }
+
+    .form-meta {
+      margin: var(--app-space-sm) var(--app-space-sm) var(--app-space-md);
+      color: var(--app-text-secondary);
+      font-size: var(--app-font-size-sm);
+    }
+
+    .form-error {
+      margin: var(--app-space-sm) 0 0;
+      color: var(--app-error);
+      font-size: var(--app-font-size-sm);
+      font-weight: 500;
+    }
+
+    .datetime-field {
+      margin-bottom: var(--app-space-md);
+    }
+
+    .filter-field {
+      margin-bottom: var(--app-space-md);
+    }
+
+    .filter-label {
+      display: block;
+      margin: 0 0 var(--app-space-xs);
+      font-size: var(--app-font-size-sm);
+      font-weight: 500;
+      color: var(--app-text-secondary);
+    }
+
+    .search-field {
+      padding: 0;
+      --background: var(--app-surface);
+      --border-radius: var(--app-radius-sm);
+      --box-shadow: none;
+      --placeholder-color: var(--app-text-secondary);
+    }
+
+    .datetime-label {
+      display: block;
+      margin: 0 0 var(--app-space-xs);
+      font-size: var(--app-font-size-sm);
+      font-weight: 500;
+      color: var(--app-text-secondary);
+    }
+
+    .datetime-button {
+      display: block;
+      width: 100%;
+      border: 0;
+      border-radius: var(--app-radius-sm);
+      background: transparent;
+    }
+
+    .datetime-button::part(native) {
+      width: 100%;
+      justify-content: flex-start;
+      padding: var(--app-space-sm) var(--app-space-md);
+      color: var(--app-text);
+      font-size: var(--app-font-size-md);
+    }
   `],
 })
 export class IngresoLoteModal {
-  constructor(private modalCtrl: ModalController) {}
+  constructor(
+    private modalCtrl: ModalController,
+    private recepcionService: RecepcionService,
+  ) {}
 
   @Input({ required: true }) medicamentos: Medicamento[] = [];
 
@@ -94,6 +233,7 @@ export class IngresoLoteModal {
   donante = '';
   ubicacion = '';
   alertaVencimiento = signal(false);
+  errorFormulario = signal('');
 
   onSearch() {
     const term = this.searchTerm.toLowerCase();
@@ -114,8 +254,32 @@ export class IngresoLoteModal {
     this.searchTerm = '';
   }
 
-  onFechaChange() {
-    if (!this.fechaVencimiento) return;
+  async abrirNuevoMedicamento(): Promise<void> {
+    const modal = await this.modalCtrl.create({
+      component: NuevoMedicamentoModal,
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role === 'cancel' || !data) return;
+
+    this.recepcionService.crearMedicamento(data).subscribe({
+      next: (nuevo) => {
+        this.medicamentos = [nuevo, ...this.medicamentos];
+        this.seleccionarMedicamento(nuevo);
+      },
+    });
+  }
+
+  onFechaChange(event: CustomEvent): void {
+    const rawValue = (event as CustomEvent<{ value?: string | string[] | null }>).detail?.value;
+    if (!rawValue) {
+      this.fechaVencimiento = '';
+      this.alertaVencimiento.set(false);
+      return;
+    }
+
+    this.fechaVencimiento = Array.isArray(rawValue) ? rawValue[0] : rawValue;
     const venc = new Date(this.fechaVencimiento);
     const hoy = new Date();
     const diffMonths = (venc.getFullYear() - hoy.getFullYear()) * 12 + (venc.getMonth() - hoy.getMonth());
@@ -127,6 +291,12 @@ export class IngresoLoteModal {
   }
 
   guardar() {
+    if (!this.puedeGuardar()) {
+      this.errorFormulario.set('Complete medicamento, cantidad y fecha de vencimiento para continuar.');
+      return;
+    }
+
+    this.errorFormulario.set('');
     this.modalCtrl.dismiss({
       medicamento_id: this.medicamentoSeleccionado!.id,
       cantidad_inicial: this.cantidad!,

@@ -25,12 +25,12 @@ import {
 
     <ion-content class="ion-padding">
       <ion-item>
-        <ion-label position="stacked">ID de Emergencia *</ion-label>
-        <ion-input [(ngModel)]="idEmergencia" placeholder="EM-2026-001"></ion-input>
+        <ion-label position="stacked">ID o Nombre del paciente *</ion-label>
+        <ion-input [(ngModel)]="idEmergencia" placeholder="EM-2026-001 o Juan Perez"></ion-input>
       </ion-item>
 
       @if (error()) {
-        <p class="ion-padding-start" style="color: var(--app-error); font-size: var(--app-font-size-sm);">{{ error() }}</p>
+        <p class="app-inline-error ion-padding-start">{{ error() }}</p>
       }
     </ion-content>
 

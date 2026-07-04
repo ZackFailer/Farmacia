@@ -36,6 +36,7 @@ import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
         <ion-item>
           <ion-label>
             <h3>Paciente</h3>
+            <p>Nombre: {{ p.nombre }} {{ p.apellido }}</p>
             <p>ID: {{ p.id_emergencia }}</p>
             <p>Peso: {{ p.peso_estimado }} kg</p>
             <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>

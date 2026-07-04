@@ -13,11 +13,17 @@ import {
   IonLabel,
   IonIcon,
   IonFooter,
-  IonButtons,
   IonButton,
   MenuController,
 } from '@ionic/angular/standalone';
 import { AuthService } from './auth/services/auth.service';
+
+interface MenuItem {
+  ruta: string;
+  label: string;
+  icon: string;
+  activePrefix: string;
+}
 
 @Component({
   standalone: true,
@@ -35,13 +41,21 @@ export class AppComponent {
   private router = inject(Router);
   private menuCtrl = inject(MenuController);
 
-  readonly menuItems = [
-    { ruta: '/recepcion', label: 'Recepción', icon: 'download-outline' },
-    { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline' },
-    { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline' },
-    { ruta: '/dispensacion/paso1', label: 'Dispensación', icon: 'medkit-outline' },
-    { ruta: '/admin/usuarios', label: 'Admin', icon: 'people-outline' },
+  readonly menuItems: MenuItem[] = [
+    { ruta: '/recepcion', label: 'Recepción', icon: 'download-outline', activePrefix: '/recepcion' },
+    { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario' },
+    { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline', activePrefix: '/inventario/umbrales' },
+    { ruta: '/dispensacion/paso1', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion' },
+    { ruta: '/admin/usuarios', label: 'Admin', icon: 'people-outline', activePrefix: '/admin' },
   ];
+
+  isActive(item: MenuItem): boolean {
+    const current = this.router.url;
+    if (item.activePrefix === '/inventario') {
+      return current === '/inventario';
+    }
+    return current.startsWith(item.activePrefix);
+  }
 
   navegar(ruta: string): void {
     this.menuCtrl.close();

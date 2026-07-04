@@ -52,7 +52,7 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
       }
 
       @if (errorMsg()) {
-        <p class="ion-padding-start" style="color: var(--app-error); font-size: var(--app-font-size-sm);">{{ errorMsg() }}</p>
+        <p class="app-inline-error ion-padding-start">{{ errorMsg() }}</p>
       }
     </ion-content>
 

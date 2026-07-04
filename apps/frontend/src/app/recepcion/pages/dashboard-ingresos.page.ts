@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
 import { TablaIngresosComponent } from '../components/tabla-ingresos.component';
 import { RecepcionService } from '../services/recepcion.service';
 import type { Lote } from '../../shared/models/lote.model';
@@ -8,7 +8,7 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, TablaIngresosComponent, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, TablaIngresosComponent, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -20,11 +20,25 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <p class="page-subtitle">Registrar lotes recibidos, verificar vencimiento y emitir etiqueta QR.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrarLotes()" placeholder="Buscar lote..." debounce="300"></ion-searchbar>
 
       @if (cargando()) {
         <div class="app-loading">
+          <ion-spinner name="crescent"></ion-spinner>
           <p>Cargando lotes...</p>
+        </div>
+      } @else if (errorMsg()) {
+        <div class="app-error-state">
+          <ion-icon name="cloud-offline-outline"></ion-icon>
+          <p>{{ errorMsg() }}</p>
+          <ion-button fill="outline" (click)="reintentarCarga()">Reintentar</ion-button>
+        </div>
+      } @else if (lotesFiltrados().length === 0) {
+        <div class="app-empty">
+          <ion-icon name="file-tray-outline" class="app-empty-icon"></ion-icon>
+          <h3>Sin resultados</h3>
+          <p>{{ searchTerm ? 'No hay lotes que coincidan con la búsqueda.' : 'Aún no hay lotes registrados.' }}</p>
         </div>
       } @else {
         <app-tabla-ingresos [lotes]="lotesFiltrados()" (reimprimir)="reimprimirQR($event)"></app-tabla-ingresos>
@@ -48,6 +62,7 @@ export class DashboardIngresosPage implements OnInit {
   lotes = signal<Lote[]>([]);
   lotesFiltrados = signal<Lote[]>([]);
   cargando = signal(true);
+  errorMsg = signal('');
   medicamentos: Medicamento[] = [];
 
   ngOnInit() {
@@ -57,14 +72,22 @@ export class DashboardIngresosPage implements OnInit {
 
   private cargarLotes() {
     this.cargando.set(true);
+    this.errorMsg.set('');
     this.recepcionService.getLotes().subscribe({
       next: (data) => {
         this.lotes.set(data);
         this.lotesFiltrados.set(data);
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false),
+      error: () => {
+        this.cargando.set(false);
+        this.errorMsg.set('No fue posible cargar los lotes.');
+      },
     });
+  }
+
+  reintentarCarga(): void {
+    this.cargarLotes();
   }
 
   private cargarMedicamentos() {
@@ -99,6 +122,7 @@ export class DashboardIngresosPage implements OnInit {
       next: (lote) => {
         this.lotes.update(list => [lote, ...list]);
         this.filtrarLotes();
+        this.cargarMedicamentos();
         this.abrirImprimirEtiqueta(lote);
       },
     });
