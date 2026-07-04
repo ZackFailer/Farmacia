@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { RecepcionModule } from './recepcion/recepcion.module';
 import { InventarioModule } from './inventario/inventario.module';
+import { PacientesModule } from './pacientes/pacientes.module';
 import { DispensacionModule } from './dispensacion/dispensacion.module';
 import { HistorialModule } from './historial/historial.module';
 import { AdministracionModule } from './administracion/administracion.module';
@@ -57,6 +58,7 @@ import { AddActivoAndRoles1741190840000 } from './common/migrations/174119084000
     AuthModule,
     RecepcionModule,
     InventarioModule,
+    PacientesModule,
     DispensacionModule,
     HistorialModule,
     AdministracionModule,

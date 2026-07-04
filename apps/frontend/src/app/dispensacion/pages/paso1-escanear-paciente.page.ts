@@ -2,11 +2,12 @@ import { Component, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon, ModalController, ViewWillEnter } from '@ionic/angular/standalone';
-import { DispensacionService } from '../services/dispensacion.service';
 import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
-import { BusquedaPacienteModal } from '../modals/busqueda-paciente.modal';
-import { RegistroPacienteModal } from '../modals/registro-paciente.modal';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
+import { DispensacionService } from '../services/dispensacion.service';
+import { PacientesService } from '../../pacientes/services/pacientes.service';
+import { BusquedaPacienteModal } from '../../pacientes/modals/busqueda-paciente.modal';
+import { RegistroPacienteModal } from '../../pacientes/modals/registro-paciente.modal';
 import type { Paciente } from '../../shared/models/paciente.model';
 
 @Component({
@@ -85,6 +86,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
   constructor(
     private dispensacionService: DispensacionService,
+    private pacientesService: PacientesService,
     private modalCtrl: ModalController,
     private router: Router,
   ) {}
@@ -103,7 +105,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   buscarPorCodigo(): void {
     const id = this.codigoBuscado.trim().toUpperCase();
     if (!id) return;
-    this.dispensacionService.buscarPaciente(id).subscribe({
+    this.pacientesService.buscarPaciente(id).subscribe({
       next: (p) => {
         this.pacienteIdentificado.set(p);
         this.errorMsg.set('');
@@ -122,7 +124,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     const { data, role } = await modal.onWillDismiss();
 
     if (role === 'buscar' && data?.idEmergencia) {
-      this.dispensacionService.buscarPaciente(data.idEmergencia).subscribe({
+      this.pacientesService.buscarPaciente(data.idEmergencia).subscribe({
         next: (p) => this.pacienteIdentificado.set(p),
         error: () => this.errorMsg.set('Paciente no encontrado'),
       });
@@ -139,7 +141,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     const { data, role } = await modal.onWillDismiss();
 
     if (role === 'confirm' && data) {
-      this.dispensacionService.registrarPaciente(data).subscribe({
+      this.pacientesService.registrarPaciente(data).subscribe({
         next: (p) => this.pacienteIdentificado.set(p),
         error: (err) => this.errorMsg.set(err.message),
       });
