@@ -48,10 +48,23 @@ import type { Paciente } from '../../shared/models/paciente.model';
           <ion-label>
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
+            @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
             <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
-            <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+            <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }} @if (p.es_titular) { · Titular de núcleo familiar } @else if (p.tiene_carga_familiar) { · Carga familiar }</ion-note>
           </ion-label>
         </ion-item>
+
+        @if (p.familiares?.length) {
+          <div class="familiares-card">
+            <p class="familiares-title">Núcleo familiar ({{ p.familiares!.length }})</p>
+            @for (f of p.familiares; track f.id) {
+              <div class="familiar-row">
+                <span class="familiar-nombre">{{ f.nombre }} {{ f.apellido }}</span>
+                <span class="familiar-detalle">{{ f.relacion }} · {{ f.edad_estimada }} años · {{ f.peso_estimado }} kg · {{ f.sexo === 'M' ? 'M' : 'F' }} @if (f.es_damnificado) { · Damnificado }</span>
+              </div>
+            }
+          </div>
+        }
 
         <ion-button expand="block" fill="clear" color="medium" (click)="verHistorial()">
           Ver historial del paciente
@@ -154,4 +167,38 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   limpiarError(): void {
     this.errorMsg.set('');
   }
+
+  static styles = [`
+    .familiares-card {
+      margin: var(--app-space-md) 0;
+      padding: var(--app-space-md);
+      background: var(--app-bg);
+      border-radius: var(--app-radius-md);
+      border-left: 3px solid var(--app-primary-light);
+    }
+    .familiares-title {
+      font-size: var(--app-font-size-sm);
+      font-weight: 600;
+      color: var(--app-text-secondary);
+      margin: 0 0 var(--app-space-sm);
+    }
+    .familiar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--app-space-xs) 0;
+      border-bottom: 1px solid var(--app-divider);
+    }
+    .familiar-row:last-child {
+      border-bottom: none;
+    }
+    .familiar-nombre {
+      font-size: var(--app-font-size-sm);
+      font-weight: 500;
+    }
+    .familiar-detalle {
+      font-size: var(--app-font-size-xs);
+      color: var(--app-text-secondary);
+    }
+  `];
 }

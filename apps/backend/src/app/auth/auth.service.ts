@@ -14,7 +14,7 @@ export class AuthService {
   ) {}
 
   async login(pin: string) {
-    const users = await this.usuarioRepository.find();
+    const users = await this.usuarioRepository.find({ where: { activo: true } });
     let matchedUser: Usuario | null = null;
 
     for (const user of users) {
@@ -48,7 +48,7 @@ export class AuthService {
   }
 
   async me(userId: number) {
-    const user = await this.usuarioRepository.findOne({ where: { id: userId } });
+    const user = await this.usuarioRepository.findOne({ where: { id: userId, activo: true } });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }

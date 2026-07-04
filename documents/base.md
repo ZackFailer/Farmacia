@@ -187,3 +187,149 @@ Respuesta estándar API:
 | Detalle de Dispensación | Historial | Ver detalle de entrega |
 | Creación/Edición de Usuario | Administración | CRUD de usuarios |
 | Configuración de Límites de Dosis | Administración | Definir dosis máximas |
+
+---
+
+## Despliegue y Operación
+
+### Requisitos
+
+| Requisito | Detalle |
+|---|---|
+| Node.js | v18, v20 o v22 LTS |
+| npm | Se incluye con Node.js |
+| Memoria RAM | Mínimo 512 MB libres |
+| Red | Conexión WiFi local (no requiere internet) |
+| Dispositivos | Cualquier dispositivo con navegador moderno (Chrome, Edge, Safari) |
+
+El proyecto se sirve completo desde un solo proceso (backend + frontend estático) en el puerto 3000.
+
+---
+
+### HTTPS (obligatorio para escáner QR)
+
+La cámara para escanear QR solo funciona en contextos seguros (HTTPS o `localhost`).  
+Al acceder desde un celular por IP local, se necesita HTTPS con certificado autofirmado.
+
+El certificado se genera automáticamente al ejecutar `npx nx build backend`.  
+Si se necesita regenerar manualmente:
+
+```powershell
+# 1. Crear certificado autofirmado en Windows
+$cert = New-SelfSignedCertificate -DnsName "192.168.X.X" -CertStoreLocation "Cert:\CurrentUser\My" -FriendlyName "ApoPharma" -NotAfter (Get-Date).AddYears(5)
+
+# 2. Exportar a PFX
+$pwd = ConvertTo-SecureString -String "apopharma" -Force -AsPlainText
+Export-PfxCertificate -Cert $cert -FilePath "apps/backend/certs/cert.pfx" -Password $pwd
+```
+
+> **Importante**: Reemplazar `192.168.X.X` por la IP real de la PC.  
+> En el celular, el navegador mostrará "Conexión no segura" → tocar **"Avanzado" → "Continuar igual"**.
+
+---
+
+### Inicio del Servidor (guía paso a paso para no técnicas)
+
+#### Primera vez en una PC nueva
+
+```powershell
+# 1. Abrir PowerShell como administrador y ubicarse en la carpeta del proyecto
+cd C:\Proyectos\Farmacia
+
+# 2. Instalar dependencias (solo la primera vez)
+npm install
+
+# 3. Construir la aplicación (backend + frontend)
+npx nx build backend
+npx nx build frontend
+```
+
+#### Iniciar el servidor (todos los días)
+
+```powershell
+# 1. Abrir PowerShell (sin necesidad de administrador)
+cd C:\Proyectos\Farmacia
+
+# 2. Iniciar el servidor
+npx nx serve backend
+```
+
+Luego de unos segundos aparecerá:
+
+```
+🚀 Application is running on: https://localhost:3000/api/v1
+```
+
+#### Acceder desde cualquier dispositivo
+
+1. **Anotar la IP de la PC**: Abrir PowerShell y ejecutar `ipconfig`. Buscar la línea `Dirección IPv4` (ej: `192.168.0.112`).
+2. **Conectar el celular**: Misma red WiFi que la PC.
+3. **Abrir navegador**: Ingresar `https://192.168.0.112:3000` (usar la IP real).
+4. **Aceptar advertencia**: El navegador mostrará "Conexión no segura" → tocar **"Avanzado" → "Continuar igual"**.
+5. **Iniciar sesión**: PIN `123456` (usuario admin).
+
+#### Detener el servidor
+
+Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo el servidor.
+
+---
+
+### PM2 (inicio automático en producción)
+
+PM2 mantiene el servidor corriendo aunque se cierre la terminal y lo reinicia si falla.
+
+#### Comandos básicos
+
+```powershell
+# Iniciar el servidor con PM2
+pm2 start ecosystem.config.js
+
+# Verificar que está corriendo
+pm2 status
+
+# Ver registros (logs)
+pm2 logs apopharma-backend
+
+# Detener
+pm2 stop apopharma-backend
+
+# Reiniciar (después de actualizar código)
+pm2 restart apopharma-backend
+```
+
+#### Inicio automático al encender la PC
+
+Ejecutar **una vez** como Administrador:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Proyectos\Farmacia\scripts\register-pm2-startup.ps1"
+```
+
+Esto crea una tarea programada que inicia PM2 automáticamente al encender la PC.
+
+---
+
+### Actualizar la aplicación después de cambios
+
+```powershell
+cd C:\Proyectos\Farmacia
+
+# Reconstruir frontend y backend
+npx nx build backend
+npx nx build frontend
+
+# Reiniciar PM2
+pm2 restart apopharma-backend
+```
+
+---
+
+### Solución de problemas comunes
+
+| Problema | Causa probable | Solución |
+|---|---|---|
+| `EADDRINUSE` al iniciar | Puerto 3000 ocupado | `pm2 stop apopharma-backend` o matar proceso con `taskkill /F /PID <ID>` |
+| Pantalla en blanco en el celular | Accediendo por HTTP en lugar de HTTPS | Usar `https://` en lugar de `http://` |
+| "No se puede acceder al sitio" | PC apagada o red diferente | Verificar que ambas estén en la misma WiFi |
+| Escáner QR no funciona | HTTPS no habilitado | Asegurar que la URL comience con `https://` |
+| Contenido se sale de la pantalla | Viewport incorrecto | Ya corregido con `height: 100dvh` en `styles.scss` |

@@ -22,6 +22,8 @@ export class InventarioService {
       .createQueryBuilder('l')
       .innerJoin('l.medicamento', 'm')
       .leftJoin(Configuracion, 'c', 'c.medicamento_id = m.id')
+      .where('l.activo = :activo', { activo: true })
+      .andWhere('m.activo = :activo', { activo: true })
       .select('m.id', 'medicamentoId')
       .addSelect('m.nombre_generico', 'nombreGenerico')
       .addSelect('m.nombre_comercial', 'nombreComercial')
@@ -51,7 +53,8 @@ export class InventarioService {
     return this.loteRepository
       .createQueryBuilder('l')
       .leftJoinAndSelect('l.medicamento', 'm')
-      .where('l.cantidad_actual > 0')
+      .where('l.activo = :activo', { activo: true })
+      .andWhere('l.cantidad_actual > 0')
       .andWhere('l.fecha_vencimiento BETWEEN :now AND :end', {
         now: now.toISOString().slice(0, 10),
         end: end.toISOString().slice(0, 10),
@@ -66,7 +69,7 @@ export class InventarioService {
     usuarioId?: number,
     motivo?: string,
   ) {
-    const lote = await this.loteRepository.findOne({ where: { id: loteId } });
+    const lote = await this.loteRepository.findOne({ where: { id: loteId, activo: true } });
     if (!lote) {
       throw new NotFoundException('Lot not found');
     }
@@ -93,20 +96,21 @@ export class InventarioService {
 
   async getMovimientosLote(loteId: number) {
     return this.movimientoRepository.find({
-      where: { loteId },
+      where: { loteId, activo: true },
       order: { createdAt: 'DESC' },
     });
   }
 
   async getUmbrales() {
     return this.configuracionRepository.find({
+      where: { activo: true },
       relations: { medicamento: true },
       order: { id: 'ASC' },
     });
   }
 
   async actualizarUmbral(id: number, umbralMinimo: number) {
-    const conf = await this.configuracionRepository.findOne({ where: { id } });
+    const conf = await this.configuracionRepository.findOne({ where: { id, activo: true } });
     if (!conf) {
       throw new NotFoundException('Configuration not found');
     }

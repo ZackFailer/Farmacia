@@ -15,7 +15,7 @@ export class HistorialService {
 
   async getHistorialPaciente(idEmergencia: string) {
     const paciente = await this.pacienteRepository.findOne({
-      where: { idEmergencia },
+      where: { idEmergencia, activo: true },
     });
 
     if (!paciente) {
@@ -23,7 +23,7 @@ export class HistorialService {
     }
 
     return this.dispensacionRepository.find({
-      where: { pacienteId: paciente.id },
+      where: { pacienteId: paciente.id, activo: true },
       relations: {
         usuario: true,
         detalles: { medicamento: true, lote: true },
@@ -34,7 +34,7 @@ export class HistorialService {
 
   async getDetalleDispensacion(id: number) {
     const dispensacion = await this.dispensacionRepository.findOne({
-      where: { id },
+      where: { id, activo: true },
       relations: {
         paciente: true,
         usuario: true,

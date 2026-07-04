@@ -97,6 +97,50 @@ Farmacia/
 └── package.json
 ```
 
+## Primeros pasos (para no técnicas)
+
+### Requisitos
+- Una PC con Windows 10 u 11
+- Conexión WiFi (la misma red que los celulares que usarán la app)
+- Node.js (v18, v20 o v22) — [descargar aquí](https://nodejs.org)
+
+### 1. Preparar la PC (solo la primera vez)
+
+Abrir **PowerShell** (clic derecho → "Ejecutar como administrador") y escribir:
+
+```powershell
+cd C:\Proyectos\Farmacia
+npm install
+npx nx build backend
+npx nx build frontend
+```
+
+### 2. Iniciar el servidor (todos los días)
+
+Abrir **PowerShell** (sin necesidad de administrador):
+
+```powershell
+cd C:\Proyectos\Farmacia
+npx nx serve backend
+```
+
+Aparecerá: `🚀 Application is running on: https://localhost:3000/api/v1`
+
+### 3. Conectarse desde cualquier dispositivo
+
+1. **Obtener la IP de la PC**: en PowerShell ejecutar `ipconfig`. Copiar el número que dice `Dirección IPv4` (ej: `192.168.0.112`).
+2. **En el celular**: abrir Chrome o Safari e ingresar `https://192.168.0.112:3000` (usar la IP real).
+3. **Aceptar la advertencia**: el navegador dirá "Conexión no segura" — tocar **"Avanzado" → "Continuar igual"**.
+4. **Iniciar sesión**: PIN `123456` (usuario administrador).
+
+> ⚠️ El escáner QR requiere HTTPS. Si ves la pantalla en blanco, asegúrate de usar `https://` y no `http://`.
+
+### 4. Detener el servidor
+
+Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo.
+
+---
+
 ## Base de Datos (7 tablas)
 
 | Tabla | Propósito |
@@ -122,6 +166,8 @@ Farmacia/
 
 ## Comandos
 
+### Desarrollo
+
 ```sh
 # Frontend
 npx nx serve frontend                      # http://localhost:4200
@@ -132,11 +178,58 @@ npx nx lint frontend
 npx nx e2e frontend-e2e
 
 # Backend
-npx nx serve backend                       # http://localhost:3000/api
+npx nx serve backend                       # https://localhost:3000
 npx nx build backend
 npx nx test backend
 npx nx lint backend
 npx nx e2e backend-e2e
 ```
+
+### Producción (PM2)
+
+El servidor se sirve completo desde un solo proceso en el puerto 3000.
+
+```sh
+# Iniciar
+pm2 start ecosystem.config.js
+
+# Verificar estado
+pm2 status
+
+# Ver logs
+pm2 logs apopharma-backend
+
+# Detener
+pm2 stop apopharma-backend
+
+# Reiniciar (ej: después de actualizar código)
+pm2 restart apopharma-backend
+```
+
+### Inicio automático al encender la PC
+
+Ejecutar **una vez como Administrador**:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Proyectos\Farmacia\scripts\register-pm2-startup.ps1"
+```
+
+### Actualizar después de cambios
+
+```sh
+npx nx build backend
+npx nx build frontend
+pm2 restart apopharma-backend
+```
+
+## Solución de problemas
+
+| Problema | Causa | Solución |
+|---|---|---|
+| Pantalla en blanco en el celular | Accediendo por HTTP en vez de HTTPS | Usar `https://` en la URL |
+| Escáner QR no funciona | No hay HTTPS | Asegurar que la URL empiece con `https://` |
+| "No se puede acceder al sitio" | Red diferente o PC apagada | Verificar misma WiFi y que el servidor esté corriendo |
+| `EADDRINUSE` al iniciar | Puerto 3000 ocupado | `pm2 stop apopharma-backend` y volver a iniciar |
+| Contenido se sale de la pantalla | Viewport incorrecto | Ya corregido (usa `100dvh`) |
 
 Ver `AGENTS.md` para la lista completa de comandos y el uso de los agentes opencode.

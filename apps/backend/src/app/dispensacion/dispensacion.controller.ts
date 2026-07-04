@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import { DispensacionService } from './dispensacion.service';
 import { CrearPacienteDto } from './dto/crear-paciente.dto';
@@ -24,6 +25,16 @@ export class DispensacionController {
   @Get('pacientes/:idEmergencia')
   getPacienteByIdEmergencia(@Param('idEmergencia') idEmergencia: string) {
     return this.dispensacionService.getPacienteByIdEmergencia(idEmergencia);
+  }
+
+  @Get('pacientes')
+  searchPacientes(@Query('q') query: string) {
+    return this.dispensacionService.searchPacientes(query);
+  }
+
+  @Get('pacientes/:id/familiares')
+  getFamiliares(@Param('id', ParseIntPipe) id: number) {
+    return this.dispensacionService.getFamiliares(id);
   }
 
   @Get('lotes/disponibles/:medicamentoId')

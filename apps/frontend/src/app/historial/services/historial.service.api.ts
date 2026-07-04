@@ -10,10 +10,14 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
 interface ApiPaciente {
   id: number;
   idEmergencia: string;
+  nombre: string;
+  apellido: string;
+  cedula: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
   esDamnificado: boolean;
+  tieneCargaFamiliar: boolean;
   createdAt: string;
 }
 
@@ -85,12 +89,14 @@ export class ApiHistorialService extends HistorialService {
         ? {
             id: item.paciente.id,
             id_emergencia: item.paciente.idEmergencia,
-            nombre: '',
-            apellido: '',
+            nombre: item.paciente.nombre,
+            apellido: item.paciente.apellido,
+            cedula: item.paciente.cedula ?? undefined,
             sexo: item.paciente.sexo,
             edad_estimada: item.paciente.edadEstimada,
             peso_estimado: item.paciente.pesoEstimado,
             es_damnificado: item.paciente.esDamnificado,
+            tiene_carga_familiar: item.paciente.tieneCargaFamiliar,
             created_at: item.paciente.createdAt,
           }
         : undefined,

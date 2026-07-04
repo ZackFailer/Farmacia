@@ -46,6 +46,9 @@ export class Lote {
   @Column({ type: 'varchar', length: 120, nullable: true })
   ubicacion!: string | null;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

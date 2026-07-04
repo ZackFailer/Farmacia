@@ -2,7 +2,11 @@
   "name": "@farmacia/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "migration:run": "typeorm -d apps/backend/typeorm-data-source.ts migration:run",
+    "migration:revert": "typeorm -d apps/backend/typeorm-data-source.ts migration:revert",
+    "migration:show": "typeorm -d apps/backend/typeorm-data-source.ts migration:show"
+  },
   "private": true,
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",

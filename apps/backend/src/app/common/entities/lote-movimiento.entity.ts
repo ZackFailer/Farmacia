@@ -38,6 +38,9 @@ export class LoteMovimiento {
   @Column({ name: 'usuario_id', nullable: true })
   usuarioId!: number | null;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 }

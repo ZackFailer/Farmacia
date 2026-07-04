@@ -41,11 +41,11 @@ describe('AdministracionService', () => {
     usuarioRepository = moduleRef.get(getRepositoryToken(Usuario));
   });
 
-  it('should block deleting last pharmaceutical admin', async () => {
+  it('should block deleting the last admin', async () => {
     usuarioRepository.findOne.mockResolvedValue({
       id: 1,
       nombre: 'admin',
-      rol: UserRole.PHARMACEUTICAL,
+      rol: UserRole.ADMIN,
     } as Usuario);
     usuarioRepository.count.mockResolvedValue(1);
 
@@ -54,15 +54,19 @@ describe('AdministracionService', () => {
     );
   });
 
-  it('should delete non-last admin', async () => {
-    usuarioRepository.findOne.mockResolvedValue({
+  it('should soft delete non-last admin', async () => {
+    const user = {
       id: 2,
       nombre: 'admin2',
-      rol: UserRole.PHARMACEUTICAL,
-    } as Usuario);
+      rol: UserRole.ADMIN,
+    } as Usuario;
+    usuarioRepository.findOne.mockResolvedValue(user);
     usuarioRepository.count.mockResolvedValue(2);
-    usuarioRepository.delete.mockResolvedValue({ affected: 1, raw: {} });
+    usuarioRepository.save.mockResolvedValue({ ...user, activo: false });
 
     await expect(service.deleteUsuario(2)).resolves.toEqual({ success: true });
+    expect(usuarioRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ activo: false }),
+    );
   });
 });

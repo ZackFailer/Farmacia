@@ -32,6 +32,9 @@ export class Configuracion {
   @Column({ name: 'peso_referencia_kg', type: 'float', default: 70 })
   pesoReferenciaKg!: number;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }

@@ -25,8 +25,9 @@ export class RecepcionService {
 
   async getMedicamentos(search?: string) {
     const qb = this.medicamentoRepository.createQueryBuilder('m');
+    qb.where('m.activo = :activo', { activo: true });
     if (search?.trim()) {
-      qb.where('LOWER(m.nombre_generico) LIKE :search', {
+      qb.andWhere('LOWER(m.nombre_generico) LIKE :search', {
         search: `%${search.toLowerCase()}%`,
       }).orWhere('LOWER(m.nombre_comercial) LIKE :search', {
         search: `%${search.toLowerCase()}%`,
@@ -59,6 +60,7 @@ export class RecepcionService {
 
   async getLotes(page = 1, limit = 20) {
     return this.loteRepository.find({
+      where: { activo: true },
       relations: { medicamento: true },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
@@ -68,7 +70,7 @@ export class RecepcionService {
 
   async createLote(dto: CrearLoteDto) {
     const medicamento = await this.medicamentoRepository.findOne({
-      where: { id: dto.medicamentoId },
+      where: { id: dto.medicamentoId, activo: true },
     });
 
     if (!medicamento) {
@@ -105,7 +107,7 @@ export class RecepcionService {
 
   async getLoteById(id: number) {
     const lote = await this.loteRepository.findOne({
-      where: { id },
+      where: { id, activo: true },
       relations: { medicamento: true },
     });
     if (!lote) {

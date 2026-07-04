@@ -26,6 +26,9 @@ export class Usuario {
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 

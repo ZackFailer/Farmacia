@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DispensacionController } from './dispensacion.controller';
 import { DispensacionService } from './dispensacion.service';
 import { Paciente } from '../common/entities/paciente.entity';
+import { NucleoFamiliar } from '../common/entities/nucleo-familiar.entity';
+import { NucleoFamiliarMiembro } from '../common/entities/nucleo-familiar-miembro.entity';
 import { Lote } from '../common/entities/lote.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { Dispensacion } from '../common/entities/dispensacion.entity';
@@ -14,6 +16,8 @@ import { Medicamento } from '../common/entities/medicamento.entity';
   imports: [
     TypeOrmModule.forFeature([
       Paciente,
+      NucleoFamiliar,
+      NucleoFamiliarMiembro,
       Lote,
       Configuracion,
       Dispensacion,

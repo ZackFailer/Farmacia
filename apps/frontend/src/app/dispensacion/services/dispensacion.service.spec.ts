@@ -158,7 +158,7 @@ describe('DispensacionService', () => {
     expect(service.estado().paso).toBe(1);
     expect(service.estado().paciente).toBeNull();
 
-    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, created_at: '' });
+    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, tiene_carga_familiar: false, created_at: '' });
 
     expect(service.estado().paciente).not.toBeNull();
     expect(service.estado().paciente!.id_emergencia).toBe('EM-TEST');
@@ -185,7 +185,7 @@ describe('DispensacionService', () => {
   });
 
   it('reiniciar debe resetear todo el estado', () => {
-    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, created_at: '' });
+    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, tiene_carga_familiar: false, created_at: '' });
     service.agregarItem({ medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, lote: { id: 1, medicamento_id: 1, codigo_qr: 'L-TEST', cantidad_inicial: 100, cantidad_actual: 50, fecha_vencimiento: '2027-01-01', created_at: '', updated_at: '' }, cantidad: 5 });
     expect(service.estado().paso).toBe(2);
     expect(service.estado().items.length).toBe(1);

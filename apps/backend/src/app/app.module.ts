@@ -21,6 +21,11 @@ import { Dispensacion } from './common/entities/dispensacion.entity';
 import { DispensacionDetalle } from './common/entities/dispensacion-detalle.entity';
 import { Configuracion } from './common/entities/configuracion.entity';
 import { LoteMovimiento } from './common/entities/lote-movimiento.entity';
+import { NucleoFamiliar } from './common/entities/nucleo-familiar.entity';
+import { NucleoFamiliarMiembro } from './common/entities/nucleo-familiar-miembro.entity';
+import { CreateNucleoFamiliar1741190820000 } from './common/migrations/1741190820000-CreateNucleoFamiliar';
+import { AddTitularFk1741190830000 } from './common/migrations/1741190830000-AddTitularFk';
+import { AddActivoAndRoles1741190840000 } from './common/migrations/1741190840000-AddActivoAndRoles';
 
 @Module({
   imports: [
@@ -36,8 +41,12 @@ import { LoteMovimiento } from './common/entities/lote-movimiento.entity';
         DispensacionDetalle,
         Configuracion,
         LoteMovimiento,
+        NucleoFamiliar,
+        NucleoFamiliarMiembro,
       ],
       synchronize: true,
+      migrations: [CreateNucleoFamiliar1741190820000, AddTitularFk1741190830000, AddActivoAndRoles1741190840000],
+      migrationsRun: false,
     }),
     JwtModule.register({
       global: true,

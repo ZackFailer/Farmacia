@@ -28,6 +28,9 @@ export class Medicamento {
   @Column({ type: 'float' })
   concentracion!: number;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

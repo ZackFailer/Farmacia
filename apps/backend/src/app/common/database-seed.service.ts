@@ -20,7 +20,7 @@ export class DatabaseSeedService implements OnApplicationBootstrap {
 
     const admin = this.usuarioRepository.create({
       nombre: 'admin',
-      rol: UserRole.PHARMACEUTICAL,
+      rol: UserRole.ADMIN,
       pinHash: await hash('123456', 10),
     });
 

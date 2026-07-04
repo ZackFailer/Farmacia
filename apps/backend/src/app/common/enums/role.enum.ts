@@ -1,4 +1,7 @@
 export enum UserRole {
+  RECEPTIONIST = 'recepcionista',
+  DOCTOR = 'doctor',
   PHARMACEUTICAL = 'farmaceutico',
-  DISPENSER = 'despachador',
+  MEDICATION_RECEPTIONIST = 'recepcionista_med',
+  ADMIN = 'admin',
 }

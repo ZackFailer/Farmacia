@@ -35,13 +35,41 @@ interface ApiLote {
   updatedAt: string;
 }
 
-interface ApiPaciente {
+interface ApiNucleoMiembro {
+  id: number;
+  nucleoId: number;
+  pacienteId: number;
+  relacion: string;
+  paciente: ApiPacienteSimple;
+}
+
+interface ApiPacienteSimple {
   id: number;
   idEmergencia: string;
+  nombre: string;
+  apellido: string;
+  cedula: string | null;
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
   esDamnificado: boolean;
+  tieneCargaFamiliar: boolean;
+  createdAt: string;
+}
+
+interface ApiPaciente {
+  id: number;
+  idEmergencia: string;
+  nombre: string;
+  apellido: string;
+  cedula: string | null;
+  sexo: Sexo;
+  edadEstimada: number;
+  pesoEstimado: number;
+  esDamnificado: boolean;
+  tieneCargaFamiliar: boolean;
+  esTitular?: boolean;
+  familiares?: ApiNucleoMiembro[];
   createdAt: string;
 }
 
@@ -83,21 +111,43 @@ export class ApiDispensacionService extends DispensacionService {
   }
 
   registrarPaciente(dto: CreatePacienteDto): Observable<Paciente> {
+    const body: Record<string, unknown> = {
+      nombre: dto.nombre,
+      apellido: dto.apellido,
+      sexo: dto.sexo,
+      edadEstimada: dto.edad_estimada,
+      pesoEstimado: dto.peso_estimado,
+      esDamnificado: dto.es_damnificado,
+      tieneCargaFamiliar: dto.tiene_carga_familiar ?? false,
+    };
+    if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
+    if (dto.cedula) body['cedula'] = dto.cedula;
+    if (dto.familiares?.length) {
+      body['familiares'] = dto.familiares.map((f) => ({
+        nombre: f.nombre,
+        apellido: f.apellido,
+        cedula: f.cedula,
+        sexo: f.sexo,
+        edadEstimada: f.edad_estimada,
+        pesoEstimado: f.peso_estimado,
+        esDamnificado: f.es_damnificado,
+        relacion: f.relacion,
+      }));
+    }
     return this.http
-      .post<ApiPaciente>(`${API_BASE_URL}/pacientes`, {
-        idEmergencia: dto.id_emergencia,
-        sexo: dto.sexo,
-        edadEstimada: dto.edad_estimada,
-        pesoEstimado: dto.peso_estimado,
-        esDamnificado: dto.es_damnificado,
-      })
-      .pipe(map((item) => this.toPaciente(item, dto.nombre, dto.apellido)));
+      .post<ApiPaciente>(`${API_BASE_URL}/pacientes`, body)
+      .pipe(map((item) => this.toPaciente(item)));
   }
 
   buscarPaciente(searchTerm: string): Observable<Paciente> {
     return this.http
-      .get<ApiPaciente>(`${API_BASE_URL}/pacientes/${encodeURIComponent(searchTerm)}`)
-      .pipe(map((item) => this.toPaciente(item)));
+      .get<ApiPaciente[]>(`${API_BASE_URL}/pacientes?q=${encodeURIComponent(searchTerm)}`)
+      .pipe(
+        map((items) => {
+          if (!items.length) throw new Error('Paciente no encontrado');
+          return this.toPaciente(items[0]);
+        }),
+      );
   }
 
   buscarMedicamentos(search: string): Observable<Medicamento[]> {
@@ -177,16 +227,37 @@ export class ApiDispensacionService extends DispensacionService {
     };
   }
 
-  private toPaciente(item: ApiPaciente, nombre = '', apellido = ''): Paciente {
+  private toFamiliar(pf: ApiNucleoMiembro) {
+    return {
+      id: pf.paciente.id,
+      id_emergencia: pf.paciente.idEmergencia,
+      nombre: pf.paciente.nombre,
+      apellido: pf.paciente.apellido,
+      cedula: pf.paciente.cedula ?? undefined,
+      sexo: pf.paciente.sexo,
+      edad_estimada: pf.paciente.edadEstimada,
+      peso_estimado: pf.paciente.pesoEstimado,
+      es_damnificado: pf.paciente.esDamnificado,
+      tiene_carga_familiar: pf.paciente.tieneCargaFamiliar,
+      relacion: pf.relacion,
+      created_at: pf.paciente.createdAt,
+    };
+  }
+
+  private toPaciente(item: ApiPaciente): Paciente {
     return {
       id: item.id,
       id_emergencia: item.idEmergencia,
-      nombre: nombre || item.idEmergencia,
-      apellido,
+      nombre: item.nombre,
+      apellido: item.apellido,
+      cedula: item.cedula ?? undefined,
       sexo: item.sexo,
       edad_estimada: item.edadEstimada,
       peso_estimado: item.pesoEstimado,
       es_damnificado: item.esDamnificado,
+      tiene_carga_familiar: item.tieneCargaFamiliar,
+      es_titular: item.esTitular,
+      familiares: item.familiares?.map((pf) => this.toFamiliar(pf)),
       created_at: item.createdAt,
     };
   }

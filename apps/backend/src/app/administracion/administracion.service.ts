@@ -80,16 +80,17 @@ export class AdministracionService {
       throw new NotFoundException('User not found');
     }
 
-    if (usuario.rol === UserRole.PHARMACEUTICAL) {
+    if (usuario.rol === UserRole.ADMIN) {
       const admins = await this.usuarioRepository.count({
-        where: { rol: UserRole.PHARMACEUTICAL },
+        where: { rol: UserRole.ADMIN, activo: true },
       });
       if (admins <= 1) {
-        throw new BadRequestException('Cannot delete last administrator');
+        throw new BadRequestException('Cannot delete the last admin');
       }
     }
 
-    await this.usuarioRepository.delete(id);
+    usuario.activo = false;
+    await this.usuarioRepository.save(usuario);
     return { success: true };
   }
 

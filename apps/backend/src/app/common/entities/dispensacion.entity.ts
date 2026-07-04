@@ -43,6 +43,9 @@ export class Dispensacion {
   @Column({ type: 'text', nullable: true })
   observaciones!: string | null;
 
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @OneToMany(() => DispensacionDetalle, (detalle) => detalle.dispensacion, {
     cascade: false,
   })

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Sex } from '../enums/sex.enum';
 import { Dispensacion } from './dispensacion.entity';
+import { NucleoFamiliarMiembro } from './nucleo-familiar-miembro.entity';
 
 @Entity('paciente')
 export class Paciente {
@@ -17,6 +18,15 @@ export class Paciente {
   @Index({ unique: true })
   @Column({ name: 'id_emergencia', type: 'varchar', length: 60 })
   idEmergencia!: string;
+
+  @Column({ type: 'varchar', length: 120 })
+  nombre!: string;
+
+  @Column({ type: 'varchar', length: 120 })
+  apellido!: string;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  cedula!: string | null;
 
   @Column({ type: 'varchar', length: 1 })
   sexo!: Sex;
@@ -30,9 +40,18 @@ export class Paciente {
   @Column({ name: 'es_damnificado', type: 'boolean', default: false })
   esDamnificado!: boolean;
 
+  @Column({ name: 'tiene_carga_familiar', type: 'boolean', default: false })
+  tieneCargaFamiliar!: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  activo!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @OneToMany(() => Dispensacion, (dispensacion) => dispensacion.paciente)
   dispensaciones!: Dispensacion[];
+
+  @OneToMany(() => NucleoFamiliarMiembro, (m) => m.paciente)
+  familiares!: NucleoFamiliarMiembro[];
 }
