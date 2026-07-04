@@ -43,13 +43,18 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
       } @else {
         <app-tabla-ingresos [lotes]="lotesFiltrados()" (reimprimir)="reimprimirQR($event)"></app-tabla-ingresos>
       }
-    </ion-content>
 
-    <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-      <ion-fab-button color="primary" (click)="abrirIngresoLote()">
-        +
-      </ion-fab-button>
-    </ion-fab>
+      <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+        <ion-fab-button color="primary" (click)="abrirIngresoLote()">
+          +
+        </ion-fab-button>
+      </ion-fab>
+    </ion-content>
+  `,
+  styles: `
+    ion-content {
+      --padding-bottom: calc(var(--app-space-2xl) + 72px);
+    }
   `,
 })
 export class DashboardIngresosPage implements OnInit {

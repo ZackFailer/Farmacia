@@ -12,7 +12,6 @@ import {
   IonItem,
   IonLabel,
   IonIcon,
-  IonFooter,
   IonButton,
   MenuController,
 } from '@ionic/angular/standalone';
@@ -30,7 +29,7 @@ interface MenuItem {
   imports: [
     IonApp, IonRouterOutlet, IonMenu, IonHeader,
     IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel,
-    IonIcon, IonFooter, IonButton,
+    IonIcon, IonButton,
   ],
   selector: 'app-root',
   templateUrl: './app.html',
