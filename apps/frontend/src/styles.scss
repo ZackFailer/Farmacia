@@ -1,15 +1,84 @@
-/* You can add global styles to this file, and also import other style files */
-
-/* Estilos obligatorios del núcleo de Ionic */
 @import '@ionic/angular/css/core.css';
 @import '@ionic/angular/css/normalize.css';
 @import '@ionic/angular/css/structure.css';
 @import '@ionic/angular/css/typography.css';
-
-/* Utilidades opcionales pero muy recomendadas de Ionic */
 @import '@ionic/angular/css/padding.css';
 @import '@ionic/angular/css/float-elements.css';
 @import '@ionic/angular/css/text-alignment.css';
 @import '@ionic/angular/css/text-transformation.css';
 @import '@ionic/angular/css/flex-utils.css';
 @import '@ionic/angular/css/display.css';
+
+:root {
+  --app-primary: #1a5276;
+  --app-primary-dark: #0e2f44;
+  --app-primary-light: #2980b9;
+  --app-bg: #f4f5f7;
+  --app-surface: #ffffff;
+  --app-text: #1a1a2e;
+  --app-text-secondary: #5a5a7a;
+  --app-border: #d1d5db;
+  --app-divider: #e5e7eb;
+  --stock-ok: #28a745;
+  --stock-bajo: #ffc107;
+  --stock-agotado: #dc3545;
+  --stock-ok-bg: #e8f5e9;
+  --stock-bajo-bg: #fff8e1;
+  --stock-agotado-bg: #ffebee;
+  --app-success: #28a745;
+  --app-warning: #ffc107;
+  --app-warning-bg: #fff3cd;
+  --app-error: #dc3545;
+  --app-error-bg: #ffebee;
+  --app-info: #17a2b8;
+  --app-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-size-xs: 0.75rem;
+  --app-font-size-sm: 0.875rem;
+  --app-font-size-md: 1rem;
+  --app-font-size-lg: 1.125rem;
+  --app-font-size-xl: 1.25rem;
+  --app-font-size-2xl: 1.5rem;
+  --app-font-size-3xl: 2rem;
+  --app-space-xs: 4px;
+  --app-space-sm: 8px;
+  --app-space-md: 12px;
+  --app-space-lg: 16px;
+  --app-space-xl: 24px;
+  --app-space-2xl: 32px;
+  --app-radius-sm: 6px;
+  --app-radius-md: 10px;
+  --app-radius-lg: 16px;
+  --app-header-height: 56px;
+}
+
+* {
+  font-family: var(--app-font-family);
+}
+
+ion-button, ion-fab-button, ion-item button {
+  --min-height: 48px;
+}
+
+ion-item {
+  --border-radius: var(--app-radius-sm);
+  --padding-start: var(--app-space-md);
+  --padding-end: var(--app-space-md);
+  margin-bottom: var(--app-space-md);
+}
+
+.app-loading, .app-empty, .app-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--app-space-2xl);
+  text-align: center;
+  min-height: 200px;
+  color: var(--app-text-secondary);
+}
+
+.app-empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--app-space-lg);
+  color: var(--app-border);
+}

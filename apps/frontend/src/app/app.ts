@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { IonApp, IonContent, IonHeader, IonTitle, IonToolbar, IonButton } from '@ionic/angular/standalone';
+import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 
 @Component({
   standalone: true,
-  imports: [IonApp, IonContent, IonHeader, IonTitle, IonToolbar, IonButton], // 👈 Importa los componentes aquí
+  imports: [IonApp, IonRouterOutlet],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
