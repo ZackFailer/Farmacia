@@ -127,6 +127,16 @@ Ejemplo:
 
 ---
 
+## Documentos clave
+
+| Documento | Propósito |
+|---|---|
+| `design-system.md` | **VINCULANTE** — Guía de diseño estandar frontend. Consultar siempre antes de crear o modificar cualquier componente, página, modal o formulario. Define colores, tipografía, espaciado, patrones de modales, formularios, listas y más. |
+| `documents/base.md` | Arquitectura del proyecto, stack tecnológico, esquema de base de datos |
+| `documents/frontend-plan.md` | Plan de implementación del frontend: rutas, componentes, servicios, modales |
+| `documents/backend-plan.md` | Plan de implementación del backend: módulos, entidades, endpoints, DTOs |
+| `documents/modules/*/` | Por módulo: propósito, diseño detallado y tareas |
+
 ## Notable
 
 - `defaultBase` is `master` (not `main`).

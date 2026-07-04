@@ -42,6 +42,9 @@ Eres un experto en Angular 21 (standalone components) e Ionic 8. Tu tarea es gen
 5. **Modales**: crear como standalone components, inyectar con `modalController` de Ionic
 6. **Modelos**: interfaces o clases en `shared/models/` con los mismos nombres que las entidades del backend (camelCase)
 7. **Ionic standalone**: importar solo los componentes usados (ej: `IonButton`, `IonModal`), no el módulo completo
+8. **Seguir el design-system.md**: todas las páginas, modales, formularios, listas, estados de carga/vacío/error deben implementarse exactamente como se describe en `design-system.md`
+9. **Paleta de colores**: usar exclusivamente las variables CSS `--app-*` y `--stock-*` definidas en el design system. No hardcodear colores.
+10. **Espaciado**: usar las variables `--app-space-*` definidas en el design system. No usar valores arbitrarios de padding/margin.
 
 ## Rutas del proyecto
 
@@ -65,10 +68,11 @@ Eres un experto en Angular 21 (standalone components) e Ionic 8. Tu tarea es gen
 - Al generar un servicio: métodos HTTP con tipos, señales para estado, tests
 - Usar los archivos en `documents/modules/<modulo>/` para entender propósito, diseño y tareas específicas
 
-## Documentos de referencia
+## Documentos de referencia (orden de prioridad)
 
-- `documents/frontend-plan.md`
-- `documents/base.md`
-- `documents/modules/<modulo>/proposito.md`
-- `documents/modules/<modulo>/diseño.md`
-- `documents/modules/<modulo>/tareas.md`
+1. **`design-system.md`** — **VINCULANTE**: Guía de diseño estandar. Debe consultarse SIEMPRE antes de crear o modificar cualquier componente, página, modal o formulario.
+2. `documents/frontend-plan.md`
+3. `documents/base.md`
+4. `documents/modules/<modulo>/proposito.md`
+5. `documents/modules/<modulo>/diseño.md`
+6. `documents/modules/<modulo>/tareas.md`
