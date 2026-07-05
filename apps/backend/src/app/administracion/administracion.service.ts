@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { hash } from 'bcrypt';
+import { hash } from 'bcryptjs';
 import { Usuario } from '../common/entities/usuario.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';

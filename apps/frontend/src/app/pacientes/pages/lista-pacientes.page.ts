@@ -1,11 +1,12 @@
 import { Component, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons,
   IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
   IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner,
-  ModalController, ViewWillEnter,
+   IonToast, ModalController, ViewWillEnter,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../services/pacientes.service';
 import type { Paciente } from '../../shared/models/paciente.model';
@@ -20,7 +21,7 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
     FormsModule,
     IonHeader, IonToolbar, IonTitle, IonButtons,
     IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
-    IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner,
+    IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner, IonToast,
     EscanerQrComponent,
   ],
   template: `
@@ -90,6 +91,14 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
         <ion-icon name="add-outline"></ion-icon>
       </ion-fab-button>
     </ion-fab>
+
+    <ion-toast
+      [isOpen]="showToast()"
+      [message]="toastMessage()"
+      [duration]="3000"
+      [color]="toastColor()"
+      (didDismiss)="showToast.set(false)"
+    ></ion-toast>
   `,
 })
 export class ListaPacientesPage implements ViewWillEnter {
@@ -97,6 +106,9 @@ export class ListaPacientesPage implements ViewWillEnter {
   cargando = signal(false);
   pacientes = signal<Paciente[]>([]);
   errorScan = signal('');
+  showToast = signal(false);
+  toastMessage = signal('');
+  toastColor = signal<'success' | 'danger'>('success');
 
   constructor(
     private pacientesService: PacientesService,
@@ -177,9 +189,13 @@ export class ListaPacientesPage implements ViewWillEnter {
         next: (p) => {
           this.pacientes.set([p]);
           this.cargando.set(false);
+          this.presentToast('Paciente registrado correctamente.', 'success');
           this.mostrarQrPaciente(p);
         },
-        error: () => this.cargando.set(false),
+        error: (error: unknown) => {
+          this.cargando.set(false);
+          this.presentToast(this.getErrorMessage(error, 'No se pudo registrar el paciente.'), 'danger');
+        },
       });
     }
   }
@@ -194,5 +210,23 @@ export class ListaPacientesPage implements ViewWillEnter {
       },
     });
     await modal.present();
+  }
+
+  private presentToast(message: string, color: 'success' | 'danger'): void {
+    this.toastMessage.set(message);
+    this.toastColor.set(color);
+    this.showToast.set(true);
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const backendMessage = typeof error.error?.message === 'string'
+        ? error.error.message
+        : Array.isArray(error.error?.message)
+          ? error.error.message.join(' · ')
+          : null;
+      return backendMessage ?? fallback;
+    }
+    return fallback;
   }
 }

@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
@@ -11,6 +12,7 @@ import {
   IonIcon,
   IonList,
   IonSpinner,
+  IonToast,
   ModalController,
   ViewWillEnter,
 } from '@ionic/angular/standalone';
@@ -38,6 +40,7 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
     IonIcon,
     IonList,
     IonSpinner,
+    IonToast,
     EncabezadoPasoComponent,
     EscanerQrComponent,
   ],
@@ -130,6 +133,14 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
         </ion-list>
       }
     </ion-content>
+
+    <ion-toast
+      [isOpen]="showToast()"
+      [message]="toastMessage()"
+      [duration]="3000"
+      [color]="toastColor()"
+      (didDismiss)="showToast.set(false)"
+    ></ion-toast>
   `,
 })
 export class Paso1EscanearPacientePage implements ViewWillEnter {
@@ -138,6 +149,9 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   errorMsg = signal('');
   recetasPendientes = signal<Receta[]>([]);
   cargandoRecetas = signal(false);
+  showToast = signal(false);
+  toastMessage = signal('');
+  toastColor = signal<'success' | 'danger'>('success');
 
   constructor(
     private dispensacionService: DispensacionService,
@@ -222,9 +236,14 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
       this.pacientesService.registrarPaciente(data).subscribe({
         next: (p) => {
           this.pacienteIdentificado.set(p);
+          this.presentToast('Paciente registrado correctamente.', 'success');
           this.mostrarQrPaciente(p);
         },
-        error: (err) => this.errorMsg.set(err.message),
+        error: (error: unknown) => {
+          const message = this.getErrorMessage(error, 'No se pudo registrar el paciente.');
+          this.errorMsg.set(message);
+          this.presentToast(message, 'danger');
+        },
       });
     }
   }
@@ -261,6 +280,24 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
   limpiarError(): void {
     this.errorMsg.set('');
+  }
+
+  private presentToast(message: string, color: 'success' | 'danger'): void {
+    this.toastMessage.set(message);
+    this.toastColor.set(color);
+    this.showToast.set(true);
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const backendMessage = typeof error.error?.message === 'string'
+        ? error.error.message
+        : Array.isArray(error.error?.message)
+          ? error.error.message.join(' · ')
+          : null;
+      return backendMessage ?? fallback;
+    }
+    return fallback;
   }
 
   static styles = [`

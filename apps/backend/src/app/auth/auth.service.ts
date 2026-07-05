@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { compare } from 'bcrypt';
+import { compare } from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { Usuario } from '../common/entities/usuario.entity';
 

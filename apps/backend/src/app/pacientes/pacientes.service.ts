@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { Paciente } from '../common/entities/paciente.entity';
 import { NucleoFamiliar } from '../common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from '../common/entities/nucleo-familiar-miembro.entity';
@@ -22,49 +22,63 @@ export class PacientesService {
   ) {}
 
   async createPaciente(dto: CrearPacienteDto) {
-    const idEmergencia = dto.idEmergencia ?? (await this.generateNextEmergenciaId());
     const { familiares, ...pacienteData } = dto;
-    const paciente = this.pacienteRepository.create({ ...pacienteData, idEmergencia });
-    const saved = await this.pacienteRepository.save(paciente);
+    let savedId = 0;
 
-    if (familiares?.length) {
-      const nucleo = this.dataSource.manager.create(NucleoFamiliar, {
+    await this.dataSource.transaction(async (manager) => {
+      const pacienteRepository = manager.getRepository(Paciente);
+      const nucleoRepository = manager.getRepository(NucleoFamiliar);
+      const miembroRepository = manager.getRepository(NucleoFamiliarMiembro);
+
+      const saved = await this.savePacienteWithUniqueId(
+        pacienteRepository,
+        {
+          ...pacienteData,
+          telefono: pacienteData.telefono ?? null,
+        },
+        dto.idEmergencia,
+      );
+      savedId = saved.id;
+
+      if (!familiares?.length) {
+        return;
+      }
+
+      const nucleo = nucleoRepository.create({
         titular: { id: saved.id } as Paciente,
       });
-      const savedNucleo = await this.dataSource.manager.save(NucleoFamiliar, nucleo);
+      const savedNucleo = await nucleoRepository.save(nucleo);
 
-      const titularMember = this.dataSource.manager.create(NucleoFamiliarMiembro, {
+      const titularMember = miembroRepository.create({
         nucleoId: savedNucleo.id,
         pacienteId: saved.id,
         relacion: 'Titular',
       });
-      await this.dataSource.manager.save(NucleoFamiliarMiembro, titularMember);
+      await miembroRepository.save(titularMember);
 
       for (const f of familiares) {
-        const familiarIdEmergencia = await this.generateNextEmergenciaId();
-        const familiarPaciente = this.pacienteRepository.create({
+        const savedFamiliar = await this.savePacienteWithUniqueId(pacienteRepository, {
           nombre: f.nombre,
           apellido: f.apellido ?? '',
           cedula: f.cedula ?? null,
-          telefono: null,
+          telefono: f.telefono ?? null,
           sexo: f.sexo,
           edadEstimada: f.edadEstimada,
           pesoEstimado: f.pesoEstimado,
           esDamnificado: f.esDamnificado,
-          idEmergencia: familiarIdEmergencia,
+          tieneCargaFamiliar: false,
         });
-        const savedFamiliar = await this.pacienteRepository.save(familiarPaciente);
 
-        const member = this.dataSource.manager.create(NucleoFamiliarMiembro, {
+        const member = miembroRepository.create({
           nucleoId: savedNucleo.id,
           pacienteId: savedFamiliar.id,
           relacion: f.relacion,
         });
-        await this.dataSource.manager.save(NucleoFamiliarMiembro, member);
+        await miembroRepository.save(member);
       }
-    }
+    });
 
-    return this.loadPacienteConNucleo(saved.id);
+    return this.loadPacienteConNucleo(savedId);
   }
 
   async getPacienteById(id: number) {
@@ -193,8 +207,7 @@ export class PacientesService {
     const year = new Date().getFullYear();
     const lastPaciente = await this.pacienteRepository
       .createQueryBuilder('p')
-      .where('p.activo = :activo', { activo: true })
-      .andWhere('p.idEmergencia LIKE :pattern', { pattern: `EM-${year}-%` })
+      .where('p.idEmergencia LIKE :pattern', { pattern: `EM-${year}-%` })
       .orderBy('p.id', 'DESC')
       .getOne();
     let nextSeq = 1;
@@ -203,5 +216,48 @@ export class PacientesService {
       nextSeq = parseInt(parts[parts.length - 1], 10) + 1;
     }
     return `EM-${year}-${String(nextSeq).padStart(3, '0')}`;
+  }
+
+  private async savePacienteWithUniqueId(
+    pacienteRepository: Repository<Paciente>,
+    payload: Partial<Paciente>,
+    fixedIdEmergencia?: string,
+  ): Promise<Paciente> {
+    if (fixedIdEmergencia) {
+      try {
+        const paciente = pacienteRepository.create({ ...payload, idEmergencia: fixedIdEmergencia });
+        return await pacienteRepository.save(paciente);
+      } catch (error) {
+        if (this.isIdEmergenciaConflict(error)) {
+          throw new ConflictException('El ID de emergencia ya existe. Intente nuevamente.');
+        }
+        throw new InternalServerErrorException('No se pudo registrar el paciente.');
+      }
+    }
+
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const idEmergencia = await this.generateNextEmergenciaId();
+      try {
+        const paciente = pacienteRepository.create({ ...payload, idEmergencia });
+        return await pacienteRepository.save(paciente);
+      } catch (error) {
+        if (this.isIdEmergenciaConflict(error) && attempt < maxAttempts - 1) {
+          continue;
+        }
+        throw new InternalServerErrorException('No se pudo registrar el paciente.');
+      }
+    }
+
+    throw new InternalServerErrorException('No se pudo registrar el paciente.');
+  }
+
+  private isIdEmergenciaConflict(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const message = String((error as { message?: string }).message ?? '');
+    return message.includes('UNIQUE constraint failed: paciente.id_emergencia');
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { hash } from 'bcrypt';
+import { hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
 import { UserRole } from './enums/role.enum';
