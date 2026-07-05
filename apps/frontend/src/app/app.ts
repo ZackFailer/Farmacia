@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonApp,
@@ -17,7 +17,6 @@ import {
 } from '@ionic/angular/standalone';
 import { AuthService } from './auth/services/auth.service';
 import { Rol, ROL_LABELS } from './shared/enums/rol.enum';
-import type { Usuario } from './shared/models/usuario.model';
 
 interface MenuItem {
   ruta: string;
@@ -55,15 +54,13 @@ export class AppComponent {
   private router = inject(Router);
   private menuCtrl = inject(MenuController);
 
-  get usuario(): Usuario | null {
-    return this.authService.getUsuario();
-  }
+  readonly usuario = this.authService.usuario$;
 
-  get menuItems(): MenuItem[] {
-    const usuario = this.authService.getUsuario();
+  readonly menuItems = computed(() => {
+    const usuario = this.authService.usuario$();
     if (!usuario) return [];
     return ALL_MENU_ITEMS.filter((item) => item.roles.includes(usuario.rol));
-  }
+  });
 
   isActive(item: MenuItem): boolean {
     const current = this.router.url;

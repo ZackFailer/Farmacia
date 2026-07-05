@@ -6,8 +6,9 @@ import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonInput, IonNote, IonIcon, IonProgressBar, IonFooter,
   IonSearchbar, IonMenuButton, IonList, IonSpinner, IonToast,
-  IonSegment, IonSegmentButton, IonCard, IonCardContent,
+  IonCard, IonCardContent, ViewWillEnter, ViewWillLeave,
 } from '@ionic/angular/standalone';
+import { interval, type Subscription } from 'rxjs';
 import { RecetasService } from '../services/recetas.service';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
 import { RecepcionService } from '../../recepcion/services/recepcion.service';
@@ -228,7 +229,7 @@ interface RecetaMedItem {
     ></ion-toast>
   `,
 })
-export class RecetarPage implements OnInit, OnDestroy {
+export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLeave {
   paso = signal(1);
   guardando = signal(false);
   cargandoPaciente = signal(false);
@@ -247,6 +248,7 @@ export class RecetarPage implements OnInit, OnDestroy {
   medicamentosEnStock = signal<StockItem[]>([]);
   medResultados = signal<StockItem[]>([]);
   medSeleccionados = signal<RecetaMedItem[]>([]);
+  private pollingSub?: Subscription;
 
   constructor(
     private recetasService: RecetasService,
@@ -269,6 +271,37 @@ export class RecetarPage implements OnInit, OnDestroy {
     if (this.paso() > 1) {
       this.cargarMedicamentosEnStock();
     }
+  }
+
+  ionViewWillEnter(): void {
+    if (this.paso() >= 2) {
+      this.cargarMedicamentosEnStock();
+      this.iniciarPollingStock();
+    }
+  }
+
+  ionViewWillLeave(): void {
+    this.detenerPolling();
+  }
+
+  private iniciarPollingStock(): void {
+    this.pollingSub = interval(20000).subscribe(() => this.refrescarStockSilencioso());
+  }
+
+  private detenerPolling(): void {
+    this.pollingSub?.unsubscribe();
+  }
+
+  private refrescarStockSilencioso(): void {
+    this.inventarioService.getStockGeneral().subscribe({
+      next: (items) => {
+        const disponibles = items
+          .filter(item => item.stock_total > 0)
+          .sort((a, b) => a.medicamento.nombre_generico.localeCompare(b.medicamento.nombre_generico));
+        this.medicamentosEnStock.set(disponibles);
+        this.aplicarFiltroMedicamentos();
+      },
+    });
   }
 
   ngOnDestroy(): void {
@@ -405,11 +438,6 @@ export class RecetarPage implements OnInit, OnDestroy {
   }
 
   private cargarMedicamentosEnStock(): void {
-    if (this.medicamentosEnStock().length > 0) {
-      this.aplicarFiltroMedicamentos();
-      return;
-    }
-
     this.cargandoMedicamentos.set(true);
     this.errorMedicamentos.set('');
     this.inventarioService.getStockGeneral().subscribe({

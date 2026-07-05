@@ -8,7 +8,7 @@
 
     <ion-content class="menu-content">
       <div class="menu-shell">
-        @if (usuario; as u) {
+        @if (usuario(); as u) {
           <div class="menu-user-info">
             <div class="menu-user-avatar">
               <ion-icon name="person-circle-outline"></ion-icon>
@@ -21,7 +21,7 @@
         }
 
         <ion-list class="menu-list">
-          @for (item of menuItems; track item.ruta) {
+          @for (item of menuItems(); track item.ruta) {
             <ion-item
               (click)="navegar(item.ruta)"
               lines="none"

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, type WritableSignal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Usuario } from '../../shared/models/usuario.model';
 
@@ -16,6 +16,7 @@ export function clearAppSessionStorage(): void {
 
 @Injectable()
 export abstract class AuthService {
+  abstract readonly usuario$: WritableSignal<Usuario | null>;
   abstract login(pin: string): Observable<{ token: string; usuario: Usuario }>;
   abstract logout(): void;
   abstract getToken(): string | null;

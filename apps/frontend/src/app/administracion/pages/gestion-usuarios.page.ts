@@ -1,8 +1,8 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
   IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast, IonIcon,
-  ModalController, AlertController,
+  IonRefresher, IonRefresherContent, ModalController, AlertController, ViewWillEnter,
 } from '@ionic/angular/standalone';
 import { AdministracionService } from '../services/administracion.service';
 import { ROL_LABELS } from '../../shared/enums/rol.enum';
@@ -14,6 +14,7 @@ import type { Usuario } from '../../shared/models/usuario.model';
   imports: [
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
     IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonToast, IonIcon,
+    IonRefresher, IonRefresherContent,
   ],
   template: `
     <ion-header>
@@ -26,6 +27,9 @@ import type { Usuario } from '../../shared/models/usuario.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
       <p class="page-subtitle">Administrar usuarios del sistema y sus permisos operativos.</p>
       <ion-button expand="block" (click)="crearUsuario()">+ Nuevo Usuario</ion-button>
 
@@ -66,7 +70,7 @@ import type { Usuario } from '../../shared/models/usuario.model';
     ></ion-toast>
   `,
 })
-export class GestionUsuariosPage implements OnInit {
+export class GestionUsuariosPage implements ViewWillEnter {
   readonly rolLabels = ROL_LABELS;
   private adminService = inject(AdministracionService);
   private modalCtrl = inject(ModalController);
@@ -79,7 +83,7 @@ export class GestionUsuariosPage implements OnInit {
   toastMsg = signal('');
   toastColor = signal('success');
 
-  ngOnInit(): void {
+  ionViewWillEnter(): void {
     this.cargarUsuarios();
   }
 
@@ -98,6 +102,11 @@ export class GestionUsuariosPage implements OnInit {
 
   reintentarCarga(): void {
     this.cargarUsuarios();
+  }
+
+  async handleRefresh(event: CustomEvent): Promise<void> {
+    this.cargarUsuarios();
+    (event.target as HTMLIonRefresherElement).complete();
   }
 
   async crearUsuario(): Promise<void> {

@@ -1,14 +1,15 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
 import { TablaIngresosComponent } from '../components/tabla-ingresos.component';
 import { RecepcionService } from '../services/recepcion.service';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
+import { interval, type Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, TablaIngresosComponent, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, TablaIngresosComponent, FormsModule, IonRefresher, IonRefresherContent],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -20,6 +21,9 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
       <p class="page-subtitle">Registrar lotes recibidos, verificar vencimiento y emitir etiqueta QR.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrarLotes()" placeholder="Buscar lote..." debounce="300"></ion-searchbar>
 
@@ -57,7 +61,7 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     }
   `,
 })
-export class DashboardIngresosPage implements OnInit {
+export class DashboardIngresosPage implements ViewWillEnter, ViewWillLeave {
   constructor(
     private recepcionService: RecepcionService,
     private modalCtrl: ModalController,
@@ -69,10 +73,33 @@ export class DashboardIngresosPage implements OnInit {
   cargando = signal(true);
   errorMsg = signal('');
   medicamentos: Medicamento[] = [];
+  private pollingSub?: Subscription;
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.cargarLotes();
     this.cargarMedicamentos();
+    this.iniciarPolling();
+  }
+
+  ionViewWillLeave() {
+    this.detenerPolling();
+  }
+
+  private iniciarPolling(): void {
+    this.pollingSub = interval(30000).subscribe(() => this.refrescarSilencioso());
+  }
+
+  private detenerPolling(): void {
+    this.pollingSub?.unsubscribe();
+  }
+
+  private refrescarSilencioso(): void {
+    this.recepcionService.getLotes().subscribe({
+      next: (data) => {
+        this.lotes.set(data);
+        this.filtrarLotes();
+      },
+    });
   }
 
   private cargarLotes() {
@@ -93,6 +120,11 @@ export class DashboardIngresosPage implements OnInit {
 
   reintentarCarga(): void {
     this.cargarLotes();
+  }
+
+  async handleRefresh(event: CustomEvent): Promise<void> {
+    this.cargarLotes();
+    (event.target as HTMLIonRefresherElement).complete();
   }
 
   private cargarMedicamentos() {
@@ -125,8 +157,7 @@ export class DashboardIngresosPage implements OnInit {
 
     this.recepcionService.crearLote(data).subscribe({
       next: (lote) => {
-        this.lotes.update(list => [lote, ...list]);
-        this.filtrarLotes();
+        this.cargarLotes();
         this.cargarMedicamentos();
         this.abrirImprimirEtiqueta(lote);
       },

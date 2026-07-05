@@ -1,15 +1,16 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
 import { TarjetaMedicamentoComponent } from '../components/tarjeta-medicamento.component';
 import { InventarioService } from '../services/inventario.service';
 import { RecepcionService } from '../../recepcion/services/recepcion.service';
 import type { StockItem } from '../../shared/models/stock-item.model';
 import type { Lote } from '../../shared/models/lote.model';
+import { interval, type Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, TarjetaMedicamentoComponent, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, TarjetaMedicamentoComponent, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -21,6 +22,9 @@ import type { Lote } from '../../shared/models/lote.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
       <p class="page-subtitle">Monitorear stock, identificar medicamentos vitales y revisar lotes disponibles.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrar()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
 
@@ -60,7 +64,7 @@ import type { Lote } from '../../shared/models/lote.model';
     ></ion-toast>
   `,
 })
-export class PanelStockPage implements OnInit {
+export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
   constructor(
     private inventarioService: InventarioService,
     private recepcionService: RecepcionService,
@@ -73,6 +77,7 @@ export class PanelStockPage implements OnInit {
   showAlerta = signal(false);
   stockItems = signal<StockItem[]>([]);
   lotesCache: Lote[] = [];
+  private pollingSub?: Subscription;
 
   get vitales() {
     return this.stockItems().filter(i => this.esVital(i.medicamento.id));
@@ -86,8 +91,34 @@ export class PanelStockPage implements OnInit {
     return [1, 3, 5, 11].includes(id);
   }
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.cargarDatos();
+    this.iniciarPolling();
+  }
+
+  ionViewWillLeave() {
+    this.detenerPolling();
+  }
+
+  private iniciarPolling(): void {
+    this.pollingSub = interval(20000).subscribe(() => this.refrescarSilencioso());
+  }
+
+  private detenerPolling(): void {
+    this.pollingSub?.unsubscribe();
+  }
+
+  private refrescarSilencioso(): void {
+    this.inventarioService.getStockGeneral().subscribe({
+      next: (data) => {
+        this.stockItems.set(data);
+        const bajos = data.filter(i => i.color === 'yellow' && this.esVital(i.medicamento.id));
+        if (bajos.length > 0) this.showAlerta.set(true);
+      },
+    });
+    this.recepcionService.getLotes().subscribe({
+      next: (data) => { this.lotesCache = data; },
+    });
   }
 
   private cargarDatos(): void {
@@ -119,6 +150,12 @@ export class PanelStockPage implements OnInit {
   reintentarCarga(): void {
     this.cargando.set(true);
     this.cargarDatos();
+  }
+
+  async handleRefresh(event: CustomEvent): Promise<void> {
+    this.cargando.set(true);
+    this.cargarDatos();
+    (event.target as HTMLIonRefresherElement).complete();
   }
 
   async verDetalleLote(item: StockItem) {

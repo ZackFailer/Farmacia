@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, signal, type WritableSignal } from '@angular/core';
 import { map, tap } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -21,8 +21,11 @@ interface LoginResponse {
 
 @Injectable()
 export class ApiAuthService extends AuthService {
+  readonly usuario$: WritableSignal<Usuario | null>;
+
   constructor(private readonly http: HttpClient) {
     super();
+    this.usuario$ = signal<Usuario | null>(this.getUsuario());
   }
 
   login(pin: string): Observable<{ token: string; usuario: Usuario }> {
@@ -34,12 +37,14 @@ export class ApiAuthService extends AuthService {
       tap((response) => {
         localStorage.setItem('apoPharma_token', response.token);
         localStorage.setItem('apoPharma_usuario', JSON.stringify(response.usuario));
+        this.usuario$.set(response.usuario);
       }),
     );
   }
 
   logout(): void {
     clearAppSessionStorage();
+    this.usuario$.set(null);
   }
 
   getToken(): string | null {
@@ -68,6 +73,7 @@ export class ApiAuthService extends AuthService {
       map((user) => this.toUsuario(user)),
       tap((user) => {
         localStorage.setItem('apoPharma_usuario', JSON.stringify(user));
+        this.usuario$.set(user);
       }),
     );
   }

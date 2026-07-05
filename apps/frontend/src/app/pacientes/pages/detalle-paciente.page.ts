@@ -10,7 +10,6 @@ import type { Paciente } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
 import { EditarPacienteModal } from '../modals/editar-paciente.modal';
 import { AgregarFamiliarModal } from '../modals/agregar-familiar.modal';
-import { PacienteQrModal } from '../modals/paciente-qr.modal';
 import { AuthService } from '../../auth/services/auth.service';
 import { Rol } from '../../shared/enums/rol.enum';
 import QRCode from 'qrcode';
@@ -72,6 +71,10 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
         <ion-button expand="block" (click)="compartirQrWhatsApp()">
           <ion-icon name="logo-whatsapp" slot="start"></ion-icon>
           Compartir QR por WhatsApp
+        </ion-button>
+
+        <ion-button expand="block" fill="outline" (click)="compartirImagenQr()">
+          Compartir imagen QR
         </ion-button>
 
         @if (puedeVerHistorial()) {
@@ -247,19 +250,81 @@ export class DetallePacientePage {
     }
   }
 
-  async compartirQrWhatsApp(): Promise<void> {
+  compartirQrWhatsApp(): void {
     const p = this.paciente();
     if (!p) return;
 
-    const modal = await this.modalCtrl.create({
-      component: PacienteQrModal,
-      componentProps: {
-        idEmergencia: normalizePacienteQrId(p.id_emergencia),
-        nombre: `${p.nombre} ${p.apellido}`,
-        telefono: p.telefono ?? '',
-      },
-    });
-    await modal.present();
+    const phone = this.normalizePhoneVe(p.telefono ?? '');
+    if (!phone) {
+      alert('El paciente no tiene un numero telefonico valido para WhatsApp.');
+      return;
+    }
+
+    const idEmergencia = normalizePacienteQrId(p.id_emergencia);
+    const nombre = `${p.nombre} ${p.apellido}`.trim();
+    const mensaje = idEmergencia
+      ? `Hola ${nombre}, este es tu ID de emergencia: ${idEmergencia}`
+      : `Hola ${nombre}`;
+
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  async compartirImagenQr(): Promise<void> {
+    const p = this.paciente();
+    if (!p) return;
+
+    const dataUrl = this.qrPreviewDataUrl();
+    if (!dataUrl) {
+      alert('No se pudo generar la imagen QR para compartir.');
+      return;
+    }
+
+    const idEmergencia = normalizePacienteQrId(p.id_emergencia);
+    const file = await this.buildQrFile(dataUrl, idEmergencia || 'paciente');
+    const text = idEmergencia
+      ? `ID de emergencia del paciente: ${idEmergencia}`
+      : 'QR del paciente';
+
+    const nav = navigator as Navigator & {
+      canShare?: (data?: ShareData) => boolean;
+    };
+
+    if (nav.share && nav.canShare?.({ files: [file] })) {
+      await nav.share({
+        files: [file],
+        title: `QR ${idEmergencia || 'paciente'}`,
+        text,
+      });
+      return;
+    }
+
+    this.descargarQr(file);
+    alert('Tu dispositivo no permite compartir imagenes directamente. Se descargo el QR para compartirlo manualmente.');
+  }
+
+  private normalizePhoneVe(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('58')) return digits;
+    if (digits.startsWith('0')) return `58${digits.slice(1)}`;
+    return `58${digits}`;
+  }
+
+  private async buildQrFile(dataUrl: string, idEmergencia: string): Promise<File> {
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], `qr-${idEmergencia}.png`, { type: 'image/png' });
+  }
+
+  private descargarQr(file: File): void {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   eliminar(): void {

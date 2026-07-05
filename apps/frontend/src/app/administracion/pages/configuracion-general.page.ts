@@ -1,8 +1,8 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
   IonItem, IonLabel, IonButton, IonSpinner, IonToast, IonIcon,
-  ModalController,
+  IonRefresher, IonRefresherContent, ModalController, ViewWillEnter,
 } from '@ionic/angular/standalone';
 import { AdministracionService } from '../services/administracion.service';
 import { LimitesDosisModal } from '../modals/limites-dosis.modal';
@@ -13,6 +13,7 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
   imports: [
     IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
     IonItem, IonLabel, IonButton, IonSpinner, IonToast, IonIcon,
+    IonRefresher, IonRefresherContent,
   ],
   template: `
     <ion-header>
@@ -25,6 +26,9 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
       <p class="page-subtitle">Definir umbrales y limites de dosis para controles clinicos y de inventario.</p>
       @if (cargando()) {
         <div class="app-loading"><ion-spinner name="crescent"></ion-spinner><p>Cargando configuraciones...</p></div>
@@ -77,7 +81,7 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     ></ion-toast>
   `,
 })
-export class ConfiguracionGeneralPage implements OnInit {
+export class ConfiguracionGeneralPage implements ViewWillEnter {
   private adminService = inject(AdministracionService);
   private modalCtrl = inject(ModalController);
 
@@ -88,7 +92,7 @@ export class ConfiguracionGeneralPage implements OnInit {
   toastMsg = signal('');
   toastColor = signal('success');
 
-  ngOnInit(): void {
+  ionViewWillEnter(): void {
     this.cargarConfiguraciones();
   }
 
@@ -107,6 +111,12 @@ export class ConfiguracionGeneralPage implements OnInit {
   reintentarCarga(): void {
     this.cargando.set(true);
     this.cargarConfiguraciones();
+  }
+
+  async handleRefresh(event: CustomEvent): Promise<void> {
+    this.cargando.set(true);
+    this.cargarConfiguraciones();
+    (event.target as HTMLIonRefresherElement).complete();
   }
 
   async editarLimite(config: Configuracion): Promise<void> {

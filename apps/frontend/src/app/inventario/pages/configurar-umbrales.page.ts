@@ -1,12 +1,12 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter } from '@ionic/angular/standalone';
 import { InventarioService } from '../services/inventario.service';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -18,6 +18,9 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
       <p class="page-subtitle">Configurar umbrales minimos por medicamento para alertas tempranas de reposicion.</p>
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrar()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
 
@@ -49,7 +52,7 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-content>
   `,
 })
-export class ConfigurarUmbralesPage implements OnInit {
+export class ConfigurarUmbralesPage implements ViewWillEnter {
   constructor(
     private inventarioService: InventarioService,
     private modalCtrl: ModalController,
@@ -61,7 +64,7 @@ export class ConfigurarUmbralesPage implements OnInit {
   configuraciones = signal<Configuracion[]>([]);
   configuracionesFiltradas = signal<Configuracion[]>([]);
 
-  ngOnInit() {
+  ionViewWillEnter() {
     this.cargarUmbrales();
   }
 
@@ -83,6 +86,12 @@ export class ConfigurarUmbralesPage implements OnInit {
   reintentarCarga(): void {
     this.cargando.set(true);
     this.cargarUmbrales();
+  }
+
+  async handleRefresh(event: CustomEvent): Promise<void> {
+    this.cargando.set(true);
+    this.cargarUmbrales();
+    (event.target as HTMLIonRefresherElement).complete();
   }
 
   filtrar() {
@@ -109,11 +118,8 @@ export class ConfigurarUmbralesPage implements OnInit {
     if (role === 'cancel' || !data) return;
 
     this.inventarioService.actualizarUmbral(conf.id, data).subscribe({
-      next: (updated) => {
-        this.configuraciones.update(list =>
-          list.map(c => c.id === updated.id ? updated : c)
-        );
-        this.filtrar();
+      next: () => {
+        this.cargarUmbrales();
       },
     });
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal, type WritableSignal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -19,11 +19,14 @@ const TOKEN_FAKE = 'mock-jwt-token-apoPharma-2026';
 
 @Injectable()
 export class MockAuthService extends AuthService {
+  readonly usuario$: WritableSignal<Usuario | null> = signal<Usuario | null>(null);
+
   login(pin: string): Observable<{ token: string; usuario: Usuario }> {
     if (pin === SEED_PIN) {
       const payload = { token: TOKEN_FAKE, usuario: SEED_USUARIO };
       localStorage.setItem('apoPharma_token', TOKEN_FAKE);
       localStorage.setItem('apoPharma_usuario', JSON.stringify(SEED_USUARIO));
+      this.usuario$.set(SEED_USUARIO);
       return of(payload);
     }
     return throwError(() => new Error('PIN inválido'));
@@ -31,6 +34,7 @@ export class MockAuthService extends AuthService {
 
   logout(): void {
     clearAppSessionStorage();
+    this.usuario$.set(null);
   }
 
   getToken(): string | null {
