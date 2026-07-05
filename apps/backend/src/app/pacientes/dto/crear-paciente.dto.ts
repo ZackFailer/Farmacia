@@ -71,6 +71,11 @@ export class CrearPacienteDto {
   @MaxLength(30)
   cedula?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  telefono?: string;
+
   @IsEnum(Sex)
   sexo!: Sex;
 

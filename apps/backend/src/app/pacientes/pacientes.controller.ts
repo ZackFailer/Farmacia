@@ -40,6 +40,7 @@ export class PacientesController {
   }
 
   @Get(':id')
+  @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
   getPacienteById(@Param('id', ParseIntPipe) id: number) {
     return this.pacientesService.getPacienteById(id);
   }

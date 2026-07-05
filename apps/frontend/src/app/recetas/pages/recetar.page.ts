@@ -32,7 +32,7 @@ interface RecetaMedItem {
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonLabel, IonInput, IonNote, IonIcon, IonProgressBar, IonFooter,
     IonSearchbar, IonMenuButton, IonList, IonSpinner, IonToast,
-    IonSegment, IonSegmentButton, IonCard, IonCardContent,
+  IonCard, IonCardContent,
     EscanerQrComponent,
   ],
   template: `
@@ -51,40 +51,27 @@ interface RecetaMedItem {
         <h2>Paciente</h2>
 
         @if (!pacienteEncontrado()) {
-          <ion-segment [value]="modoBusqueda()" (ionChange)="onModoBusquedaChange($event)">
-            <ion-segment-button value="buscar">
-              <ion-label>Buscar</ion-label>
-            </ion-segment-button>
-            <ion-segment-button value="escaner">
-              <ion-label>Escaner QR</ion-label>
-            </ion-segment-button>
-          </ion-segment>
+          <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
 
-          @if (modoBusqueda() === 'buscar') {
-            <ion-searchbar
-              [(ngModel)]="searchTerm"
-              (ionInput)="buscarPaciente()"
-              placeholder="ID, nombre o cédula..."
-              debounce="400"
-            ></ion-searchbar>
+          <ion-searchbar
+            [(ngModel)]="searchTerm"
+            (ionInput)="buscarPaciente()"
+            placeholder="ID, nombre o cédula..."
+            debounce="400"
+          ></ion-searchbar>
 
-            @if (!pacienteEncontrado() && pacientesEncontrados().length > 0) {
-              <ion-list>
-                @for (p of pacientesEncontrados(); track p.id) {
-                  <ion-item button (click)="seleccionarPaciente(p)">
-                    <ion-label>
-                      <h2>{{ p.nombre }} {{ p.apellido }}</h2>
-                      <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
-                      <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
-                    </ion-label>
-                  </ion-item>
-                }
-              </ion-list>
-            }
-          }
-
-          @if (modoBusqueda() === 'escaner') {
-            <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
+          @if (!pacienteEncontrado() && pacientesEncontrados().length > 0) {
+            <ion-list>
+              @for (p of pacientesEncontrados(); track p.id) {
+                <ion-item button (click)="seleccionarPaciente(p)">
+                  <ion-label>
+                    <h2>{{ p.nombre }} {{ p.apellido }}</h2>
+                    <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
+                    <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+                  </ion-label>
+                </ion-item>
+              }
+            </ion-list>
           }
         }
 
@@ -244,7 +231,6 @@ interface RecetaMedItem {
 export class RecetarPage implements OnInit, OnDestroy {
   paso = signal(1);
   guardando = signal(false);
-  modoBusqueda = signal<'buscar' | 'escaner'>('buscar');
   cargandoPaciente = signal(false);
   cargandoHistorial = signal(false);
   pacienteEncontrado = signal<Paciente | null>(null);
@@ -412,11 +398,6 @@ export class RecetarPage implements OnInit, OnDestroy {
     this.paso.set(1);
     this.searchTerm = '';
     this.persistirBorrador();
-  }
-
-  onModoBusquedaChange(event: CustomEvent<{ value?: string | number | null }>): void {
-    const value = event.detail.value;
-    this.modoBusqueda.set(value === 'escaner' ? 'escaner' : 'buscar');
   }
 
   buscarMedicamentos(): void {

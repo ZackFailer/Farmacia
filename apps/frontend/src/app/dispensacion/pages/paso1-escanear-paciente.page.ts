@@ -23,6 +23,7 @@ import { RegistroPacienteModal } from '../../pacientes/modals/registro-paciente.
 import { PacienteQrModal } from '../../pacientes/modals/paciente-qr.modal';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Receta } from '../../shared/models/receta.model';
+import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
 
 @Component({
   standalone: true,
@@ -232,8 +233,9 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     const modal = await this.modalCtrl.create({
       component: PacienteQrModal,
       componentProps: {
-        idEmergencia: p.id_emergencia,
+        idEmergencia: normalizePacienteQrId(p.id_emergencia),
         nombre: `${p.nombre} ${p.apellido}`,
+        telefono: p.telefono ?? '',
       },
     });
     await modal.present();

@@ -19,7 +19,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'pacientes',
-    canActivate: [roleGuard([Rol.RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN])],
+    canActivate: [roleGuard([Rol.RECEPTIONIST, Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN])],
     loadChildren: () => import('./pacientes/pacientes.routes').then(m => m.pacientesRoutes),
   },
   {
