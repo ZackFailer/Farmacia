@@ -22,10 +22,8 @@ import { DispensacionService } from '../services/dispensacion.service';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
 import { BusquedaPacienteModal } from '../../pacientes/modals/busqueda-paciente.modal';
 import { RegistroPacienteModal } from '../../pacientes/modals/registro-paciente.modal';
-import { PacienteQrModal } from '../../pacientes/modals/paciente-qr.modal';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Receta } from '../../shared/models/receta.model';
-import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
 
 @Component({
   standalone: true,
@@ -237,7 +235,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
         next: (p) => {
           this.pacienteIdentificado.set(p);
           this.presentToast('Paciente registrado correctamente.', 'success');
-          this.mostrarQrPaciente(p);
+          this.router.navigate(['/pacientes', p.id]);
         },
         error: (error: unknown) => {
           const message = this.getErrorMessage(error, 'No se pudo registrar el paciente.');
@@ -246,18 +244,6 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
         },
       });
     }
-  }
-
-  private async mostrarQrPaciente(p: Paciente): Promise<void> {
-    const modal = await this.modalCtrl.create({
-      component: PacienteQrModal,
-      componentProps: {
-        idEmergencia: normalizePacienteQrId(p.id_emergencia),
-        nombre: `${p.nombre} ${p.apellido}`,
-        telefono: p.telefono ?? '',
-      },
-    });
-    await modal.present();
   }
 
   verHistorial(): void {

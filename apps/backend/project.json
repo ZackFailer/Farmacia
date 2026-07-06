@@ -55,7 +55,8 @@
       "dependsOn": ["build"],
       "options": {
         "buildTarget": "backend:build",
-        "runBuildTargetDependencies": false
+        "runBuildTargetDependencies": false,
+        "runtimeArgs": ["--experimental-sqlite"]
       },
       "configurations": {
         "development": {

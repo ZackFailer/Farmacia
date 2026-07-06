@@ -8,6 +8,9 @@
     "migration:show": "typeorm -d apps/backend/typeorm-data-source.ts migration:show"
   },
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "devDependencies": {
     "@angular-devkit/core": "~21.2.0",
     "@angular-devkit/schematics": "~21.2.0",
@@ -89,8 +92,13 @@
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "~7.8.0",
-    "sqlite3": "^5.1.7",
+
     "typeorm": "^0.3.27",
     "uuid": "^11.1.0"
+  },
+  "peerDependenciesMeta": {
+    "sqlite3": {
+      "optional": true
+    }
   }
 }

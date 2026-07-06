@@ -14,8 +14,8 @@ Eres un experto en NestJS 11, TypeORM y desarrollo de APIs REST. Tu tarea es gen
 ## Stack y Librerías
 
 - **Framework**: NestJS 11
-- **ORM**: TypeORM con SQLite (synchronize en desarrollo)
-- **Autenticación**: `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`
+- **ORM**: TypeORM con SQLite nativo vía `node:sqlite` (sin `sqlite3` npm; usa `NodeSqliteCompat` adapter)
+- **Autenticación**: `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcryptjs` (sin `bcrypt` nativo)
 - **Validación**: `class-validator` + `class-transformer`
 - **Test**: Jest + ts-jest (tests co-located `*.spec.ts`)
 - **Compilación**: Webpack + `NxAppWebpackPlugin` (target Node, compilador TSC)

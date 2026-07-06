@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,29 +32,69 @@ import { CreateNucleoFamiliar1741190820000 } from './common/migrations/174119082
 import { AddTitularFk1741190830000 } from './common/migrations/1741190830000-AddTitularFk';
 import { AddActivoAndRoles1741190840000 } from './common/migrations/1741190840000-AddActivoAndRoles';
 import { CreateReceta1741190850000 } from './common/migrations/1741190850000-CreateReceta';
+import { NodeSqliteCompat } from './common/node-sqlite-compat';
+
+const typeOrmOptions = {
+  type: 'sqlite' as const,
+  database: 'apps/backend/data/farmacia.sqlite',
+  entities: [
+    Usuario,
+    Medicamento,
+    Lote,
+    Paciente,
+    Dispensacion,
+    DispensacionDetalle,
+    Configuracion,
+    LoteMovimiento,
+    NucleoFamiliar,
+    NucleoFamiliarMiembro,
+    Receta,
+    RecetaDetalle,
+  ],
+  synchronize: true,
+  migrations: [CreateNucleoFamiliar1741190820000, AddTitularFk1741190830000, AddActivoAndRoles1741190840000, CreateReceta1741190850000],
+  migrationsRun: false,
+};
+
+const mockSqlite = {
+  verbose: () => ({
+    Database: class Mock {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      constructor(..._args: any[]) {
+        // stub — nunca se usa porque reemplazamos connect()
+      }
+      run() { return this; }
+      close() { /* stub */ }
+    },
+  }),
+};
+
+async function createNodeSqliteDataSource(options: DataSourceOptions): Promise<DataSource> {
+  const ds = new DataSource({
+    ...options,
+    driver: mockSqlite,
+  } as any);
+  const driver = ds.driver as unknown as { connect: () => Promise<void>; disconnect: () => Promise<void>; databaseConnection: NodeSqliteCompat | undefined };
+  driver.connect = async () => {
+    driver.databaseConnection = new NodeSqliteCompat(options.database as string);
+  };
+  driver.disconnect = async () => {
+    const compat = driver.databaseConnection;
+    if (compat) {
+      await new Promise<void>((resolve, reject) => {
+        compat.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
+  };
+  await ds.initialize();
+  return ds;
+}
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'apps/backend/data/farmacia.sqlite',
-      entities: [
-        Usuario,
-        Medicamento,
-        Lote,
-        Paciente,
-        Dispensacion,
-        DispensacionDetalle,
-        Configuracion,
-        LoteMovimiento,
-        NucleoFamiliar,
-        NucleoFamiliarMiembro,
-        Receta,
-        RecetaDetalle,
-      ],
-      synchronize: true,
-      migrations: [CreateNucleoFamiliar1741190820000, AddTitularFk1741190830000, AddActivoAndRoles1741190840000, CreateReceta1741190850000],
-      migrationsRun: false,
+    TypeOrmModule.forRootAsync({
+      useFactory: () => typeOrmOptions,
+      dataSourceFactory: createNodeSqliteDataSource,
     }),
     JwtModule.register({
       global: true,

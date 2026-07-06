@@ -241,7 +241,8 @@ export class PacientesService {
       try {
         const paciente = pacienteRepository.create({ ...payload, idEmergencia });
         return await pacienteRepository.save(paciente);
-      } catch (error) {
+      } catch (error: unknown) {
+        console.error('DEBUG savePacienteWithUniqueId attempt', attempt, 'error:', error);
         if (this.isIdEmergenciaConflict(error) && attempt < maxAttempts - 1) {
           continue;
         }
@@ -254,10 +255,12 @@ export class PacientesService {
 
   private isIdEmergenciaConflict(error: unknown): boolean {
     if (!(error instanceof QueryFailedError)) {
+      console.error('DEBUG isIdEmergenciaConflict: not QueryFailedError, type:', typeof error, error?.constructor?.name);
       return false;
     }
 
     const message = String((error as { message?: string }).message ?? '');
+    console.error('DEBUG isIdEmergenciaConflict: message:', message.slice(0, 200));
     return message.includes('UNIQUE constraint failed: paciente.id_emergencia');
   }
 }

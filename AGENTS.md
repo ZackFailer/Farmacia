@@ -34,7 +34,7 @@ Cada módulo contiene `proposito.md`, `diseño.md` y `tareas.md` con el desglose
 | Lint frontend | `npx nx lint frontend` |
 | E2E frontend | `npx nx e2e frontend-e2e` |
 | Serve frontend (static) | `npx nx serve-static frontend` (port 4200) |
-| Serve backend | `npx nx serve backend` |
+| Serve backend | `npx nx serve backend` (usa `--experimental-sqlite` automáticamente) |
 | Build backend | `npx nx build backend` |
 | Test backend | `npx nx test backend` |
 | Lint backend | `npx nx lint backend` |
@@ -81,7 +81,7 @@ No shared libraries exist yet — everything lives inside apps.
 - **DTOs**: clases con decoradores `class-validator`
 - **ORM**: TypeORM con entidades decoradas
 - **Autenticación**: PIN + JWT (`@nestjs/jwt`, `@nestjs/passport`)
-- **Base de datos**: SQLite via TypeORM (synchronize en desarrollo)
+- **Base de datos**: SQLite via `node:sqlite` nativo (sin `sqlite3` npm package) + TypeORM (synchronize en desarrollo)
 
 ### General
 - **Idioma**: español en UI, inglés en código (variables, funciones, tablas DB)
@@ -141,6 +141,8 @@ Ejemplo:
 
 - `defaultBase` is `master` (not `main`).
 - `@angular/build:unit-test` does not watch by default (`"watch": false`).
+- Requiere Node.js **22+** para `node:sqlite`. El serve usa `--experimental-sqlite` automáticamente via `runtimeArgs` en `project.json`.
+- `sqlite3` eliminado como dependencia; reemplazado por `node:sqlite` nativo vía `NodeSqliteCompat` wrapper.
 - No CI workflows exist yet.
 - Nx caching is enabled for build, lint, and test targets.
 - The `.angular/`, `.nx/cache/`, and `dist/` directories are gitignored.

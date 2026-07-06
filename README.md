@@ -8,7 +8,7 @@ Monorepo para digitalizar la gestión de insumos y la dispensación de medicamen
 |---|---|
 | **Frontend** | Angular 21 (standalone) + Ionic 8 |
 | **Backend** | NestJS 11 + TypeORM |
-| **Base de datos** | SQLite (embebida, sin servidor) |
+| **Base de datos** | SQLite via `node:sqlite` nativo (sin dependencias externas) |
 | **Lenguaje** | TypeScript ~5.9 (strict) |
 | **Monorepo** | Nx 23 |
 | **Estilos** | SCSS |
@@ -102,7 +102,7 @@ Farmacia/
 ### Requisitos
 - Una PC con Windows 10 u 11
 - Conexión WiFi (la misma red que los celulares que usarán la app)
-- Node.js (v18, v20 o v22) — [descargar aquí](https://nodejs.org)
+- Node.js **22+** — [descargar aquí](https://nodejs.org) (requerido para `node:sqlite` nativo)
 
 ### 1. Preparar la PC (solo la primera vez)
 
@@ -121,7 +121,7 @@ Abrir **PowerShell** (sin necesidad de administrador):
 
 ```powershell
 cd C:\Proyectos\Farmacia
-npx nx serve backend
+npx nx serve backend          # usa --experimental-sqlite automáticamente
 ```
 
 Aparecerá: `🚀 Application is running on: https://localhost:3000/api/v1`
@@ -141,7 +141,7 @@ Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo.
 
 ---
 
-## Base de Datos (7 tablas)
+## Base de Datos (13 tablas)
 
 | Tabla | Propósito |
 |---|---|
@@ -152,6 +152,11 @@ Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo.
 | `dispensacion_detalle` | Items de cada dispensación |
 | `usuario` | Usuarios del sistema con PIN y rol |
 | `configuracion` | Umbrales de stock y límites de dosis |
+| `lote_movimiento` | Movimientos de stock por lote (ingreso, ajuste, egreso) |
+| `receta` | Cabecera de receta médica |
+| `receta_detalle` | Items de cada receta |
+| `nucleo_familiar` | Grupo familiar asociado a un titular |
+| `nucleo_familiar_miembro` | Miembros del núcleo familiar con relación |
 
 ## Módulos Funcionales
 
@@ -178,7 +183,7 @@ npx nx lint frontend
 npx nx e2e frontend-e2e
 
 # Backend
-npx nx serve backend                       # https://localhost:3000
+npx nx serve backend                       # https://localhost:3000 (usa --experimental-sqlite)
 npx nx build backend
 npx nx test backend
 npx nx lint backend

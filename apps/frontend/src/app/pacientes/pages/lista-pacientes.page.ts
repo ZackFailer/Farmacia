@@ -11,7 +11,6 @@ import {
 import { PacientesService } from '../services/pacientes.service';
 import type { Paciente } from '../../shared/models/paciente.model';
 import { RegistroPacienteModal } from '../modals/registro-paciente.modal';
-import { PacienteQrModal } from '../modals/paciente-qr.modal';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
 
@@ -190,7 +189,7 @@ export class ListaPacientesPage implements ViewWillEnter {
           this.pacientes.set([p]);
           this.cargando.set(false);
           this.presentToast('Paciente registrado correctamente.', 'success');
-          this.mostrarQrPaciente(p);
+          this.router.navigate(['/pacientes', p.id]);
         },
         error: (error: unknown) => {
           this.cargando.set(false);
@@ -198,18 +197,6 @@ export class ListaPacientesPage implements ViewWillEnter {
         },
       });
     }
-  }
-
-  private async mostrarQrPaciente(paciente: Paciente): Promise<void> {
-    const modal = await this.modalCtrl.create({
-      component: PacienteQrModal,
-      componentProps: {
-        idEmergencia: normalizePacienteQrId(paciente.id_emergencia),
-        nombre: `${paciente.nombre} ${paciente.apellido}`,
-        telefono: paciente.telefono ?? '',
-      },
-    });
-    await modal.present();
   }
 
   private presentToast(message: string, color: 'success' | 'danger'): void {
