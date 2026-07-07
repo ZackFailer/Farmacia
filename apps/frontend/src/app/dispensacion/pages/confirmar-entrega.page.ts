@@ -1,28 +1,36 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonToast, ModalController } from '@ionic/angular/standalone';
-import { DispensacionService, type RecetaItem } from '../services/dispensacion.service';
-import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
+import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonToast, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, ModalController } from '@ionic/angular/standalone';
+import { DispensacionService } from '../services/dispensacion.service';
 import { ValidacionDosisModal } from '../modals/validacion-dosis.modal';
 import { ConfirmacionEntregaModal } from '../modals/confirmacion-entrega.modal';
+import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { CreateDispensacionDto } from '../../shared/models/dispensacion.model';
+import type { Lote } from '../../shared/models/lote.model';
+import type { RecetaItem } from '../services/dispensacion.service';
 
 @Component({
   standalone: true,
-  imports: [IonContent, IonButton, IonItem, IonLabel, IonNote, IonToast, EncabezadoPasoComponent],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, IonContent, IonButton, IonItem, IonLabel, IonNote, IonToast],
   template: `
-    <app-encabezado-paso [paso]="3"></app-encabezado-paso>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/dispensacion/medicamentos"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Confirmar Entrega</ion-title>
+      </ion-toolbar>
+    </ion-header>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Paso 3 de 3: validar dosis, confirmar entrega y registrar la dispensacion.</p>
       @if (estado().paciente; as p) {
         <h3>Resumen de Entrega</h3>
         <ion-item>
           <ion-label>
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
-            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
             <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
           </ion-label>
         </ion-item>
@@ -63,16 +71,14 @@ import type { CreateDispensacionDto } from '../../shared/models/dispensacion.mod
     ></ion-toast>
   `,
 })
-export class Paso3ConfirmarPage implements OnInit {
+export class ConfirmarEntregaPage implements OnInit {
   readonly showToast = signal(false);
   readonly toastMsg = signal('');
   readonly toastColor = signal('success');
 
-  constructor(
-    private dispensacionService: DispensacionService,
-    private modalCtrl: ModalController,
-    private router: Router,
-  ) {}
+  private readonly dispensacionService = inject(DispensacionService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly router = inject(Router);
 
   get estado() { return this.dispensacionService.estado; }
 
@@ -86,7 +92,12 @@ export class Paso3ConfirmarPage implements OnInit {
 
     for (let i = 0; i < estado.items.length; i++) {
       const item = estado.items[i];
-      const config = await firstValueFrom(this.dispensacionService.getLimiteDosis(item.medicamento.id));
+      let config: Configuracion | null = null;
+      try {
+        config = await firstValueFrom(this.dispensacionService.getLimiteDosis(item.medicamento.id));
+      } catch {
+        config = null;
+      }
       const peso = estado.paciente.peso_estimado;
 
       if (config?.dosis_maxima_mg_kg && peso > 0) {
@@ -101,7 +112,7 @@ export class Paso3ConfirmarPage implements OnInit {
   }
 
   anterior(): void {
-    this.router.navigate(['/dispensacion/paso2']);
+    this.router.navigate(['/dispensacion/medicamentos']);
   }
 
   async confirmarEntrega(): Promise<void> {
@@ -147,8 +158,9 @@ export class Paso3ConfirmarPage implements OnInit {
       const dto: CreateDispensacionDto = {
         paciente_id: estado.paciente.id,
         receta_id: estado.recetaId,
-        items: estado.items.map(i => ({
-          lote_id: i.lote!.id,
+        observaciones: '',
+        items: estado.items.filter((i): i is RecetaItem & { lote: Lote } => !!i.lote).map(i => ({
+          lote_id: i.lote.id,
           medicamento_id: i.medicamento.id,
           cantidad: i.cantidad,
         })),
@@ -160,7 +172,7 @@ export class Paso3ConfirmarPage implements OnInit {
           this.toastMsg.set('Dispensación registrada exitosamente');
           this.toastColor.set('success');
           this.dispensacionService.reiniciar();
-          setTimeout(() => this.router.navigate(['/dispensacion/paso1']), 1500);
+          setTimeout(() => this.router.navigate(['/dispensacion']), 1500);
         },
         error: (err) => {
           this.showToast.set(true);

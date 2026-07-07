@@ -1,10 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, signal, inject } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonNote, IonList, IonFooter, ModalController } from '@ionic/angular/standalone';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
 import { InventarioService } from '../services/inventario.service';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Movimiento } from '../../shared/models/stock-item.model';
+import QRCode from 'qrcode';
 
 @Component({
   standalone: true,
@@ -29,6 +30,17 @@ import type { Movimiento } from '../../shared/models/stock-item.model';
           @if (lote.ubicacion) { <ion-note>Ubicación: {{ lote.ubicacion }}</ion-note> }
         </ion-label>
       </ion-item>
+
+      @if (qrDataUrl()) {
+        <div class="qr-section">
+          <img [src]="qrDataUrl()" alt="QR del lote" class="qr-img" />
+          <p class="qr-code">{{ lote.codigo_qr }}</p>
+        </div>
+      } @else {
+        <div class="qr-section">
+          <div class="qr-box">Generando QR...</div>
+        </div>
+      }
 
       <ion-list>
         @for (mov of movimientos; track mov.id) {
@@ -58,20 +70,59 @@ import type { Movimiento } from '../../shared/models/stock-item.model';
       </ion-toolbar>
     </ion-footer>
   `,
+  styles: [`
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--app-space-md) 0;
+    }
+    .qr-img {
+      width: 160px;
+      height: 160px;
+      image-rendering: pixelated;
+    }
+    .qr-code {
+      font-size: var(--app-font-size-xs);
+      color: var(--app-text-secondary);
+      font-family: monospace;
+      margin-top: var(--app-space-xs);
+      word-break: break-all;
+      text-align: center;
+    }
+    .qr-box {
+      width: 120px;
+      height: 120px;
+      border: 2px dashed var(--app-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--app-font-size-xs);
+      color: var(--app-text-secondary);
+    }
+  `],
 })
 export class DetalleLoteModal implements OnInit {
-  constructor(
-    private modalCtrl: ModalController,
-    private inventarioService: InventarioService,
-  ) {}
+  private readonly modalCtrl = inject(ModalController);
+  private readonly inventarioService = inject(InventarioService);
 
   @Input({ required: true }) lote!: Lote;
   movimientos: Movimiento[] = [];
+  qrDataUrl = signal<string | null>(null);
 
-  ngOnInit() {
+  async ngOnInit() {
     this.inventarioService.getMovimientosLote(this.lote.id).subscribe({
       next: (data) => { this.movimientos = data; },
     });
+    try {
+      const url = await QRCode.toDataURL(this.lote.codigo_qr, {
+        margin: 1,
+        width: 280,
+      });
+      this.qrDataUrl.set(url);
+    } catch {
+      this.qrDataUrl.set(null);
+    }
   }
 
   dismiss() {

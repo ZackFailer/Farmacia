@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel,
@@ -48,7 +48,7 @@ export class ValidacionDosisModal {
   @Input({ required: true }) dosisCalculada!: number;
   @Input({ required: true }) dosisMaxima!: number;
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   cerrar(): void {
     this.modalCtrl.dismiss(false, 'cerrar');

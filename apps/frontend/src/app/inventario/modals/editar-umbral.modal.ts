@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonFooter, ModalController } from '@ionic/angular/standalone';
 import type { Configuracion } from '../../shared/models/configuracion.model';
@@ -43,13 +43,13 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
   `,
 })
 export class EditarUmbralModal {
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   @Input({ required: true }) configuracion!: Configuracion;
   nuevoUmbral: number | null = null;
 
   guardar() {
-    this.modalCtrl.dismiss({ umbral_minimo: this.nuevoUmbral! });
+    this.modalCtrl.dismiss({ umbral_minimo: this.nuevoUmbral ?? 0 });
   }
 
   dismiss() {

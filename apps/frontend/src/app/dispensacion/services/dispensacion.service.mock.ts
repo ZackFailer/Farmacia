@@ -224,7 +224,7 @@ export class MockDispensacionService extends DispensacionService {
     return of(attachFamiliares(nuevo));
   }
 
-  buscarPaciente(searchTerm: string): Observable<Paciente> {
+  buscarPaciente(searchTerm: string): Observable<Paciente[]> {
     const term = searchTerm.trim().toLowerCase();
     const results = SEED_PACIENTES.filter((pac) => {
       const fullName = `${pac.nombre} ${pac.apellido}`.toLowerCase();
@@ -234,8 +234,7 @@ export class MockDispensacionService extends DispensacionService {
         || pac.apellido.toLowerCase().includes(term)
         || (pac.cedula?.toLowerCase().includes(term) ?? false);
     });
-    if (results.length === 0) return throwError(() => new Error('Paciente no encontrado'));
-    return of(attachFamiliares(results[0]));
+    return of(results.map((p) => attachFamiliares(p)));
   }
 
   buscarMedicamentos(search: string): Observable<Medicamento[]> {

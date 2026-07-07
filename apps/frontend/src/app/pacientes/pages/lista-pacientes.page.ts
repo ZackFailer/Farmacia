@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,10 +6,12 @@ import {
   IonHeader, IonToolbar, IonTitle, IonButtons,
   IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
   IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner,
-   IonToast, ModalController, ViewWillEnter,
+  IonToast, IonToggle, IonButton, ModalController, AlertController, ViewWillEnter,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../services/pacientes.service';
-import type { Paciente } from '../../shared/models/paciente.model';
+import { AuthService } from '../../auth/services/auth.service';
+import { Rol } from '../../shared/enums/rol.enum';
+import type { Paciente, CreatePacienteDto } from '../../shared/models/paciente.model';
 import { RegistroPacienteModal } from '../modals/registro-paciente.modal';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
@@ -21,6 +23,7 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
     IonHeader, IonToolbar, IonTitle, IonButtons,
     IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
     IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner, IonToast,
+    IonToggle, IonButton,
     EscanerQrComponent,
   ],
   template: `
@@ -34,7 +37,9 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
     </ion-header>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Busque paciente por QR, cédula, nombre o ID de emergencia.</p>
+      <div style="text-align: center;">
+        <h2>Paciente</h2>
+      </div>
 
       <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
 
@@ -44,6 +49,17 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
         placeholder="Ej: EM-2026-001, 12345678 o nombre"
         debounce="300"
       ></ion-searchbar>
+
+      @if (!searchTerm || !searchTerm.trim()) {
+        <p class="app-text-secondary" style="text-align:center;font-size:var(--app-font-size-sm);margin:0 0 var(--app-space-lg);">Busque paciente por QR, cédula, nombre o ID de emergencia.</p>
+      }
+
+      @if (esAdmin()) {
+        <ion-item>
+          <ion-label>Ver inactivos</ion-label>
+          <ion-toggle [(ngModel)]="verInactivos" (ionChange)="buscar()"></ion-toggle>
+        </ion-item>
+      }
 
       @if (cargando()) {
         <div class="app-loading">
@@ -74,12 +90,25 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
 
       <ion-list>
         @for (p of pacientes(); track p.id) {
-          <ion-item button (click)="verDetalle(p)">
+          <ion-item button (click)="verDetalle(p)" [class.item-inactivo]="p.activo === false">
             <ion-label>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
-              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
+              @if (p.activo === false) {
+                <ion-note color="medium">Inactivo</ion-note>
+              }
             </ion-label>
+            @if (p.activo === false && esAdmin()) {
+              <ion-button slot="end" fill="clear" color="success" (click)="$event.stopPropagation(); reactivarPaciente(p)">
+                <ion-icon name="refresh-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            }
+            @if (p.activo !== false || esAdmin()) {
+              <ion-button slot="end" fill="clear" color="danger" (click)="$event.stopPropagation(); eliminarPaciente(p)">
+                <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            }
           </ion-item>
         }
       </ion-list>
@@ -99,6 +128,9 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
       (didDismiss)="showToast.set(false)"
     ></ion-toast>
   `,
+  styles: [`
+    .item-inactivo { opacity: 0.5; }
+  `],
 })
 export class ListaPacientesPage implements ViewWillEnter {
   searchTerm = '';
@@ -108,12 +140,17 @@ export class ListaPacientesPage implements ViewWillEnter {
   showToast = signal(false);
   toastMessage = signal('');
   toastColor = signal<'success' | 'danger'>('success');
+  verInactivos = signal(false);
 
-  constructor(
-    private pacientesService: PacientesService,
-    private modalCtrl: ModalController,
-    private router: Router,
-  ) {}
+  private readonly pacientesService = inject(PacientesService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+
+  esAdmin(): boolean {
+    return this.authService.getUsuario()?.rol === Rol.ADMIN;
+  }
 
   ionViewWillEnter(): void {
     this.searchTerm = '';
@@ -160,7 +197,7 @@ export class ListaPacientesPage implements ViewWillEnter {
       return;
     }
     this.cargando.set(true);
-    this.pacientesService.buscarPaciente(term).subscribe({
+    this.pacientesService.buscarPaciente(term, this.verInactivos()).subscribe({
       next: (items) => {
         this.pacientes.set(items);
         this.cargando.set(false);
@@ -197,6 +234,44 @@ export class ListaPacientesPage implements ViewWillEnter {
         },
       });
     }
+  }
+
+  async eliminarPaciente(p: Paciente): Promise<void> {
+    const esAdmin = this.esAdmin();
+    const alert = await this.alertCtrl.create({
+      header: 'Eliminar paciente',
+      message: esAdmin
+        ? `¿Eliminar permanentemente a <strong>${p.nombre} ${p.apellido}</strong>?`
+        : `¿Desactivar a <strong>${p.nombre} ${p.apellido}</strong>?`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: esAdmin ? 'Eliminar' : 'Desactivar',
+          role: 'destructive',
+          handler: () => {
+            if (esAdmin) {
+              this.pacientesService.eliminarPaciente(p.id).subscribe({
+                next: () => { this.buscar(); this.presentToast('Paciente eliminado permanentemente.', 'success'); },
+                error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al eliminar'), 'danger'),
+              });
+            } else {
+              this.pacientesService.actualizarPaciente(p.id, { activo: false } as unknown as Partial<CreatePacienteDto>).subscribe({
+                next: () => { this.buscar(); this.presentToast('Paciente desactivado.', 'success'); },
+                error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al desactivar'), 'danger'),
+              });
+            }
+          },
+        },
+      ],
+    });
+    alert.present();
+  }
+
+  async reactivarPaciente(p: Paciente): Promise<void> {
+    this.pacientesService.actualizarPaciente(p.id, { activo: true } as unknown as Partial<CreatePacienteDto>).subscribe({
+      next: () => { this.buscar(); this.presentToast('Paciente reactivado.', 'success'); },
+      error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al reactivar'), 'danger'),
+    });
   }
 
   private presentToast(message: string, color: 'success' | 'danger'): void {

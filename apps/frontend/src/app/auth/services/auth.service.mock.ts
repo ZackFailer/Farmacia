@@ -6,30 +6,55 @@ import { clearAppSessionStorage } from './auth.service';
 import type { Usuario } from '../../shared/models/usuario.model';
 import { Rol } from '../../shared/enums/rol.enum';
 
-const SEED_USUARIO: Usuario = {
-  id: 1,
-  nombre: 'Administrador',
-  rol: Rol.PHARMACEUTICAL,
-  created_at: '2026-01-01T00:00:00Z',
-  updated_at: '2026-01-01T00:00:00Z',
-};
+interface MockUser {
+  username: string;
+  pin: string;
+  usuario: Usuario;
+}
 
-const SEED_PIN = '123456';
+const SEED_USUARIOS: MockUser[] = [
+  {
+    username: 'admin',
+    pin: '123456',
+    usuario: {
+      id: 1,
+      username: 'admin',
+      nombre: 'Administrador',
+      rol: Rol.ADMIN,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+  },
+  {
+    username: 'humber_farias',
+    pin: '123456',
+    usuario: {
+      id: 2,
+      username: 'humber_farias',
+      nombre: 'Humberto Farías',
+      rol: Rol.MEDICATION_RECEPTIONIST,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+  },
+];
+
 const TOKEN_FAKE = 'mock-jwt-token-apoPharma-2026';
 
 @Injectable()
 export class MockAuthService extends AuthService {
   readonly usuario$: WritableSignal<Usuario | null> = signal<Usuario | null>(null);
 
-  login(pin: string): Observable<{ token: string; usuario: Usuario }> {
-    if (pin === SEED_PIN) {
-      const payload = { token: TOKEN_FAKE, usuario: SEED_USUARIO };
+  login(username: string, pin: string): Observable<{ token: string; usuario: Usuario }> {
+    const match = SEED_USUARIOS.find(u => u.username === username && u.pin === pin);
+    if (match) {
+      const payload = { token: TOKEN_FAKE, usuario: match.usuario };
       localStorage.setItem('apoPharma_token', TOKEN_FAKE);
-      localStorage.setItem('apoPharma_usuario', JSON.stringify(SEED_USUARIO));
-      this.usuario$.set(SEED_USUARIO);
+      localStorage.setItem('apoPharma_usuario', JSON.stringify(match.usuario));
+      this.usuario$.set(match.usuario);
       return of(payload);
     }
-    return throwError(() => new Error('PIN inválido'));
+    return throwError(() => new Error('Credenciales inválidas'));
   }
 
   logout(): void {

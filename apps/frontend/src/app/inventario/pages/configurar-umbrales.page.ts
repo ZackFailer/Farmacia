@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonButtons, IonMenuButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter } from '@ionic/angular/standalone';
 import { InventarioService } from '../services/inventario.service';
@@ -53,10 +53,8 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
   `,
 })
 export class ConfigurarUmbralesPage implements ViewWillEnter {
-  constructor(
-    private inventarioService: InventarioService,
-    private modalCtrl: ModalController,
-  ) {}
+  private readonly inventarioService = inject(InventarioService);
+  private readonly modalCtrl = inject(ModalController);
 
   searchTerm = '';
   cargando = signal(true);

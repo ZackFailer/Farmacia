@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Lote } from '../common/entities/lote.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { LoteMovimiento } from '../common/entities/lote-movimiento.entity';
+import { Medicamento } from '../common/entities/medicamento.entity';
 import { MovementType } from '../common/enums/movement-type.enum';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class InventarioService {
     private readonly configuracionRepository: Repository<Configuracion>,
     @InjectRepository(LoteMovimiento)
     private readonly movimientoRepository: Repository<LoteMovimiento>,
+    @InjectRepository(Medicamento)
+    private readonly medicamentoRepository: Repository<Medicamento>,
   ) {}
 
   async getInventario(search?: string) {
@@ -102,19 +105,49 @@ export class InventarioService {
   }
 
   async getUmbrales() {
-    return this.configuracionRepository.find({
+    const medicamentos = await this.medicamentoRepository.find({
       where: { activo: true },
-      relations: { medicamento: true },
-      order: { id: 'ASC' },
+      relations: { configuracion: true },
+      order: { nombreGenerico: 'ASC' },
     });
+    return medicamentos.map(m => ({
+      id: m.configuracion?.id ?? 0,
+      medicamentoId: m.id,
+      medicamento: {
+        id: m.id,
+        nombreGenerico: m.nombreGenerico,
+        nombreComercial: m.nombreComercial,
+        presentacion: m.presentacion,
+        concentracion: m.concentracion,
+        unidadConcentracion: m.unidadConcentracion,
+        activo: m.activo,
+        createdAt: m.createdAt,
+        updatedAt: m.updatedAt,
+      },
+      umbralMinimo: m.configuracion?.umbralMinimo ?? 10,
+      dosisMaximaMgKg: m.configuracion?.dosisMaximaMgKg ?? null,
+      pesoReferenciaKg: m.configuracion?.pesoReferenciaKg ?? null,
+      activo: true,
+      updatedAt: m.configuracion?.updatedAt ?? m.updatedAt,
+    }));
   }
 
-  async actualizarUmbral(id: number, umbralMinimo: number) {
-    const conf = await this.configuracionRepository.findOne({ where: { id, activo: true } });
+  async actualizarUmbral(medicamentoId: number, umbralMinimo: number) {
+    let conf = await this.configuracionRepository.findOne({
+      where: { medicamentoId, activo: true },
+    });
     if (!conf) {
-      throw new NotFoundException('Configuration not found');
+      const medicamento = await this.medicamentoRepository.findOne({
+        where: { id: medicamentoId, activo: true },
+      });
+      if (!medicamento) throw new NotFoundException('Medicamento no encontrado');
+      conf = this.configuracionRepository.create({
+        medicamentoId,
+        umbralMinimo,
+      });
+    } else {
+      conf.umbralMinimo = umbralMinimo;
     }
-    conf.umbralMinimo = umbralMinimo;
     return this.configuracionRepository.save(conf);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -48,7 +48,9 @@ import type { Paciente } from '../../shared/models/paciente.model';
     </ion-header>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Busque paciente por QR, cédula, nombre o ID de emergencia para abrir historial.</p>
+      <div style="text-align: center;">
+        <h2>Historial</h2>
+      </div>
 
       <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
 
@@ -58,6 +60,10 @@ import type { Paciente } from '../../shared/models/paciente.model';
         placeholder="Ej: EM-2026-001, 12345678 o nombre"
         debounce="300"
       ></ion-searchbar>
+
+      @if (!searchTerm || !searchTerm.trim()) {
+        <p class="app-text-secondary" style="text-align:center;font-size:var(--app-font-size-sm);margin:0 0 var(--app-space-lg);">Busque paciente por QR, cédula, nombre o ID de emergencia para abrir historial.</p>
+      }
 
       @if (cargando()) {
         <div class="app-loading app-loading-compact">
@@ -73,7 +79,7 @@ import type { Paciente } from '../../shared/models/paciente.model';
               <ion-label>
                 <h2>{{ p.nombre }} {{ p.apellido }}</h2>
                 <p>ID: {{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
-                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada }} años</ion-note>
+                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada ?? 0 }} años</ion-note>
               </ion-label>
             </ion-item>
           }
@@ -92,10 +98,8 @@ export class HistorialBusquedaPage {
   resultados = signal<Paciente[]>([]);
   errorMsg = signal('');
 
-  constructor(
-    private router: Router,
-    private pacientesService: PacientesService,
-  ) {}
+  private readonly router = inject(Router);
+  private readonly pacientesService = inject(PacientesService);
 
   onCodigoEscaneado(codigo: string): void {
     const id = codigo.trim().toUpperCase();

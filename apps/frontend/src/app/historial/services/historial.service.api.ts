@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { HistorialService } from './historial.service';
@@ -54,6 +54,8 @@ interface ApiDispensacion {
   usuarioId: number;
   fechaHora: string;
   observaciones: string | null;
+  recetaId: number | null;
+  activo: boolean;
   paciente?: ApiPaciente;
   usuario?: ApiUsuario;
   detalles?: ApiDetalle[];
@@ -61,9 +63,7 @@ interface ApiDispensacion {
 
 @Injectable()
 export class ApiHistorialService extends HistorialService {
-  constructor(private readonly http: HttpClient) {
-    super();
-  }
+  private readonly http = inject(HttpClient);
 
   getHistorialPaciente(idEmergencia: string): Observable<Dispensacion[]> {
     return this.http
@@ -84,6 +84,8 @@ export class ApiHistorialService extends HistorialService {
       usuario_id: item.usuarioId,
       fecha_hora: item.fechaHora,
       observaciones: item.observaciones ?? undefined,
+      receta_id: item.recetaId ?? undefined,
+      activo: item.activo,
       despachado_por: item.usuario?.nombre,
       paciente: item.paciente
         ? {

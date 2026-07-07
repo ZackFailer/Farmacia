@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CrearMedicamentoDto {
   @IsString()
@@ -17,4 +17,13 @@ export class CrearMedicamentoDto {
   @IsNumber()
   @Min(0.0001)
   concentracion!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  unidadConcentracion?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  esVital?: boolean;
 }

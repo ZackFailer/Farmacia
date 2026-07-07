@@ -1,9 +1,11 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
 import { Paciente } from '../common/entities/paciente.entity';
 import { NucleoFamiliar } from '../common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from '../common/entities/nucleo-familiar-miembro.entity';
+import { PacientePatologia } from '../common/entities/paciente-patologia.entity';
+import { PacienteNecesidad } from '../common/entities/paciente-necesidad.entity';
 import { CrearPacienteDto } from './dto/crear-paciente.dto';
 import { ActualizarPacienteDto } from './dto/actualizar-paciente.dto';
 import { AgregarFamiliarDto } from './dto/agregar-familiar.dto';
@@ -17,16 +19,22 @@ export class PacientesService {
     private readonly nucleoRepository: Repository<NucleoFamiliar>,
     @InjectRepository(NucleoFamiliarMiembro)
     private readonly miembroRepository: Repository<NucleoFamiliarMiembro>,
+    @InjectRepository(PacientePatologia)
+    private readonly pacientePatologiaRepository: Repository<PacientePatologia>,
+    @InjectRepository(PacienteNecesidad)
+    private readonly pacienteNecesidadRepository: Repository<PacienteNecesidad>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
 
   async createPaciente(dto: CrearPacienteDto) {
-    const { familiares, ...pacienteData } = dto;
+    const { familiares, patologiaIds, patologias, necesidadIds, ...pacienteData } = dto;
     let savedId = 0;
 
     await this.dataSource.transaction(async (manager) => {
       const pacienteRepository = manager.getRepository(Paciente);
+      const patologiaRepository = manager.getRepository(PacientePatologia);
+      const necesidadRepository = manager.getRepository(PacienteNecesidad);
       const nucleoRepository = manager.getRepository(NucleoFamiliar);
       const miembroRepository = manager.getRepository(NucleoFamiliarMiembro);
 
@@ -35,10 +43,14 @@ export class PacientesService {
         {
           ...pacienteData,
           telefono: pacienteData.telefono ?? null,
+          edadEstimada: this.computeEdadEstimada(pacienteData),
         },
         dto.idEmergencia,
+        manager,
       );
       savedId = saved.id;
+
+      await this.savePacienteRelations(patologiaRepository, necesidadRepository, saved.id, patologias, patologiaIds, necesidadIds);
 
       if (!familiares?.length) {
         return;
@@ -57,17 +69,24 @@ export class PacientesService {
       await miembroRepository.save(titularMember);
 
       for (const f of familiares) {
+        const { patologiaIds: fPatologiaIds, patologias: fPatologias, necesidadIds: fNecesidadIds } = f;
         const savedFamiliar = await this.savePacienteWithUniqueId(pacienteRepository, {
           nombre: f.nombre,
           apellido: f.apellido ?? '',
           cedula: f.cedula ?? null,
           telefono: f.telefono ?? null,
           sexo: f.sexo,
-          edadEstimada: f.edadEstimada,
+          edadEstimada: this.computeEdadEstimada(f),
+          fechaNacimiento: f.fechaNacimiento ?? null,
+          edadManual: f.edadManual ?? null,
+          esRecienNacido: f.esRecienNacido ?? false,
           pesoEstimado: f.pesoEstimado,
           esDamnificado: f.esDamnificado,
           tieneCargaFamiliar: false,
-        });
+          tieneDiscapacidadMotora: f.tieneDiscapacidadMotora ?? false,
+        }, undefined, manager);
+
+        await this.savePacienteRelations(patologiaRepository, necesidadRepository, savedFamiliar.id, fPatologias, fPatologiaIds, fNecesidadIds);
 
         const member = miembroRepository.create({
           nucleoId: savedNucleo.id,
@@ -81,6 +100,34 @@ export class PacientesService {
     return this.loadPacienteConNucleo(savedId);
   }
 
+  private async savePacienteRelations(
+    patologiaRepo: Repository<PacientePatologia>,
+    necesidadRepo: Repository<PacienteNecesidad>,
+    pacienteId: number,
+    patologias?: { patologiaId: number; tratamiento?: string }[],
+    patologiaIds?: number[],
+    necesidadIds?: number[],
+  ) {
+    if (patologias && patologias.length > 0) {
+      for (const p of patologias) {
+        const entity = patologiaRepo.create({ pacienteId, patologiaId: p.patologiaId, tratamiento: p.tratamiento ?? null });
+        await patologiaRepo.save(entity);
+      }
+    } else if (patologiaIds && patologiaIds.length > 0) {
+      for (const pid of patologiaIds) {
+        const entity = patologiaRepo.create({ pacienteId, patologiaId: pid });
+        await patologiaRepo.save(entity);
+      }
+    }
+
+    if (necesidadIds && necesidadIds.length > 0) {
+      for (const nid of necesidadIds) {
+        const entity = necesidadRepo.create({ pacienteId, necesidadId: nid });
+        await necesidadRepo.save(entity);
+      }
+    }
+  }
+
   async getPacienteById(id: number) {
     return this.loadPacienteConNucleo(id);
   }
@@ -88,7 +135,11 @@ export class PacientesService {
   async getPacienteByIdEmergencia(idEmergencia: string) {
     const paciente = await this.pacienteRepository.findOne({
       where: { idEmergencia, activo: true },
-      relations: { familiares: { nucleo: { miembros: { paciente: true }, titular: true } } },
+      relations: {
+        _familiaresBacking: { paciente: true, nucleo: { miembros: { paciente: true }, titular: true } },
+        pacientePatologias: { patologia: true },
+        pacienteNecesidades: { necesidad: true },
+      },
     });
 
     if (!paciente) {
@@ -98,25 +149,36 @@ export class PacientesService {
     return paciente;
   }
 
-  async searchPacientes(query?: string) {
+  async searchPacientes(query?: string, incluirInactivos?: boolean) {
     const q = query?.trim().toLowerCase() ?? '';
     if (!q) return [];
-    return this.pacienteRepository
+    const qb = this.pacienteRepository
       .createQueryBuilder('p')
-      .leftJoinAndSelect('p.familiares', 'nfm')
+      .leftJoinAndSelect('p._familiaresBacking', 'nfm')
+      .leftJoinAndSelect('nfm.paciente', 'nfm_paciente')
       .leftJoinAndSelect('nfm.nucleo', 'nf')
       .leftJoinAndSelect('nf.miembros', 'all_members')
       .leftJoinAndSelect('all_members.paciente', 'member_paciente')
       .leftJoinAndSelect('nf.titular', 'titular')
-      .where('p.activo = :activo', { activo: true })
-      .andWhere('(LOWER(p.idEmergencia) LIKE :q OR LOWER(p.nombre) LIKE :q OR LOWER(p.apellido) LIKE :q OR p.cedula LIKE :q OR p.telefono LIKE :q)', { q: `%${q}%` })
-      .take(20)
-      .getMany();
+      .leftJoinAndSelect('p.pacientePatologias', 'pp')
+      .leftJoinAndSelect('pp.patologia', 'pat')
+      .leftJoinAndSelect('p.pacienteNecesidades', 'pn')
+      .leftJoinAndSelect('pn.necesidad', 'nec')
+      .where('(LOWER(p.idEmergencia) LIKE :q OR LOWER(p.nombre) LIKE :q OR LOWER(p.apellido) LIKE :q OR p.cedula LIKE :q OR p.telefono LIKE :q)', { q: `%${q}%` })
+      .take(20);
+    if (!incluirInactivos) {
+      qb.andWhere('p.activo = :activo', { activo: true });
+    }
+    return qb.getMany();
   }
 
   async updatePaciente(id: number, dto: ActualizarPacienteDto) {
     const paciente = await this.pacienteRepository.findOne({
-      where: { id, activo: true },
+      where: { id },
+      relations: {
+        pacientePatologias: true,
+        pacienteNecesidades: true,
+      },
     });
     if (!paciente) {
       throw new NotFoundException('Patient not found');
@@ -128,22 +190,60 @@ export class PacientesService {
     if (dto.telefono !== undefined) paciente.telefono = dto.telefono;
     if (dto.sexo !== undefined) paciente.sexo = dto.sexo;
     if (dto.edadEstimada !== undefined) paciente.edadEstimada = dto.edadEstimada;
+    if (dto.fechaNacimiento !== undefined) paciente.fechaNacimiento = dto.fechaNacimiento;
+    if (dto.edadManual !== undefined) paciente.edadManual = dto.edadManual;
+    if (dto.esRecienNacido !== undefined) paciente.esRecienNacido = dto.esRecienNacido;
     if (dto.pesoEstimado !== undefined) paciente.pesoEstimado = dto.pesoEstimado;
+
+    // Compute edadEstimada if not explicitly provided
+    if (dto.edadEstimada === undefined && (dto.fechaNacimiento !== undefined || dto.edadManual !== undefined || dto.esRecienNacido !== undefined)) {
+      paciente.edadEstimada = this.computeEdadEstimada({
+        esRecienNacido: dto.esRecienNacido ?? paciente.esRecienNacido,
+        fechaNacimiento: dto.fechaNacimiento ?? paciente.fechaNacimiento ?? undefined,
+        edadManual: dto.edadManual ?? paciente.edadManual ?? undefined,
+      });
+    }
     if (dto.esDamnificado !== undefined) paciente.esDamnificado = dto.esDamnificado;
+    if (dto.tieneDiscapacidadMotora !== undefined) paciente.tieneDiscapacidadMotora = dto.tieneDiscapacidadMotora;
+    if (dto.activo !== undefined) paciente.activo = dto.activo;
+
+    if (dto.patologias !== undefined || dto.patologiaIds !== undefined) {
+      await this.pacientePatologiaRepository.delete({ pacienteId: id });
+      const patologias = dto.patologias ?? [];
+      const patologiaIds = dto.patologiaIds ?? [];
+      if (patologias.length > 0) {
+        for (const p of patologias) {
+          const entity = this.pacientePatologiaRepository.create({ pacienteId: id, patologiaId: p.patologiaId, tratamiento: p.tratamiento ?? null });
+          await this.pacientePatologiaRepository.save(entity);
+        }
+      } else if (patologiaIds.length > 0) {
+        for (const pid of patologiaIds) {
+          const entity = this.pacientePatologiaRepository.create({ pacienteId: id, patologiaId: pid });
+          await this.pacientePatologiaRepository.save(entity);
+        }
+      }
+    }
+
+    if (dto.necesidadIds !== undefined) {
+      await this.pacienteNecesidadRepository.delete({ pacienteId: id });
+      for (const nid of dto.necesidadIds) {
+        const entity = this.pacienteNecesidadRepository.create({ pacienteId: id, necesidadId: nid });
+        await this.pacienteNecesidadRepository.save(entity);
+      }
+    }
 
     await this.pacienteRepository.save(paciente);
     return this.loadPacienteConNucleo(id);
   }
 
-  async softDeletePaciente(id: number) {
+  async deletePaciente(id: number) {
     const paciente = await this.pacienteRepository.findOne({
-      where: { id, activo: true },
+      where: { id },
     });
     if (!paciente) {
       throw new NotFoundException('Patient not found');
     }
-    paciente.activo = false;
-    await this.pacienteRepository.save(paciente);
+    await this.pacienteRepository.remove(paciente);
     return { success: true };
   }
 
@@ -197,15 +297,20 @@ export class PacientesService {
   private async loadPacienteConNucleo(id: number) {
     const paciente = await this.pacienteRepository.findOne({
       where: { id, activo: true },
-      relations: { familiares: { nucleo: { miembros: { paciente: true }, titular: true } } },
+      relations: {
+        _familiaresBacking: { paciente: true, nucleo: { miembros: { paciente: true }, titular: true } },
+        pacientePatologias: { patologia: true },
+        pacienteNecesidades: { necesidad: true },
+      },
     });
     if (!paciente) throw new NotFoundException('Patient not found');
     return paciente;
   }
 
-  private async generateNextEmergenciaId(): Promise<string> {
+  private async generateNextEmergenciaId(manager?: EntityManager): Promise<string> {
     const year = new Date().getFullYear();
-    const lastPaciente = await this.pacienteRepository
+    const repo = manager ? manager.getRepository(Paciente) : this.pacienteRepository;
+    const lastPaciente = await repo
       .createQueryBuilder('p')
       .where('p.idEmergencia LIKE :pattern', { pattern: `EM-${year}-%` })
       .orderBy('p.id', 'DESC')
@@ -218,10 +323,34 @@ export class PacientesService {
     return `EM-${year}-${String(nextSeq).padStart(3, '0')}`;
   }
 
+  private computeEdadEstimada(dto: { esRecienNacido?: boolean; fechaNacimiento?: string; edadManual?: number; edadEstimada?: number }): number {
+    if (dto.edadEstimada !== undefined) {
+      return dto.edadEstimada;
+    }
+    if (dto.esRecienNacido) {
+      return 0;
+    }
+    if (dto.fechaNacimiento) {
+      const nacimiento = new Date(dto.fechaNacimiento);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - nacimiento.getFullYear();
+      const mesDiff = hoy.getMonth() - nacimiento.getMonth();
+      if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--;
+      }
+      return Math.max(0, edad);
+    }
+    if (dto.edadManual !== undefined) {
+      return dto.edadManual;
+    }
+    return 0;
+  }
+
   private async savePacienteWithUniqueId(
     pacienteRepository: Repository<Paciente>,
     payload: Partial<Paciente>,
     fixedIdEmergencia?: string,
+    manager?: EntityManager,
   ): Promise<Paciente> {
     if (fixedIdEmergencia) {
       try {
@@ -237,12 +366,11 @@ export class PacientesService {
 
     const maxAttempts = 5;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const idEmergencia = await this.generateNextEmergenciaId();
+      const idEmergencia = await this.generateNextEmergenciaId(manager);
       try {
         const paciente = pacienteRepository.create({ ...payload, idEmergencia });
         return await pacienteRepository.save(paciente);
       } catch (error: unknown) {
-        console.error('DEBUG savePacienteWithUniqueId attempt', attempt, 'error:', error);
         if (this.isIdEmergenciaConflict(error) && attempt < maxAttempts - 1) {
           continue;
         }
@@ -255,12 +383,10 @@ export class PacientesService {
 
   private isIdEmergenciaConflict(error: unknown): boolean {
     if (!(error instanceof QueryFailedError)) {
-      console.error('DEBUG isIdEmergenciaConflict: not QueryFailedError, type:', typeof error, error?.constructor?.name);
       return false;
     }
 
     const message = String((error as { message?: string }).message ?? '');
-    console.error('DEBUG isIdEmergenciaConflict: message:', message.slice(0, 200));
     return message.includes('UNIQUE constraint failed: paciente.id_emergencia');
   }
 }

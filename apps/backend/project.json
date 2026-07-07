@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "inputs": ["default", "!{projectRoot}/data/**"],
       "options": {
-        "command": "webpack-cli build && if exist certs (xcopy certs ..\\..\\dist\\apps\\backend\\certs /E /I /Y >nul)",
+        "command": "webpack-cli build && if exist certs (xcopy certs ..\\..\\dist\\apps\\backend\\certs /E /I /Y >nul) & copy /Y start.js ..\\..\\dist\\apps\\backend\\start.js >nul & cd ..\\..\\dist\\apps\\backend && npm install --omit=dev --ignore-scripts --no-audit --no-fund >nul 2>&1",
         "env": {
           "NODE_ENV": "production"
         },
@@ -56,7 +56,7 @@
       "options": {
         "buildTarget": "backend:build",
         "runBuildTargetDependencies": false,
-        "runtimeArgs": ["--experimental-sqlite"]
+        "runtimeArgs": ["--experimental-sqlite"],
       },
       "configurations": {
         "development": {

@@ -1,12 +1,12 @@
 import { Component, computed, input, output } from '@angular/core';
-import { IonItem, IonLabel, IonNote } from '@ionic/angular/standalone';
+import { IonItem, IonLabel, IonNote, IonButton, IonIcon } from '@ionic/angular/standalone';
 import { IndicadorStockComponent } from '../../shared/components/indicador-stock.component';
 import type { StockItem } from '../../shared/models/stock-item.model';
 
 @Component({
   standalone: true,
   selector: 'app-tarjeta-medicamento',
-  imports: [IonItem, IonLabel, IonNote, IndicadorStockComponent],
+  imports: [IonItem, IonLabel, IonNote, IonButton, IonIcon, IndicadorStockComponent],
   template: `
     <ion-item button class="med-card" [style.border-left]="'4px solid ' + borderColor()" (click)="verLotes.emit(item())">
       <ion-label>
@@ -19,7 +19,12 @@ import type { StockItem } from '../../shared/models/stock-item.model';
         </div>
         <ion-note>Umbral minimo: {{ item().umbral_minimo }} unds</ion-note>
       </ion-label>
-      <app-indicador-stock slot="end" [cantidad]="item().stock_total" [umbral]="item().umbral_minimo"></app-indicador-stock>
+      <div slot="end" style="display:flex;flex-direction:column;gap:4px;">
+        <app-indicador-stock [cantidad]="item().stock_total" [umbral]="item().umbral_minimo"></app-indicador-stock>
+        <ion-button fill="clear" size="small" (click)="ajustarStock.emit(item()); $event.stopPropagation()">
+          <ion-icon name="create-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
     </ion-item>
   `,
   styles: [`
@@ -74,6 +79,7 @@ import type { StockItem } from '../../shared/models/stock-item.model';
 export class TarjetaMedicamentoComponent {
   item = input.required<StockItem>();
   verLotes = output<StockItem>();
+  ajustarStock = output<StockItem>();
 
   borderColor = computed(() => {
     switch (this.item().color) {

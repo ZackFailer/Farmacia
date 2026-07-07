@@ -11,11 +11,13 @@ Sistema de Gestión de Farmacia de Emergencia. Monorepo Nx con Angular 21 + Ioni
 ### Módulos
 
 | Módulo | Docs |
-|---|---|
+|---|---|---|
 | Autenticación | `documents/modules/autenticacion/` |
+| Pacientes | `documents/modules/pacientes/` |
 | Recepción | `documents/modules/recepcion/` |
-| Inventario | `documents/modules/inventario/` |
+| Recetas | `documents/modules/recetas/` |
 | Dispensación | `documents/modules/dispensacion/` |
+| Inventario | `documents/modules/inventario/` |
 | Historial | `documents/modules/historial/` |
 | Administración | `documents/modules/administracion/` |
 

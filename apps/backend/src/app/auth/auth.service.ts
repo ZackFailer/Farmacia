@@ -13,26 +13,20 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(pin: string) {
-    const users = await this.usuarioRepository.find({ where: { activo: true } });
-    let matchedUser: Usuario | null = null;
+  async login(username: string, pin: string) {
+    const user = await this.usuarioRepository.findOne({
+      where: { username, activo: true },
+    });
 
-    for (const user of users) {
-      const isValid = await compare(pin, user.pinHash);
-      if (isValid) {
-        matchedUser = user;
-        break;
-      }
-    }
-
-    if (!matchedUser) {
-      throw new UnauthorizedException('Invalid PIN');
+    if (!user || !(await compare(pin, user.pinHash))) {
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const payload = {
-      sub: matchedUser.id,
-      nombre: matchedUser.nombre,
-      rol: matchedUser.rol,
+      sub: user.id,
+      username: user.username,
+      nombre: user.nombre,
+      rol: user.rol,
     };
 
     const token = this.jwtService.sign(payload);
@@ -40,9 +34,10 @@ export class AuthService {
     return {
       token,
       usuario: {
-        id: matchedUser.id,
-        nombre: matchedUser.nombre,
-        rol: matchedUser.rol,
+        id: user.id,
+        username: user.username,
+        nombre: user.nombre,
+        rol: user.rol,
       },
     };
   }
@@ -55,6 +50,7 @@ export class AuthService {
 
     return {
       id: user.id,
+      username: user.username,
       nombre: user.nombre,
       rol: user.rol,
     };

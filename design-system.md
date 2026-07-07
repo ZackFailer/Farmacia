@@ -536,9 +536,9 @@ ion-item {
 
 | Ruta | Página | Modales asociados |
 |---|---|---|
-| `/login` | `LoginPage` | RecuperarPinModal |
 | `/recepcion` | `DashboardIngresosPage` | IngresoLoteModal, NuevoMedicamentoModal, ImprimirEtiquetaModal |
-| `/inventario` | `PanelStockPage` | AjusteStockModal, DetalleLoteModal, AlertaStockModal |
+| `/recepcion/catalogo` | `CatalogoMedicamentosPage` | NuevoMedicamentoModal |
+| `/inventario` | `PanelStockPage` | AjusteStockModal, DetalleLoteModal |
 | `/inventario/umbrales` | `ConfigurarUmbralesPage` | EditarUmbralModal |
 | `/dispensacion/paso1` | `Paso1EscanearPacientePage` | RegistroPacienteModal, BusquedaPacienteModal |
 | `/dispensacion/paso2` | `Paso2SeleccionarMedsPage` | BusquedaMedicamentoModal |

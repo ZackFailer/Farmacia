@@ -26,6 +26,8 @@ src/app/
 ├── inventario/
 ├── historial/
 ├── administracion/
+├── admin/           (patologías y necesidades)
+├── censo/           (carpas, tablero estadístico)
 ├── shared/
 └── core/
 ```
@@ -35,31 +37,41 @@ src/app/
 ## 3. Rutas principales
 
 | Ruta | Módulo | Roles |
-|---|---|---|
+|---|---|---|---|
 | `/login` | Autenticación | todos |
 | `/recepcion` | Recepción | `recepcionista_med`, `admin` |
-| `/pacientes` | Pacientes | `recepcionista`, `doctor`, `admin` |
-| `/pacientes/:id` | Pacientes | `recepcionista`, `doctor`, `admin` |
+| `/recepcion/catalogo` | Recepción — catálogo de medicamentos | `recepcionista_med`, `admin` |
+| `/pacientes` | Pacientes | `recepcionista`, `doctor`, `farmaceutico`, `admin`, `encuestador` |
+| `/pacientes/:id` | Pacientes | `recepcionista`, `doctor`, `farmaceutico`, `admin`, `encuestador` |
 | `/recetas` | Recetas | `doctor`, `admin` |
-| `/dispensacion/cola` | Dispensación | `farmaceutico`, `admin` |
-| `/dispensacion/paso1` | Dispensación manual/contingencia | `farmaceutico`, `admin` |
-| `/dispensacion/paso2` | Dispensación | `farmaceutico`, `admin` |
-| `/dispensacion/paso3` | Dispensación | `farmaceutico`, `admin` |
+| `/dispensacion` | Dispensación — **redirige a paso1** | `farmaceutico`, `admin` |
+| `/dispensacion/cola` | Dispensación — **redirige a paso1** | `farmaceutico`, `admin` |
+| `/dispensacion/paso1` | Dispensación — identificación paciente (cola + QR + búsqueda) | `farmaceutico`, `admin` |
+| `/dispensacion/paso2` | Dispensación — selección de lotes | `farmaceutico`, `admin` |
+| `/dispensacion/paso3` | Dispensación — confirmación de entrega | `farmaceutico`, `admin` |
 | `/inventario` | Inventario | `recepcionista_med`, `farmaceutico`, `admin` |
 | `/inventario/umbrales` | Umbrales | `admin` |
 | `/historial` | Búsqueda de historial | `doctor`, `farmaceutico`, `admin` |
 | `/historial/:idEmergencia` | Historial | `doctor`, `farmaceutico`, `admin` |
+| `/censo/carpas` | Censo — lista de carpas | `encuestador`, `recepcionista`, `admin` |
+| `/censo/crear-carpa` | Censo — crear carpa | `encuestador`, `admin` |
+| `/censo/carpa/:codigo` | Censo — detalle de carpa | `encuestador`, `recepcionista`, `admin` |
+| `/censo/tablero` | Censo — tablero estadístico | `encuestador`, `recepcionista`, `admin` |
+| `/admin` | Admin — **redirige a usuarios** | `admin`, `encuestador` |
 | `/admin/usuarios` | Administración | `admin` |
+| `/admin/patologias` | Patologías | `admin`, `encuestador` |
+| `/admin/necesidades` | Necesidades | `admin`, `encuestador` |
 | `/admin/configuracion` | Administración | `admin` |
 
 ### Landing por rol
 
 | Rol | Landing |
-|---|---|
+|---|---|---|
 | `recepcionista` | `/pacientes` |
 | `doctor` | `/recetas` |
-| `farmaceutico` | `/dispensacion/cola` |
+| `farmaceutico` | `/dispensacion/paso1` |
 | `recepcionista_med` | `/recepcion` |
+| `encuestador` | `/censo/crear-carpa` |
 | `admin` | `/admin/usuarios` |
 
 ---
@@ -67,12 +79,13 @@ src/app/
 ## 4. Menú lateral esperado
 
 | Rol | Menú visible |
-|---|---|
-| `recepcionista` | Pacientes |
+|---|---|---|
+| `recepcionista` | Pacientes, Censo |
 | `doctor` | Pacientes, Recetas, Historial |
 | `farmaceutico` | Dispensación, Inventario, Historial |
 | `recepcionista_med` | Recepción, Inventario |
-| `admin` | Recepción, Pacientes, Recetas, Dispensación, Inventario, Umbrales, Historial, Admin |
+| `encuestador` | Censo, Patologías, Necesidades |
+| `admin` | Recepción, Pacientes, Recetas, Dispensación, Inventario, Umbrales, Historial, Censo, Admin |
 
 El menú debe mostrar además:
 
@@ -124,8 +137,9 @@ El menú debe mostrar además:
 
 ### 5.5 Dispensación
 
-- entrada principal: cola de recetas pendientes,
-- flujo alterno: dispensación manual con paciente identificado,
+- entrada principal (`/dispensacion/paso1`): cola de recetas pendientes + búsqueda manual de paciente,
+- la ruta `/dispensacion/cola` existe como alias y redirige a `/dispensacion/paso1`,
+- en paso1 se muestran ambas opciones: seleccionar receta pendiente de la cola o identificar paciente manualmente (sin receta) para dispensación de contingencia,
 - asignación de lotes,
 - validación de stock y dosis,
 - confirmación de entrega,
@@ -163,56 +177,103 @@ El menú debe mostrar además:
 auth/
   pages/login.page.ts
   services/auth.service.ts
-  guards/
+  services/auth.service.api.ts
+  services/auth.service.mock.ts
+  guards/auth.guard.ts
 
 pacientes/
   pages/lista-pacientes.page.ts
   pages/detalle-paciente.page.ts
-  modals/
+  modals/registro-paciente.modal.ts
+  modals/editar-paciente.modal.ts
+  modals/busqueda-paciente.modal.ts
+  modals/agregar-familiar.modal.ts
+  modals/paciente-qr.modal.ts
   services/pacientes.service.ts
   pacientes.routes.ts
 
 recepcion/
   pages/dashboard-ingresos.page.ts
-  modals/
+  pages/catalogo-medicamentos.page.ts
+  modals/ingreso-lote.modal.ts
+  modals/nuevo-medicamento.modal.ts
+  modals/editar-medicamento.modal.ts
+  modals/imprimir-etiqueta.modal.ts
+  components/tabla-ingresos.component.ts
   services/recepcion.service.ts
   recepcion.routes.ts
 
 recetas/
   pages/recetar.page.ts
   services/recetas.service.ts
+  services/receta-draft.service.ts
   recetas.routes.ts
 
 dispensacion/
-  pages/paso0-cola.page.ts
-  pages/paso1-escanear-paciente.page.ts
+  pages/paso1-escanear-paciente.page.ts (cola + QR + búsqueda)
   pages/paso2-seleccionar-meds.page.ts
   pages/paso3-confirmar.page.ts
-  components/
-  modals/
+  components/encabezado-paso.component.ts
+  components/resumen-receta.component.ts
+  modals/busqueda-medicamento.modal.ts
+  modals/validacion-dosis.modal.ts
+  modals/confirmacion-entrega.modal.ts
   services/dispensacion.service.ts
   dispensacion.routes.ts
+  guards/paso.guard.ts
 
 inventario/
   pages/panel-stock.page.ts
   pages/configurar-umbrales.page.ts
-  modals/
+  modals/ajuste-stock.modal.ts
+  modals/detalle-lote.modal.ts
+  modals/editar-umbral.modal.ts
+  components/tarjeta-medicamento.component.ts
   services/inventario.service.ts
   inventario.routes.ts
 
 historial/
   pages/historial-busqueda.page.ts
   pages/historial-paciente.page.ts
-  modals/
+  modals/detalle-dispensacion.modal.ts
   services/historial.service.ts
   historial.routes.ts
 
 administracion/
   pages/gestion-usuarios.page.ts
   pages/configuracion-general.page.ts
-  modals/
+  modals/crear-editar-usuario.modal.ts
+  modals/limites-dosis.modal.ts
   services/administracion.service.ts
   administracion.routes.ts
+
+admin/  (patologías y necesidades)
+  pages/patologias.page.ts
+  pages/necesidades.page.ts
+  modals/crear-patologia.modal.ts
+  modals/crear-necesidad.modal.ts
+
+censo/  (carpas y tablero)
+  pages/listar-carpas.page.ts
+  pages/crear-carpa.page.ts
+  pages/detalle-carpa.page.ts
+  pages/tablero.page.ts
+  modals/registrar-paciente-carpa.modal.ts
+  censo.routes.ts
+
+shared/
+  components/escaner-qr.component.ts
+  components/indicador-stock.component.ts
+  components/buscador.component.ts
+  models/*.model.ts
+  enums/*.enum.ts
+
+core/
+  guards/role.guard.ts
+  interceptors/auth.interceptor.ts
+  interceptors/error.interceptor.ts
+  services/escaner.service.ts
+  services/api.constants.ts
 ```
 
 ---
@@ -232,17 +293,19 @@ administracion/
 
 1. Ningún rol debe ver rutas que backend le niega.
 2. El historial debe navegar por `idEmergencia`, no por `id` interno.
-3. La cola de recetas es la entrada por defecto de `farmaceutico`.
+3. La cola de recetas se muestra dentro de `/dispensacion/paso1` (no como página separada). Si no hay recetas pendientes, se ofrece opción de dispensación manual identificando paciente.
 4. La receta es el flujo principal del `doctor`.
 5. Las contingencias deben estar explícitamente marcadas en UI.
 6. Las acciones destructivas deben confirmar antes de ejecutar.
 7. La receta debe mostrar disponibilidad de medicamentos en stock dentro de su propio flujo.
 8. La gestión de umbrales no debe mostrarse a `farmaceutico` ni `recepcionista_med`.
+9. El tablero estadístico se refresca en cada `ionViewWillEnter` (sin caché entre visitas).
+10. Las carpas censales son independientes del núcleo familiar clínico.
 
 ---
 
 ## 9. Pendientes de alineación funcional
 
-- Documentar historial completo mostrado dentro del flujo de recetas.
+- SyncService offline + cola localStorage (pendiente de implementación).
+- Filtro por carpa en lista-pacientes page (pendiente de implementación).
 - Alinear permanencia del JWT: sin expiración por ahora; si se activa, usar 15 dias.
-- Exponer historial y configuración admin en navegación de forma consistente.

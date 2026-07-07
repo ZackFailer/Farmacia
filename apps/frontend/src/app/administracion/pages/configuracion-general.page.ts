@@ -45,25 +45,16 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
           <p>No hay configuraciones clínicas registradas.</p>
         </div>
       } @else {
-        <h3>Umbrales de Stock</h3>
+        <h3>Configuración por Medicamento</h3>
         @for (c of configuraciones(); track c.id) {
           <ion-item>
             <ion-label>
               <h2>{{ c.medicamento?.nombre_generico ?? '—' }}</h2>
               <p>Umbral mínimo: <strong>{{ c.umbral_minimo }} unds</strong></p>
-            </ion-label>
-          </ion-item>
-        }
-
-        <h3 style="margin-top: var(--app-space-xl);">Límites de Dosis</h3>
-        @for (c of configuraciones(); track c.id) {
-          <ion-item>
-            <ion-label>
-              <h2>{{ c.medicamento?.nombre_generico ?? '—' }}</h2>
               @if (c.dosis_maxima_mg_kg !== undefined && c.dosis_maxima_mg_kg !== null) {
                 <p>Dosis máx: {{ c.dosis_maxima_mg_kg }} mg/kg | Peso ref: {{ c.peso_referencia_kg ?? '—' }} kg</p>
               } @else {
-                <p><em>Sin límite configurado</em></p>
+                <p><em>Sin límite de dosis configurado</em></p>
               }
             </ion-label>
             <ion-button slot="end" fill="outline" (click)="editarLimite(c)">Editar</ion-button>

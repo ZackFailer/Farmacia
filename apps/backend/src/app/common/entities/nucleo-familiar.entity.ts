@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -14,6 +15,13 @@ import { Paciente } from './paciente.entity';
 export class NucleoFamiliar {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Index({ unique: true })
+  @Column({ name: 'codigo_carpa', type: 'varchar', length: 20, nullable: true })
+  codigoCarpa!: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  ubicacion!: string | null;
 
   @ManyToOne(() => Paciente)
   @JoinColumn({ name: 'titular_id' })

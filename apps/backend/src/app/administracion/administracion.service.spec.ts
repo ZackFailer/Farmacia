@@ -24,6 +24,7 @@ describe('AdministracionService', () => {
             findOne: jest.fn(),
             count: jest.fn(),
             delete: jest.fn(),
+            remove: jest.fn(),
           },
         },
         {
@@ -54,7 +55,7 @@ describe('AdministracionService', () => {
     );
   });
 
-  it('should soft delete non-last admin', async () => {
+  it('should hard delete non-last admin', async () => {
     const user = {
       id: 2,
       nombre: 'admin2',
@@ -62,11 +63,9 @@ describe('AdministracionService', () => {
     } as Usuario;
     usuarioRepository.findOne.mockResolvedValue(user);
     usuarioRepository.count.mockResolvedValue(2);
-    usuarioRepository.save.mockResolvedValue({ ...user, activo: false });
+    usuarioRepository.remove.mockResolvedValue(user);
 
     await expect(service.deleteUsuario(2)).resolves.toEqual({ success: true });
-    expect(usuarioRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({ activo: false }),
-    );
+    expect(usuarioRepository.remove).toHaveBeenCalledWith(user);
   });
 });

@@ -55,12 +55,12 @@ export class InventarioController {
     return this.inventarioService.getUmbrales();
   }
 
-  @Patch('configuraciones/:id/umbral')
+  @Patch('configuraciones/medicamento/:medicamentoId/umbral')
   @Roles(UserRole.ADMIN)
   actualizarUmbral(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('medicamentoId', ParseIntPipe) medicamentoId: number,
     @Body() dto: ActualizarUmbralDto,
   ) {
-    return this.inventarioService.actualizarUmbral(id, dto.umbralMinimo);
+    return this.inventarioService.actualizarUmbral(medicamentoId, dto.umbralMinimo);
   }
 }

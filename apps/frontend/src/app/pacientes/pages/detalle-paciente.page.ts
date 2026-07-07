@@ -1,15 +1,14 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonNote, IonIcon,
-  IonMenuButton, IonSpinner, ModalController,
+  IonBackButton, IonSpinner, ModalController,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../services/pacientes.service';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
 import { EditarPacienteModal } from '../modals/editar-paciente.modal';
-import { AgregarFamiliarModal } from '../modals/agregar-familiar.modal';
 import { AuthService } from '../../auth/services/auth.service';
 import { Rol } from '../../shared/enums/rol.enum';
 import QRCode from 'qrcode';
@@ -20,13 +19,13 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonLabel, IonNote, IonIcon,
-    IonMenuButton, IonSpinner,
+    IonBackButton, IonSpinner,
   ],
   template: `
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-menu-button></ion-menu-button>
+          <ion-back-button defaultHref="/pacientes"></ion-back-button>
         </ion-buttons>
         <ion-title>Detalle Paciente</ion-title>
         <ion-buttons slot="end">
@@ -54,7 +53,7 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
             <p>ID: {{ p.id_emergencia }}</p>
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
             @if (p.telefono) { <p>Teléfono: {{ p.telefono }}</p> }
-            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ formatearEdadSimple(p) }} | {{ p.peso_estimado }} kg</p>
             <ion-note>@if (p.es_damnificado) { Damnificado } @else { No damnificado }@if (p.es_titular) { · Titular de núcleo }</ion-note>
           </ion-label>
         </ion-item>
@@ -83,6 +82,13 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
           </ion-button>
         }
 
+        @if (p.codigo_carpa && puedeEditar()) {
+          <ion-button expand="block" fill="outline" (click)="irACarpa()">
+            <ion-icon name="people-outline" slot="start"></ion-icon>
+            Agregar familiar desde carpa
+          </ion-button>
+        }
+
         <h3>Núcleo familiar</h3>
         @if (familiares(); as f) {
           @if (f.length === 0) {
@@ -92,16 +98,12 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
             <ion-item>
               <ion-label>
                 <h2>{{ fam.nombre }} {{ fam.apellido }}</h2>
-                <p>{{ fam.id_emergencia }} · {{ fam.relacion }} · {{ fam.edad_estimada }} años · {{ fam.peso_estimado }} kg</p>
+                <p>{{ fam.id_emergencia }} · {{ fam.relacion }} · {{ fam.edad_estimada ?? 0 }} años · {{ fam.peso_estimado }} kg</p>
                 <ion-note>{{ fam.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
               </ion-label>
             </ion-item>
           }
         }
-
-        <ion-button expand="block" fill="outline" (click)="agregarFamiliar()">
-          + Agregar familiar
-        </ion-button>
 
         @if (puedeEliminar()) {
           <ion-button expand="block" fill="clear" color="danger" (click)="eliminar()">
@@ -156,13 +158,13 @@ export class DetallePacientePage {
   qrPreviewDataUrl = signal('');
   private pacienteId = 0;
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private pacientesService: PacientesService,
-    private modalCtrl: ModalController,
-    private authService: AuthService,
-  ) {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly pacientesService = inject(PacientesService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly authService = inject(AuthService);
+
+  constructor() {
     this.pacienteId = Number(this.route.snapshot.paramMap.get('id'));
     this.cargar();
   }
@@ -220,6 +222,12 @@ export class DetallePacientePage {
     this.router.navigate(['/historial', p.id_emergencia]);
   }
 
+  irACarpa(): void {
+    const p = this.paciente();
+    if (!p?.codigo_carpa) return;
+    this.router.navigate(['/censo/carpa', p.codigo_carpa]);
+  }
+
   async editar(): Promise<void> {
     const p = this.paciente();
     if (!p) return;
@@ -232,19 +240,6 @@ export class DetallePacientePage {
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data) {
       this.pacientesService.actualizarPaciente(this.pacienteId, data).subscribe({
-        next: () => this.cargar(),
-      });
-    }
-  }
-
-  async agregarFamiliar(): Promise<void> {
-    const modal = await this.modalCtrl.create({
-      component: AgregarFamiliarModal,
-    });
-    modal.present();
-    const { data, role } = await modal.onWillDismiss();
-    if (role === 'confirm' && data) {
-      this.pacientesService.agregarFamiliar(this.pacienteId, data.pacienteId, data.relacion).subscribe({
         next: () => this.cargar(),
       });
     }
@@ -325,6 +320,23 @@ export class DetallePacientePage {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  }
+
+  formatearEdadSimple(p: Paciente): string {
+    if (p.es_recien_nacido) return 'Recién nacido';
+    if (p.fecha_nacimiento) {
+      const nac = new Date(p.fecha_nacimiento);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - nac.getFullYear();
+      const mes = hoy.getMonth() - nac.getMonth();
+      if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) edad--;
+      if (edad < 2) {
+        const meses = Math.max(0, (hoy.getFullYear() - nac.getFullYear()) * 12 + hoy.getMonth() - nac.getMonth());
+        return `${meses} meses`;
+      }
+      return `${edad} años`;
+    }
+    return `${p.edad_estimada} años`;
   }
 
   eliminar(): void {

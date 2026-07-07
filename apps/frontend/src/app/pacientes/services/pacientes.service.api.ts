@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { PacientesService } from './pacientes.service';
@@ -7,6 +7,10 @@ import { API_BASE_URL } from '../../core/services/api.constants';
 import { Sexo } from '../../shared/enums/sexo.enum';
 import type { CreatePacienteDto, Paciente } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
+import type { Patologia } from '../../shared/models/patologia.model';
+import type { Necesidad } from '../../shared/models/necesidad.model';
+import type { NucleoFamiliar } from '../../shared/models/nucleo-familiar.model';
+import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.model';
 
 interface ApiPaciente {
   id: number;
@@ -17,11 +21,19 @@ interface ApiPaciente {
   telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
+  fechaNacimiento?: string;
+  edadManual?: number;
+  esRecienNacido?: boolean;
   pesoEstimado: number;
   esDamnificado: boolean;
   tieneCargaFamiliar: boolean;
+  tieneDiscapacidadMotora?: boolean;
   esTitular?: boolean;
+  codigoCarpa?: string;
   familiares?: ApiNucleoMiembro[];
+  pacientePatologias?: Array<{ id: number; patologiaId: number; tratamiento?: string; patologia: { id: number; nombre: string } }>;
+  pacienteNecesidades?: Array<{ id: number; necesidadId: number; necesidad: { id: number; nombre: string } }>;
+  activo: boolean;
   createdAt: string;
 }
 
@@ -30,7 +42,22 @@ interface ApiNucleoMiembro {
   nucleoId: number;
   pacienteId: number;
   relacion: string;
-  paciente: ApiPacienteSimple;
+  paciente?: ApiPacienteSimple;
+  nucleo?: {
+    id: number;
+    codigoCarpa?: string;
+    activo: boolean;
+    createdAt: string;
+    miembros: Array<{
+      id: number;
+      nucleoId: number;
+      pacienteId: number;
+      relacion: string;
+      activo: boolean;
+      paciente: ApiPacienteSimple;
+    }>;
+    titular: ApiPacienteSimple;
+  };
 }
 
 interface ApiPacienteSimple {
@@ -42,6 +69,9 @@ interface ApiPacienteSimple {
   telefono: string | null;
   sexo: Sexo;
   edadEstimada: number;
+  fechaNacimiento?: string;
+  edadManual?: number;
+  esRecienNacido?: boolean;
   pesoEstimado: number;
   esDamnificado: boolean;
   tieneCargaFamiliar: boolean;
@@ -50,13 +80,13 @@ interface ApiPacienteSimple {
 
 @Injectable()
 export class ApiPacientesService extends PacientesService {
-  constructor(private readonly http: HttpClient) {
-    super();
-  }
+  private readonly http = inject(HttpClient);
 
-  buscarPaciente(searchTerm: string): Observable<Paciente[]> {
+  buscarPaciente(searchTerm: string, incluirInactivos?: boolean): Observable<Paciente[]> {
+    const base = `${API_BASE_URL}/pacientes?q=${encodeURIComponent(searchTerm)}`;
+    const url = incluirInactivos ? `${base}&incluirInactivos=true` : base;
     return this.http
-      .get<ApiPaciente[]>(`${API_BASE_URL}/pacientes?q=${encodeURIComponent(searchTerm)}`)
+      .get<ApiPaciente[]>(url)
       .pipe(map((items) => items.map((item) => this.toPaciente(item))));
   }
 
@@ -73,6 +103,13 @@ export class ApiPacientesService extends PacientesService {
     if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
     if (dto.cedula) body['cedula'] = dto.cedula;
     if (dto.telefono) body['telefono'] = dto.telefono;
+    if (dto.fecha_nacimiento) body['fechaNacimiento'] = dto.fecha_nacimiento;
+    if (dto.edad_manual !== undefined) body['edadManual'] = dto.edad_manual;
+    if (dto.es_recien_nacido !== undefined) body['esRecienNacido'] = dto.es_recien_nacido;
+    if (dto.tiene_discapacidad_motora !== undefined) body['tieneDiscapacidadMotora'] = dto.tiene_discapacidad_motora;
+    if (dto.patologiaIds?.length) body['patologiaIds'] = dto.patologiaIds;
+    else if (dto.patologias?.length) body['patologias'] = dto.patologias;
+    if (dto.necesidadIds?.length) body['necesidadIds'] = dto.necesidadIds;
     if (dto.familiares?.length) {
       body['familiares'] = dto.familiares.map((f) => ({
         nombre: f.nombre,
@@ -80,6 +117,9 @@ export class ApiPacientesService extends PacientesService {
         cedula: f.cedula,
         sexo: f.sexo,
         edadEstimada: f.edad_estimada,
+        fechaNacimiento: f.fecha_nacimiento,
+        edadManual: f.edad_manual,
+        esRecienNacido: f.es_recien_nacido,
         pesoEstimado: f.peso_estimado,
         esDamnificado: f.es_damnificado,
         relacion: f.relacion,
@@ -100,6 +140,13 @@ export class ApiPacientesService extends PacientesService {
     if (dto.edad_estimada !== undefined) body['edadEstimada'] = dto.edad_estimada;
     if (dto.peso_estimado !== undefined) body['pesoEstimado'] = dto.peso_estimado;
     if (dto.es_damnificado !== undefined) body['esDamnificado'] = dto.es_damnificado;
+    if (dto.fecha_nacimiento !== undefined) body['fechaNacimiento'] = dto.fecha_nacimiento;
+    if (dto.edad_manual !== undefined) body['edadManual'] = dto.edad_manual;
+    if (dto.es_recien_nacido !== undefined) body['esRecienNacido'] = dto.es_recien_nacido;
+    if (dto.tiene_discapacidad_motora !== undefined) body['tieneDiscapacidadMotora'] = dto.tiene_discapacidad_motora;
+    if (dto.patologiaIds?.length) body['patologiaIds'] = dto.patologiaIds;
+    else if (dto.patologias?.length) body['patologias'] = dto.patologias;
+    if (dto.necesidadIds?.length) body['necesidadIds'] = dto.necesidadIds;
     return this.http
       .patch<ApiPaciente>(`${API_BASE_URL}/pacientes/${id}`, body)
       .pipe(map((item) => this.toPaciente(item)));
@@ -155,21 +202,81 @@ export class ApiPacientesService extends PacientesService {
     return this.http.delete<{ success: boolean }>(`${API_BASE_URL}/pacientes/${pacienteId}/nucleo/${miembroId}`);
   }
 
+  getPatologias(): Observable<Patologia[]> {
+    return this.http.get<Patologia[]>(`${API_BASE_URL}/patologias`);
+  }
+
+  getNecesidades(): Observable<Necesidad[]> {
+    return this.http.get<Necesidad[]>(`${API_BASE_URL}/necesidades`);
+  }
+
+  getEstadisticasCenso(): Observable<CensoEstadisticas> {
+    return this.http.get<CensoEstadisticas>(`${API_BASE_URL}/censo/estadisticas`);
+  }
+
+  crearCarpa(dto: { ubicacion?: string }): Observable<NucleoFamiliar> {
+    return this.http.post<NucleoFamiliar>(`${API_BASE_URL}/censo/carpas`, dto);
+  }
+
+  listarCarpas(): Observable<NucleoFamiliar[]> {
+    return this.http.get<NucleoFamiliar[]>(`${API_BASE_URL}/censo/carpas`);
+  }
+
+  getCarpaByCodigo(codigo: string): Observable<NucleoFamiliar> {
+    return this.http.get<NucleoFamiliar>(`${API_BASE_URL}/censo/carpas/${encodeURIComponent(codigo)}`);
+  }
+
+  agregarMiembroCarpa(codigoCarpa: string, pacienteId: number, relacion?: string): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/censo/carpas/${encodeURIComponent(codigoCarpa)}/miembros`, {
+      pacienteId,
+      relacion: relacion ?? 'Miembro',
+    });
+  }
+
+  actualizarCarpa(codigoCarpa: string, dto: { ubicacion?: string }): Observable<NucleoFamiliar> {
+    return this.http.patch<NucleoFamiliar>(`${API_BASE_URL}/censo/carpas/${encodeURIComponent(codigoCarpa)}`, dto);
+  }
+
+  eliminarCarpa(codigoCarpa: string): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${API_BASE_URL}/censo/carpas/${encodeURIComponent(codigoCarpa)}`);
+  }
+
+  listarCarpasConMiembros(): Observable<NucleoFamiliar[]> {
+    return this.http.get<NucleoFamiliar[]>(`${API_BASE_URL}/censo/carpas?includeMiembros=true`);
+  }
+
   private toFamiliar(pf: ApiNucleoMiembro): Familiar {
+    const p = pf.paciente ?? pf.nucleo?.miembros?.find((m) => m.pacienteId === pf.pacienteId)?.paciente;
+    if (!p) {
+      console.warn('toFamiliar: no paciente data for member', pf);
+      return {
+        id: 0,
+        id_emergencia: '',
+        nombre: '',
+        apellido: '',
+        sexo: 'M' as Sexo,
+        edad_estimada: 0,
+        peso_estimado: 0,
+        es_damnificado: false,
+        tiene_carga_familiar: false,
+        relacion: pf.relacion,
+        created_at: '',
+      };
+    }
     return {
-      id: pf.paciente.id,
-      id_emergencia: pf.paciente.idEmergencia!,
-      nombre: pf.paciente.nombre!,
-      apellido: pf.paciente.apellido!,
-      cedula: pf.paciente.cedula ?? undefined,
-      telefono: pf.paciente.telefono ?? undefined,
-      sexo: pf.paciente.sexo!,
-      edad_estimada: pf.paciente.edadEstimada!,
-      peso_estimado: pf.paciente.pesoEstimado!,
-      es_damnificado: pf.paciente.esDamnificado!,
-      tiene_carga_familiar: pf.paciente.tieneCargaFamiliar!,
+      id: p.id,
+      id_emergencia: p.idEmergencia,
+      nombre: p.nombre,
+      apellido: p.apellido,
+      cedula: p.cedula ?? undefined,
+      telefono: p.telefono ?? undefined,
+      sexo: p.sexo,
+      edad_estimada: p.edadEstimada,
+      peso_estimado: p.pesoEstimado,
+      es_damnificado: p.esDamnificado,
+      tiene_carga_familiar: p.tieneCargaFamiliar,
       relacion: pf.relacion,
-      created_at: pf.paciente.createdAt!,
+      created_at: p.createdAt,
     };
   }
 
@@ -183,11 +290,19 @@ export class ApiPacientesService extends PacientesService {
       telefono: item.telefono ?? undefined,
       sexo: item.sexo,
       edad_estimada: item.edadEstimada,
+      fecha_nacimiento: item.fechaNacimiento,
+      edad_manual: item.edadManual,
+      es_recien_nacido: item.esRecienNacido,
       peso_estimado: item.pesoEstimado,
       es_damnificado: item.esDamnificado,
       tiene_carga_familiar: item.tieneCargaFamiliar,
+      tiene_discapacidad_motora: item.tieneDiscapacidadMotora,
       es_titular: item.esTitular,
+      codigo_carpa: item.codigoCarpa,
+      pacientePatologias: item.pacientePatologias,
+      pacienteNecesidades: item.pacienteNecesidades,
       familiares: item.familiares?.map((pf) => this.toFamiliar(pf)),
+      activo: item.activo,
       created_at: item.createdAt,
     };
   }

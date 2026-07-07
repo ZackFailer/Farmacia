@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { DispensacionService } from './dispensacion.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
@@ -19,6 +21,9 @@ interface ApiMedicamento {
   nombreComercial: string | null;
   presentacion: string;
   concentracion: number;
+  unidadConcentracion: string;
+  esVital: boolean;
+  activo: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +38,7 @@ interface ApiLote {
   fechaVencimiento: string;
   donante: string | null;
   ubicacion: string | null;
+  activo: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,7 +48,21 @@ interface ApiNucleoMiembro {
   nucleoId: number;
   pacienteId: number;
   relacion: string;
-  paciente: ApiPacienteSimple;
+  paciente?: ApiPacienteSimple;
+  nucleo?: {
+    id: number;
+    activo: boolean;
+    createdAt: string;
+    miembros: Array<{
+      id: number;
+      nucleoId: number;
+      pacienteId: number;
+      relacion: string;
+      activo: boolean;
+      paciente: ApiPacienteSimple;
+    }>;
+    titular: ApiPacienteSimple;
+  };
 }
 
 interface ApiPacienteSimple {
@@ -57,6 +77,7 @@ interface ApiPacienteSimple {
   pesoEstimado: number;
   esDamnificado: boolean;
   tieneCargaFamiliar: boolean;
+  activo: boolean;
   createdAt: string;
 }
 
@@ -119,6 +140,8 @@ interface ApiDispensacion {
   usuarioId: number;
   fechaHora: string;
   observaciones: string | null;
+  recetaId: number | null;
+  activo: boolean;
   paciente?: ApiPaciente;
   detalles?: ApiDispensacionDetalle[];
 }
@@ -129,14 +152,13 @@ interface ApiConfiguracion {
   umbralMinimo: number;
   dosisMaximaMgKg: number;
   pesoReferenciaKg: number;
+  activo: boolean;
   updatedAt: string;
 }
 
 @Injectable()
 export class ApiDispensacionService extends DispensacionService {
-  constructor(private readonly http: HttpClient) {
-    super();
-  }
+  private readonly http = inject(HttpClient);
 
   registrarPaciente(dto: CreatePacienteDto): Observable<Paciente> {
     const body: Record<string, unknown> = {
@@ -156,6 +178,7 @@ export class ApiDispensacionService extends DispensacionService {
         nombre: f.nombre,
         apellido: f.apellido,
         cedula: f.cedula,
+        telefono: f.telefono,
         sexo: f.sexo,
         edadEstimada: f.edad_estimada,
         pesoEstimado: f.peso_estimado,
@@ -168,15 +191,10 @@ export class ApiDispensacionService extends DispensacionService {
       .pipe(map((item) => this.toPaciente(item)));
   }
 
-  buscarPaciente(searchTerm: string): Observable<Paciente> {
+  buscarPaciente(searchTerm: string): Observable<Paciente[]> {
     return this.http
       .get<ApiPaciente[]>(`${API_BASE_URL}/pacientes?q=${encodeURIComponent(searchTerm)}`)
-      .pipe(
-        map((items) => {
-          if (!items.length) throw new Error('Paciente no encontrado');
-          return this.toPaciente(items[0]);
-        }),
-      );
+      .pipe(map((items) => items.map((item) => this.toPaciente(item))));
   }
 
   buscarMedicamentos(search: string): Observable<Medicamento[]> {
@@ -194,23 +212,17 @@ export class ApiDispensacionService extends DispensacionService {
 
   getLoteByQR(codigoQR: string): Observable<Lote> {
     return this.http
-      .get<ApiLote[]>(`${API_BASE_URL}/lotes?limit=200`)
-      .pipe(
-        map((items) => items.map((item) => this.toLote(item))),
-        map((items) => {
-          const lote = items.find((item) => item.codigo_qr === codigoQR);
-          if (!lote) {
-            throw new Error('Lote no encontrado');
-          }
-          return lote;
-        }),
-      );
+      .get<ApiLote>(`${API_BASE_URL}/lotes/qr/${encodeURIComponent(codigoQR)}`)
+      .pipe(map((item) => this.toLote(item)));
   }
 
   getLimiteDosis(medicamentoId: number): Observable<Configuracion | null> {
     return this.http
       .get<ApiConfiguracion>(`${API_BASE_URL}/configuraciones/${medicamentoId}/dosis`)
-      .pipe(map((item) => this.toConfiguracion(item)));
+      .pipe(
+        map((item) => this.toConfiguracion(item)),
+        catchError(() => of(null)),
+      );
   }
 
   getRecetasPendientes(): Observable<Receta[]> {
@@ -266,7 +278,9 @@ export class ApiDispensacionService extends DispensacionService {
       nombre_comercial: item.nombreComercial ?? undefined,
       presentacion: item.presentacion,
       concentracion: item.concentracion,
-      unidad_concentracion: 'mg',
+      unidad_concentracion: item.unidadConcentracion as Medicamento['unidad_concentracion'],
+      es_vital: item.esVital,
+      activo: item.activo,
       created_at: item.createdAt,
       updated_at: item.updatedAt,
     };
@@ -283,25 +297,43 @@ export class ApiDispensacionService extends DispensacionService {
       fecha_vencimiento: item.fechaVencimiento,
       donante: item.donante ?? undefined,
       ubicacion: item.ubicacion ?? undefined,
+      activo: item.activo,
       created_at: item.createdAt,
       updated_at: item.updatedAt,
     };
   }
 
   private toFamiliar(pf: ApiNucleoMiembro) {
+    const p = pf.paciente ?? pf.nucleo?.miembros?.find((m) => m.pacienteId === pf.pacienteId)?.paciente;
+    if (!p) {
+      console.warn('toFamiliar: no paciente data for member', pf);
+      return {
+        id: 0,
+        id_emergencia: '',
+        nombre: '',
+        apellido: '',
+        sexo: 'M' as Sexo,
+        edad_estimada: 0,
+        peso_estimado: 0,
+        es_damnificado: false,
+        tiene_carga_familiar: false,
+        relacion: pf.relacion,
+        created_at: '',
+      };
+    }
     return {
-      id: pf.paciente.id,
-      id_emergencia: pf.paciente.idEmergencia,
-      nombre: pf.paciente.nombre,
-      apellido: pf.paciente.apellido,
-      cedula: pf.paciente.cedula ?? undefined,
-      sexo: pf.paciente.sexo,
-      edad_estimada: pf.paciente.edadEstimada,
-      peso_estimado: pf.paciente.pesoEstimado,
-      es_damnificado: pf.paciente.esDamnificado,
-      tiene_carga_familiar: pf.paciente.tieneCargaFamiliar,
+      id: p.id,
+      id_emergencia: p.idEmergencia,
+      nombre: p.nombre,
+      apellido: p.apellido,
+      cedula: p.cedula ?? undefined,
+      sexo: p.sexo,
+      edad_estimada: p.edadEstimada,
+      peso_estimado: p.pesoEstimado,
+      es_damnificado: p.esDamnificado,
+      tiene_carga_familiar: p.tieneCargaFamiliar,
       relacion: pf.relacion,
-      created_at: pf.paciente.createdAt,
+      created_at: p.createdAt,
     };
   }
 
@@ -331,6 +363,8 @@ export class ApiDispensacionService extends DispensacionService {
       usuario_id: item.usuarioId,
       fecha_hora: item.fechaHora,
       observaciones: item.observaciones ?? undefined,
+      receta_id: item.recetaId ?? undefined,
+      activo: item.activo,
       paciente: item.paciente ? this.toPaciente(item.paciente) : undefined,
       items: (item.detalles ?? []).map((detalle) => ({
         id: detalle.id,
@@ -353,6 +387,7 @@ export class ApiDispensacionService extends DispensacionService {
       umbral_minimo: item.umbralMinimo,
       dosis_maxima_mg_kg: item.dosisMaximaMgKg,
       peso_referencia_kg: item.pesoReferenciaKg,
+      activo: item.activo,
       updated_at: item.updatedAt,
     };
   }

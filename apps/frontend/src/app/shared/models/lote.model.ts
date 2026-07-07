@@ -10,6 +10,7 @@ export interface Lote {
   fecha_vencimiento: string;
   donante?: string;
   ubicacion?: string;
+  activo?: boolean;
   created_at: string;
   updated_at: string;
 }

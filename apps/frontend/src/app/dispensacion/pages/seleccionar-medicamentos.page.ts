@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -11,10 +11,14 @@ import {
   IonNote,
   IonSelect,
   IonSelectOption,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonBackButton,
   ModalController,
 } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
-import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { ResumenRecetaComponent } from '../components/resumen-receta.component';
 import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
@@ -34,15 +38,25 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     IonNote,
     IonSelect,
     IonSelectOption,
-    EncabezadoPasoComponent,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonBackButton,
     ResumenRecetaComponent,
     EscanerQrComponent,
   ],
   template: `
-    <app-encabezado-paso [paso]="2"></app-encabezado-paso>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/dispensacion"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Medicamentos</ion-title>
+      </ion-toolbar>
+    </ion-header>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Paso 2 de 3: validar medicamentos y asignar lote por QR o código manual.</p>
       @if (estado().paciente; as p) {
         <ion-item lines="none">
           <ion-label>
@@ -127,12 +141,10 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     ></ion-toast>
   `,
 })
-export class Paso2SeleccionarMedsPage implements OnInit {
-  constructor(
-    private dispensacionService: DispensacionService,
-    private modalCtrl: ModalController,
-    private router: Router,
-  ) {}
+export class SeleccionarMedicamentosPage implements OnInit {
+  private readonly dispensacionService = inject(DispensacionService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly router = inject(Router);
 
   get estado() { return this.dispensacionService.estado; }
   lotesPorMedicamento = signal<Record<number, Lote[]>>({});
@@ -157,9 +169,7 @@ export class Paso2SeleccionarMedsPage implements OnInit {
   }
 
   private precargarLotesRecetaPendiente(): void {
-    if (!this.estado().recetaId) {
-      return;
-    }
+    if (!this.estado().recetaId) return;
 
     const ids = Array.from(new Set(this.estado().items.map((item) => item.medicamento.id)));
     ids.forEach((medicamentoId) => {
@@ -180,9 +190,7 @@ export class Paso2SeleccionarMedsPage implements OnInit {
 
   onSelectLote(index: number, medicamentoId: number, event: CustomEvent<{ value?: number | null }>): void {
     const loteId = Number(event.detail.value);
-    if (!loteId) {
-      return;
-    }
+    if (!loteId) return;
 
     const lote = this.getLotesMedicamento(medicamentoId).find((item) => item.id === loteId);
     if (!lote) {
@@ -252,23 +260,17 @@ export class Paso2SeleccionarMedsPage implements OnInit {
   anterior(): void {
     this.dispensacionService.resetRecetaContext();
     this.dispensacionService.resetPaciente();
-    this.router.navigate(['/dispensacion/paso1']);
+    this.router.navigate(['/dispensacion']);
   }
 
   puedeContinuar(): boolean {
-    if (this.estado().items.length === 0) {
-      return false;
-    }
-
-    if (!this.estado().recetaId) {
-      return true;
-    }
-
+    if (this.estado().items.length === 0) return false;
+    if (!this.estado().recetaId) return true;
     return this.estado().items.every((item) => Boolean(item.lote));
   }
 
   siguiente(): void {
     if (!this.puedeContinuar()) return;
-    this.router.navigate(['/dispensacion/paso3']);
+    this.router.navigate(['/dispensacion/confirmacion']);
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
@@ -6,16 +7,16 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { Lote } from '../../shared/models/lote.model';
 
 const MEDICAMENTOS: Medicamento[] = [
-  { id: 1, nombre_generico: 'Paracetamol', nombre_comercial: 'Tempra', presentacion: 'Tableta', concentracion: 500, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 2, nombre_generico: 'Amoxicilina', nombre_comercial: undefined, presentacion: 'Suspensión', concentracion: 250, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 3, nombre_generico: 'Ibuprofeno', nombre_comercial: 'Advil', presentacion: 'Tableta', concentracion: 400, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 4, nombre_generico: 'Insulina NPH', nombre_comercial: undefined, presentacion: 'Inyectable', concentracion: 100, unidad_concentracion: 'UI', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 5, nombre_generico: 'Salbutamol', nombre_comercial: 'Ventolin', presentacion: 'Inhalador', concentracion: 200, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 6, nombre_generico: 'Omeprazol', nombre_comercial: undefined, presentacion: 'Cápsula', concentracion: 20, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 7, nombre_generico: 'Dexametasona', nombre_comercial: undefined, presentacion: 'Inyectable', concentracion: 8, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 8, nombre_generico: 'Doxiciclina', nombre_comercial: undefined, presentacion: 'Tableta', concentracion: 100, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 9, nombre_generico: 'Loperamida', nombre_comercial: undefined, presentacion: 'Tableta', concentracion: 2, unidad_concentracion: 'mg', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
-  { id: 10, nombre_generico: 'Solución Salina', nombre_comercial: undefined, presentacion: 'Solución', concentracion: 500, unidad_concentracion: 'ml', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 1, nombre_generico: 'Paracetamol', nombre_comercial: 'Tempra', presentacion: 'Tableta', concentracion: 500, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 2, nombre_generico: 'Amoxicilina', nombre_comercial: undefined, presentacion: 'Suspensión', concentracion: 250, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 3, nombre_generico: 'Ibuprofeno', nombre_comercial: 'Advil', presentacion: 'Tableta', concentracion: 400, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 4, nombre_generico: 'Insulina NPH', nombre_comercial: undefined, presentacion: 'Inyectable', concentracion: 100, unidad_concentracion: 'UI', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 5, nombre_generico: 'Salbutamol', nombre_comercial: 'Ventolin', presentacion: 'Inhalador', concentracion: 200, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 6, nombre_generico: 'Omeprazol', nombre_comercial: undefined, presentacion: 'Cápsula', concentracion: 20, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 7, nombre_generico: 'Dexametasona', nombre_comercial: undefined, presentacion: 'Inyectable', concentracion: 8, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 8, nombre_generico: 'Doxiciclina', nombre_comercial: undefined, presentacion: 'Tableta', concentracion: 100, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 9, nombre_generico: 'Loperamida', nombre_comercial: undefined, presentacion: 'Tableta', concentracion: 2, unidad_concentracion: 'mg', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
+  { id: 10, nombre_generico: 'Solución Salina', nombre_comercial: undefined, presentacion: 'Solución', concentracion: 500, unidad_concentracion: 'ml', es_vital: false, activo: true, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' },
 ];
 
 const LOTES: Lote[] = [
@@ -49,11 +50,37 @@ export class MockRecepcionService extends RecepcionService {
       presentacion: dto.presentacion!,
       concentracion: dto.concentracion!,
       unidad_concentracion: dto.unidad_concentracion!,
+      es_vital: dto.es_vital ?? false,
+      activo: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     MEDICAMENTOS.push(nuevo);
     return of(nuevo);
+  }
+
+  actualizarMedicamento(id: number, dto: Partial<Medicamento>): Observable<Medicamento> {
+    const idx = MEDICAMENTOS.findIndex(m => m.id === id);
+    if (idx === -1) return throwError(() => new Error('Medicamento no encontrado'));
+    MEDICAMENTOS[idx] = {
+      ...MEDICAMENTOS[idx],
+      ...(dto.nombre_generico !== undefined && { nombre_generico: dto.nombre_generico }),
+      ...(dto.nombre_comercial !== undefined && { nombre_comercial: dto.nombre_comercial }),
+      ...(dto.presentacion !== undefined && { presentacion: dto.presentacion }),
+      ...(dto.concentracion !== undefined && { concentracion: dto.concentracion }),
+      ...(dto.unidad_concentracion !== undefined && { unidad_concentracion: dto.unidad_concentracion }),
+      ...(dto.es_vital !== undefined && { es_vital: dto.es_vital }),
+      ...(dto.activo !== undefined && { activo: dto.activo }),
+      updated_at: new Date().toISOString(),
+    };
+    return of({ ...MEDICAMENTOS[idx] });
+  }
+
+  eliminarMedicamento(id: number): Observable<void> {
+    const idx = MEDICAMENTOS.findIndex(m => m.id === id);
+    if (idx === -1) return throwError(() => new Error('Medicamento no encontrado'));
+    MEDICAMENTOS.splice(idx, 1);
+    return of(void 0);
   }
 
   getLotes(page = 1, limit = 20): Observable<Lote[]> {
@@ -83,7 +110,29 @@ export class MockRecepcionService extends RecepcionService {
     return of(nuevo);
   }
 
-  getLoteQR(_id: number): Observable<Blob> {
+  actualizarLote(id: number, dto: Partial<Lote>): Observable<Lote> {
+    const idx = LOTES.findIndex(l => l.id === id);
+    if (idx === -1) return throwError(() => new Error('Lote no encontrado'));
+    LOTES[idx] = {
+      ...LOTES[idx],
+      ...(dto.donante !== undefined && { donante: dto.donante }),
+      ...(dto.ubicacion !== undefined && { ubicacion: dto.ubicacion }),
+      ...(dto.fecha_vencimiento !== undefined && { fecha_vencimiento: dto.fecha_vencimiento }),
+      updated_at: new Date().toISOString(),
+    };
+    return of({ ...LOTES[idx], medicamento: MEDICAMENTOS.find(m => m.id === LOTES[idx].medicamento_id) });
+  }
+
+  getLoteById(id: number): Observable<Lote> {
+    const lote = LOTES.find(l => l.id === id);
+    if (!lote) return throwError(() => new Error('Lote no encontrado'));
+    return of({
+      ...lote,
+      medicamento: MEDICAMENTOS.find(m => m.id === lote.medicamento_id),
+    });
+  }
+
+  getLoteQR(): Observable<Blob> {
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="white"/><text x="50" y="100">QR-MOCK</text></svg>';
     return of(new Blob([svg], { type: 'image/svg+xml' }));
   }

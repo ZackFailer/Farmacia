@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonFab, IonFabButton, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
 import { TablaIngresosComponent } from '../components/tabla-ingresos.component';
 import { RecepcionService } from '../services/recepcion.service';
@@ -17,6 +18,11 @@ import { interval, type Subscription } from 'rxjs';
           <ion-menu-button></ion-menu-button>
         </ion-buttons>
         <ion-title>Recepción</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="irAlCatalogo()">
+            <ion-icon name="file-tray-stacked-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -25,6 +31,12 @@ import { interval, type Subscription } from 'rxjs';
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
       <p class="page-subtitle">Registrar lotes recibidos, verificar vencimiento y emitir etiqueta QR.</p>
+
+      <ion-button expand="block" fill="outline" class="catalogo-btn" (click)="irAlCatalogo()">
+        <ion-icon name="file-tray-stacked-outline" slot="start"></ion-icon>
+        Catálogo de Medicamentos
+      </ion-button>
+
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrarLotes()" placeholder="Buscar lote..." debounce="300"></ion-searchbar>
 
       @if (cargando()) {
@@ -45,12 +57,12 @@ import { interval, type Subscription } from 'rxjs';
           <p>{{ searchTerm ? 'No hay lotes que coincidan con la búsqueda.' : 'Aún no hay lotes registrados.' }}</p>
         </div>
       } @else {
-        <app-tabla-ingresos [lotes]="lotesFiltrados()" (reimprimir)="reimprimirQR($event)"></app-tabla-ingresos>
+        <app-tabla-ingresos [lotes]="lotesFiltrados()" (reimprimir)="reimprimirQR($event)" (verDetalle)="verDetalleLote($event)"></app-tabla-ingresos>
       }
 
       <ion-fab vertical="bottom" horizontal="end" slot="fixed">
         <ion-fab-button color="primary" (click)="abrirIngresoLote()">
-          +
+          <ion-icon name="add-outline"></ion-icon>
         </ion-fab-button>
       </ion-fab>
     </ion-content>
@@ -59,13 +71,19 @@ import { interval, type Subscription } from 'rxjs';
     ion-content {
       --padding-bottom: calc(var(--app-space-2xl) + 72px);
     }
+    .catalogo-btn {
+      margin-bottom: var(--app-space-md);
+    }
   `,
 })
 export class DashboardIngresosPage implements ViewWillEnter, ViewWillLeave {
-  constructor(
-    private recepcionService: RecepcionService,
-    private modalCtrl: ModalController,
-  ) {}
+  private readonly recepcionService = inject(RecepcionService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly router = inject(Router);
+
+  irAlCatalogo(): void {
+    this.router.navigate(['/recepcion/catalogo']);
+  }
 
   searchTerm = '';
   lotes = signal<Lote[]>([]);
@@ -173,9 +191,18 @@ export class DashboardIngresosPage implements ViewWillEnter, ViewWillLeave {
     await modal.present();
   }
 
-  reimprimirQR(loteId: number) {
+    reimprimirQR(loteId: number) {
     const lote = this.lotes().find(l => l.id === loteId);
     if (lote) this.abrirImprimirEtiqueta(lote);
+  }
+
+  async verDetalleLote(lote: Lote) {
+    const { ImprimirEtiquetaModal } = await import('../modals/imprimir-etiqueta.modal');
+    const modal = await this.modalCtrl.create({
+      component: ImprimirEtiquetaModal,
+      componentProps: { lote },
+    });
+    await modal.present();
   }
 }
 

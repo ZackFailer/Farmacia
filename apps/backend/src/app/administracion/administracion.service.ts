@@ -22,16 +22,19 @@ export class AdministracionService {
     private readonly configuracionRepository: Repository<Configuracion>,
   ) {}
 
-  getUsuarios() {
+  getUsuarios(incluirInactivos?: boolean) {
+    const where = incluirInactivos ? {} : { activo: true };
     return this.usuarioRepository.find({
+      where,
       order: { id: 'ASC' },
-      select: ['id', 'nombre', 'rol', 'createdAt', 'updatedAt'],
+      select: ['id', 'username', 'nombre', 'rol', 'activo', 'createdAt', 'updatedAt'],
     });
   }
 
   async createUsuario(dto: CrearUsuarioDto) {
     const pinHash = await hash(dto.pin, 10);
     const usuario = this.usuarioRepository.create({
+      username: dto.username,
       nombre: dto.nombre,
       rol: dto.rol,
       pinHash,
@@ -39,6 +42,7 @@ export class AdministracionService {
     const saved = await this.usuarioRepository.save(usuario);
     return {
       id: saved.id,
+      username: saved.username,
       nombre: saved.nombre,
       rol: saved.rol,
       createdAt: saved.createdAt,
@@ -50,6 +54,10 @@ export class AdministracionService {
     const usuario = await this.usuarioRepository.findOne({ where: { id } });
     if (!usuario) {
       throw new NotFoundException('User not found');
+    }
+
+    if (dto.username !== undefined) {
+      usuario.username = dto.username;
     }
 
     if (dto.nombre !== undefined) {
@@ -67,6 +75,7 @@ export class AdministracionService {
     const updated = await this.usuarioRepository.save(usuario);
     return {
       id: updated.id,
+      username: updated.username,
       nombre: updated.nombre,
       rol: updated.rol,
       createdAt: updated.createdAt,
@@ -89,8 +98,7 @@ export class AdministracionService {
       }
     }
 
-    usuario.activo = false;
-    await this.usuarioRepository.save(usuario);
+    await this.usuarioRepository.remove(usuario);
     return { success: true };
   }
 

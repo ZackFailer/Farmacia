@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -13,6 +14,9 @@ import { RecetasModule } from './recetas/recetas.module';
 import { DispensacionModule } from './dispensacion/dispensacion.module';
 import { HistorialModule } from './historial/historial.module';
 import { AdministracionModule } from './administracion/administracion.module';
+import { PatologiaModule } from './patologia/patologia.module';
+import { NecesidadModule } from './necesidad/necesidad.module';
+import { CensoModule } from './censo/censo.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CommonModule } from './common/common.module';
@@ -28,6 +32,10 @@ import { NucleoFamiliar } from './common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from './common/entities/nucleo-familiar-miembro.entity';
 import { Receta } from './common/entities/receta.entity';
 import { RecetaDetalle } from './common/entities/receta-detalle.entity';
+import { CatalogoPatologia } from './common/entities/patologia.entity';
+import { CatalogoNecesidad } from './common/entities/necesidad.entity';
+import { PacientePatologia } from './common/entities/paciente-patologia.entity';
+import { PacienteNecesidad } from './common/entities/paciente-necesidad.entity';
 import { CreateNucleoFamiliar1741190820000 } from './common/migrations/1741190820000-CreateNucleoFamiliar';
 import { AddTitularFk1741190830000 } from './common/migrations/1741190830000-AddTitularFk';
 import { AddActivoAndRoles1741190840000 } from './common/migrations/1741190840000-AddActivoAndRoles';
@@ -36,7 +44,7 @@ import { NodeSqliteCompat } from './common/node-sqlite-compat';
 
 const typeOrmOptions = {
   type: 'sqlite' as const,
-  database: 'apps/backend/data/farmacia.sqlite',
+  database: process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite'),
   entities: [
     Usuario,
     Medicamento,
@@ -50,6 +58,10 @@ const typeOrmOptions = {
     NucleoFamiliarMiembro,
     Receta,
     RecetaDetalle,
+    CatalogoPatologia,
+    CatalogoNecesidad,
+    PacientePatologia,
+    PacienteNecesidad,
   ],
   synchronize: true,
   migrations: [CreateNucleoFamiliar1741190820000, AddTitularFk1741190830000, AddActivoAndRoles1741190840000, CreateReceta1741190850000],
@@ -59,8 +71,7 @@ const typeOrmOptions = {
 const mockSqlite = {
   verbose: () => ({
     Database: class Mock {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      constructor(..._args: any[]) {
+      constructor() {
         // stub — nunca se usa porque reemplazamos connect()
       }
       run() { return this; }
@@ -73,7 +84,7 @@ async function createNodeSqliteDataSource(options: DataSourceOptions): Promise<D
   const ds = new DataSource({
     ...options,
     driver: mockSqlite,
-  } as any);
+  } as unknown as DataSourceOptions);
   const driver = ds.driver as unknown as { connect: () => Promise<void>; disconnect: () => Promise<void>; databaseConnection: NodeSqliteCompat | undefined };
   driver.connect = async () => {
     driver.databaseConnection = new NodeSqliteCompat(options.database as string);
@@ -110,6 +121,9 @@ async function createNodeSqliteDataSource(options: DataSourceOptions): Promise<D
     DispensacionModule,
     HistorialModule,
     AdministracionModule,
+    PatologiaModule,
+    NecesidadModule,
+    CensoModule,
   ],
   controllers: [AppController],
   providers: [
@@ -121,6 +135,10 @@ async function createNodeSqliteDataSource(options: DataSourceOptions): Promise<D
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
     },
   ],
 })

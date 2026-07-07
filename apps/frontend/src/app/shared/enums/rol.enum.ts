@@ -4,6 +4,7 @@ export enum Rol {
   PHARMACEUTICAL = 'farmaceutico',
   MEDICATION_RECEPTIONIST = 'recepcionista_med',
   ADMIN = 'admin',
+  SURVEYOR = 'encuestador',
 }
 
 export const ROL_LABELS: Record<Rol, string> = {
@@ -12,4 +13,5 @@ export const ROL_LABELS: Record<Rol, string> = {
   [Rol.PHARMACEUTICAL]: 'Farmacéutico',
   [Rol.MEDICATION_RECEPTIONIST]: 'Recepcionista Med.',
   [Rol.ADMIN]: 'Administrador',
+  [Rol.SURVEYOR]: 'Encuestador',
 };

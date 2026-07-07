@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { HistorialService } from './historial.service';
-import type { Dispensacion, DispensacionDetalle } from '../../shared/models/dispensacion.model';
+import type { Dispensacion } from '../../shared/models/dispensacion.model';
 import { Sexo } from '../../shared/enums/sexo.enum';
 
 const SEED: Dispensacion[] = [

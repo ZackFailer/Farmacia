@@ -5,6 +5,8 @@ export interface Medicamento {
   presentacion: string;
   concentracion: number;
   unidad_concentracion: 'mg' | 'ml' | 'UI';
+  es_vital?: boolean;
+  activo?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -36,9 +36,23 @@ export class CrearPacienteFamiliarDto {
   @IsEnum(Sex)
   sexo!: Sex;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  edadEstimada!: number;
+  edadEstimada?: number;
+
+  @IsOptional()
+  @IsString()
+  fechaNacimiento?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  edadManual?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  esRecienNacido?: boolean;
 
   @IsNumber()
   @Min(0.1)
@@ -47,9 +61,39 @@ export class CrearPacienteFamiliarDto {
   @IsBoolean()
   esDamnificado!: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  tieneDiscapacidadMotora?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  patologiaIds?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PacientePatologiaDto)
+  patologias?: PacientePatologiaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  necesidadIds?: number[];
+
   @IsString()
   @MaxLength(30)
   relacion!: string;
+}
+
+export class PacientePatologiaDto {
+  @IsInt()
+  patologiaId!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  tratamiento?: string;
 }
 
 export class CrearPacienteDto {
@@ -79,9 +123,23 @@ export class CrearPacienteDto {
   @IsEnum(Sex)
   sexo!: Sex;
 
+  @IsOptional()
   @IsInt()
   @Min(0)
-  edadEstimada!: number;
+  edadEstimada?: number;
+
+  @IsOptional()
+  @IsString()
+  fechaNacimiento?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  edadManual?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  esRecienNacido?: boolean;
 
   @IsNumber()
   @Min(0.1)
@@ -95,8 +153,28 @@ export class CrearPacienteDto {
   tieneCargaFamiliar?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  tieneDiscapacidadMotora?: boolean;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CrearPacienteFamiliarDto)
   familiares?: CrearPacienteFamiliarDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  patologiaIds?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PacientePatologiaDto)
+  patologias?: PacientePatologiaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  necesidadIds?: number[];
 }

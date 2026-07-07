@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   Column,
   Entity,
@@ -16,6 +17,7 @@ export class NucleoFamiliarMiembro {
   @Column({ name: 'nucleo_id', type: 'int' })
   nucleoId!: number;
 
+  @Exclude()
   @ManyToOne(() => NucleoFamiliar, (n) => n.miembros, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'nucleo_id' })
   nucleo!: NucleoFamiliar;

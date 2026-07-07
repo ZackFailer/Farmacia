@@ -17,7 +17,7 @@ export function clearAppSessionStorage(): void {
 @Injectable()
 export abstract class AuthService {
   abstract readonly usuario$: WritableSignal<Usuario | null>;
-  abstract login(pin: string): Observable<{ token: string; usuario: Usuario }>;
+  abstract login(username: string, pin: string): Observable<{ token: string; usuario: Usuario }>;
   abstract logout(): void;
   abstract getToken(): string | null;
   abstract getUsuario(): Usuario | null;

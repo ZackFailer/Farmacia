@@ -9,7 +9,7 @@ import { DatePipe } from '@angular/common';
   imports: [IonItem, IonLabel, IonNote, IonButton, IonIcon, DatePipe],
   template: `
     @for (lote of lotes(); track lote.id) {
-      <ion-item button class="ingreso-item">
+      <ion-item button class="ingreso-item" (click)="verDetalle.emit(lote)">
         <ion-label>
           <h2 class="med-name">{{ lote.medicamento?.nombre_generico ?? 'Desconocido' }} {{ lote.medicamento?.concentracion }}{{ lote.medicamento?.unidad_concentracion }}</h2>
           <p class="med-subtitle">{{ lote.medicamento?.presentacion ?? 'Sin presentacion' }}</p>
@@ -23,7 +23,7 @@ import { DatePipe } from '@angular/common';
         @if (esProximoVencer(lote.fecha_vencimiento)) {
           <ion-icon slot="start" name="alert-circle" color="warning" class="ion-margin-end"></ion-icon>
         }
-        <ion-button slot="end" fill="clear" (click)="reimprimir.emit(lote.id)">
+        <ion-button slot="end" fill="clear" (click)="$event.stopPropagation(); reimprimir.emit(lote.id)">
           <ion-icon name="print-outline" slot="icon-only"></ion-icon>
         </ion-button>
       </ion-item>
@@ -82,6 +82,7 @@ import { DatePipe } from '@angular/common';
 export class TablaIngresosComponent {
   lotes = input<Lote[]>([]);
   reimprimir = output<number>();
+  verDetalle = output<Lote>();
 
   esProximoVencer(fecha: string): boolean {
     const venc = new Date(fecha);

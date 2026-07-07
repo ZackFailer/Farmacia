@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit, signal, inject } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonFooter, ModalController } from '@ionic/angular/standalone';
 import { DatePipe } from '@angular/common';
 import type { Lote } from '../../shared/models/lote.model';
+import QRCode from 'qrcode';
 
 @Component({
   standalone: true,
@@ -43,8 +44,12 @@ import type { Lote } from '../../shared/models/lote.model';
           </div>
         }
         <div class="etiqueta-divider"></div>
-        <div class="etiqueta-qr-placeholder">
-          <div class="qr-box">[QR: {{ lote.codigo_qr.slice(-8) }}]</div>
+        <div class="etiqueta-qr">
+          @if (qrDataUrl()) {
+            <img [src]="qrDataUrl()" alt="QR del lote" class="qr-img" />
+          } @else {
+            <div class="qr-box">Generando QR...</div>
+          }
         </div>
       </div>
     </ion-content>
@@ -52,7 +57,7 @@ import type { Lote } from '../../shared/models/lote.model';
     <ion-footer>
       <ion-toolbar>
         <ion-buttons slot="end">
-          <ion-button fill="solid" color="primary" (click)="imprimir()">Imprimir</ion-button>
+          <ion-button fill="solid" color="primary" (click)="imprimir()" [disabled]="!qrDataUrl()">Imprimir</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-footer>
@@ -86,10 +91,15 @@ import type { Lote } from '../../shared/models/lote.model';
     }
     .etiqueta-label { color: var(--app-text-secondary); font-weight: 500; }
     .etiqueta-value { color: var(--app-text); font-weight: 600; text-align: right; }
-    .etiqueta-qr-placeholder {
+    .etiqueta-qr {
       display: flex;
       justify-content: center;
       margin-top: var(--app-space-sm);
+    }
+    .qr-img {
+      width: 160px;
+      height: 160px;
+      image-rendering: pixelated;
     }
     .qr-box {
       width: 120px;
@@ -104,14 +114,26 @@ import type { Lote } from '../../shared/models/lote.model';
     @media print {
       ion-header, ion-footer { display: none !important; }
       .etiqueta { border: none; max-width: 100%; }
-      .qr-box { border: 1px solid #000; }
     }
   `],
 })
-export class ImprimirEtiquetaModal {
-  constructor(private modalCtrl: ModalController) {}
+export class ImprimirEtiquetaModal implements OnInit {
+  private readonly modalCtrl = inject(ModalController);
 
   @Input({ required: true }) lote!: Lote;
+  qrDataUrl = signal<string | null>(null);
+
+  async ngOnInit() {
+    try {
+      const url = await QRCode.toDataURL(this.lote.codigo_qr, {
+        margin: 1,
+        width: 280,
+      });
+      this.qrDataUrl.set(url);
+    } catch {
+      this.qrDataUrl.set(null);
+    }
+  }
 
   imprimir() {
     window.print();

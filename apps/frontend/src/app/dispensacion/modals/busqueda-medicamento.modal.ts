@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -100,10 +100,8 @@ export class BusquedaMedicamentoModal implements OnInit {
   cantidad = '1';
   errorMsg = signal('');
 
-  constructor(
-    private modalCtrl: ModalController,
-    private dispensacionService: DispensacionService,
-  ) {}
+  private readonly modalCtrl = inject(ModalController);
+  private readonly dispensacionService = inject(DispensacionService);
 
   ngOnInit(): void {
     this.cargarMedicamentos();

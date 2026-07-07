@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal, type WritableSignal } from '@angular/core';
+import { Injectable, inject, signal, type WritableSignal } from '@angular/core';
 import { map, tap } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -12,6 +12,7 @@ interface LoginResponse {
   token: string;
   usuario: {
     id: number;
+    username: string;
     nombre: string;
     rol: Rol;
     createdAt?: string;
@@ -21,15 +22,11 @@ interface LoginResponse {
 
 @Injectable()
 export class ApiAuthService extends AuthService {
-  readonly usuario$: WritableSignal<Usuario | null>;
+  private readonly http = inject(HttpClient);
+  readonly usuario$: WritableSignal<Usuario | null> = signal<Usuario | null>(this.getUsuario());
 
-  constructor(private readonly http: HttpClient) {
-    super();
-    this.usuario$ = signal<Usuario | null>(this.getUsuario());
-  }
-
-  login(pin: string): Observable<{ token: string; usuario: Usuario }> {
-    return this.http.post<LoginResponse>(`${API_BASE_URL}/auth/login`, { pin }).pipe(
+  login(username: string, pin: string): Observable<{ token: string; usuario: Usuario }> {
+    return this.http.post<LoginResponse>(`${API_BASE_URL}/auth/login`, { username, pin }).pipe(
       map((response) => ({
         token: response.token,
         usuario: this.toUsuario(response.usuario),
@@ -82,6 +79,7 @@ export class ApiAuthService extends AuthService {
     const now = new Date().toISOString();
     return {
       id: user.id,
+      username: user.username,
       nombre: user.nombre,
       rol: user.rol,
       created_at: user.createdAt ?? now,

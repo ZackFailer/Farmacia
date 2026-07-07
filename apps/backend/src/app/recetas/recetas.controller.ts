@@ -16,6 +16,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtUser } from '../common/types/jwt-user.type';
 
 @Controller('recetas')
+@Roles(UserRole.DOCTOR, UserRole.ADMIN)
 export class RecetasController {
   constructor(private readonly recetasService: RecetasService) {}
 

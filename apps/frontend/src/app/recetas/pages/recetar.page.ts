@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -49,10 +49,16 @@ interface RecetaMedItem {
 
     <ion-content class="ion-padding">
       @if (paso() === 1) {
-        <h2>Paciente</h2>
+        <div style="text-align: center;">
+          <h2>Paciente</h2>
+        </div>
 
         @if (!pacienteEncontrado()) {
           <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
+
+          @if (!searchTerm || !searchTerm.trim()) {
+            <p class="app-text-secondary" style="text-align:center;font-size:var(--app-font-size-sm);margin:0 0 var(--app-space-lg);">Ingrese el ID de emergencia, nombre o cédula del paciente. También puede escanear su código QR.</p>
+          }
 
           <ion-searchbar
             [(ngModel)]="searchTerm"
@@ -68,7 +74,7 @@ interface RecetaMedItem {
                   <ion-label>
                     <h2>{{ p.nombre }} {{ p.apellido }}</h2>
                     <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
-                    <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+                    <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
                   </ion-label>
                 </ion-item>
               }
@@ -88,7 +94,7 @@ interface RecetaMedItem {
             <ion-card-content>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>ID: {{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
-              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
             </ion-card-content>
           </ion-card>
 
@@ -141,7 +147,7 @@ interface RecetaMedItem {
                 <ion-label>
                   <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
                   <p>{{ item.medicamento.presentacion }}</p>
-                  <ion-note>Stock: {{ item.stock_total }} unds</ion-note>
+                  <ion-note>Stock: {{ item.stock_total }} unidades</ion-note>
                 </ion-label>
                 <ion-icon
                   [name]="isMedSeleccionado(item.medicamento.id) ? 'checkmark-circle-outline' : 'add-circle-outline'"
@@ -194,7 +200,7 @@ interface RecetaMedItem {
           <ion-item>
             <ion-label>
               <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-              <p>{{ item.cantidad }} unds · {{ item.dias }} días</p>
+              <p>Cantidad: {{ item.cantidad }} · {{ item.dias }} días</p>
             </ion-label>
           </ion-item>
         }
@@ -250,15 +256,13 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   medSeleccionados = signal<RecetaMedItem[]>([]);
   private pollingSub?: Subscription;
 
-  constructor(
-    private recetasService: RecetasService,
-    private pacientesService: PacientesService,
-    private recepcionService: RecepcionService,
-    private inventarioService: InventarioService,
-    private recetaDraftService: RecetaDraftService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) {}
+  private readonly recetasService = inject(RecetasService);
+  private readonly pacientesService = inject(PacientesService);
+  private readonly recepcionService = inject(RecepcionService);
+  private readonly inventarioService = inject(InventarioService);
+  private readonly recetaDraftService = inject(RecetaDraftService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     this.restaurarBorrador();

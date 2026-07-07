@@ -28,11 +28,12 @@ El sistema trabaja bajo un flujo principal:
 ## 2. Roles oficiales
 
 | Rol | Responsabilidad principal |
-|---|---|
+|---|---|---|
 | `recepcionista` | Registro y mantenimiento de pacientes y núcleo familiar |
 | `doctor` | Evaluación clínica, consulta de historial y creación de recetas |
 | `farmaceutico` | Dispensación, validación de dosis, cola de recetas, historial e inventario operativo |
 | `recepcionista_med` | Catálogo de medicamentos, lotes, QR e inventario operativo |
+| `encuestador` | Censo de carpas, registro de patologías y necesidades |
 | `admin` | Acceso transversal, usuarios y configuración global |
 
 ### Principios por rol
@@ -41,6 +42,7 @@ El sistema trabaja bajo un flujo principal:
 - `doctor` no realiza dispensación.
 - `farmaceutico` no gestiona usuarios.
 - `recepcionista_med` no trabaja con pacientes ni recetas clínicas.
+- `encuestador` solo accede a censo (carpas, tablero), patologías y necesidades.
 - `admin` puede operar todos los módulos, pero su uso principal es supervisión y mantenimiento.
 
 ---
@@ -48,15 +50,18 @@ El sistema trabaja bajo un flujo principal:
 ## 3. Módulos funcionales
 
 | Módulo | Propósito | Roles permitidos |
-|---|---|---|
+|---|---|---|---|
 | Autenticación | Iniciar sesión, mantener sesión, proteger acceso | todos |
-| Pacientes | Buscar, registrar, editar y vincular familiares | `recepcionista`, `doctor`, `admin` |
+| Pacientes | Buscar, registrar, editar y vincular familiares | `recepcionista`, `doctor`, `admin`, `encuestador` |
 | Recepción | Crear medicamentos, registrar lotes y generar QR | `recepcionista_med`, `admin` |
 | Recetas | Crear recetas y revisar antecedentes del paciente | `doctor`, `admin` |
 | Dispensación | Atender cola de recetas, asignar lotes y entregar | `farmaceutico`, `admin` |
 | Inventario | Ver stock, vencimientos y movimientos | `recepcionista_med`, `farmaceutico`, `admin` |
 | Umbrales | Gestionar umbrales operativos por medicamento | `admin` |
 | Historial | Consultar dispensaciones previas por paciente | `doctor`, `farmaceutico`, `admin` |
+| Censo | Registro de carpas, familias, patologías y necesidades; tablero estadístico | `encuestador`, `recepcionista`, `admin` |
+| Patologías | Catálogo de patologías (CRUD) | `admin`, `encuestador` |
+| Necesidades | Catálogo de necesidades (CRUD) | `admin`, `encuestador` |
 | Administración | Usuarios y configuración global | `admin` |
 
 ---
@@ -89,21 +94,28 @@ El sistema trabaja bajo un flujo principal:
 ## 5. Rutas de aplicación
 
 | Ruta | Pantalla | Módulo |
-|---|---|---|
+|---|---|---|---|
 | `/login` | Inicio de sesión | Autenticación |
 | `/recepcion` | Dashboard de recepción | Recepción |
+| `/recepcion/catalogo` | Catálogo de medicamentos (CRUD + toggle inactivos) | Recepción |
 | `/pacientes` | Lista y búsqueda de pacientes | Pacientes |
 | `/pacientes/:id` | Detalle del paciente | Pacientes |
 | `/recetas` | Flujo de receta médica | Recetas |
-| `/dispensacion/cola` | Cola de recetas pendientes | Dispensación |
-| `/dispensacion/paso1` | Identificar paciente (contingencia/manual) | Dispensación |
+| `/dispensacion/cola` | Redirige a paso1 | Dispensación |
+| `/dispensacion/paso1` | Cola de recetas pendientes + escaneo/búsqueda paciente | Dispensación |
 | `/dispensacion/paso2` | Selección de lotes/medicamentos | Dispensación |
 | `/dispensacion/paso3` | Confirmación de entrega | Dispensación |
 | `/inventario` | Stock general | Inventario |
 | `/inventario/umbrales` | Configuración de umbrales | Umbrales |
 | `/historial` | Búsqueda de historial (QR/ID/cédula/nombre) | Historial |
 | `/historial/:idEmergencia` | Historial del paciente | Historial |
+| `/censo/carpas` | Lista de carpas censales | Censo |
+| `/censo/crear-carpa` | Crear nueva carpa | Censo |
+| `/censo/carpa/:codigo` | Detalle de carpa con integrantes | Censo |
+| `/censo/tablero` | Tablero estadístico con exportación CSV | Censo |
 | `/admin/usuarios` | Gestión de usuarios | Administración |
+| `/admin/patologias` | Catálogo de patologías | Patologías |
+| `/admin/necesidades` | Catálogo de necesidades | Necesidades |
 | `/admin/configuracion` | Configuración general | Administración |
 
 ---
@@ -156,10 +168,13 @@ paciente (
   cedula,
   telefono,
   sexo,
+  fecha_nacimiento NULL,
   edad_estimada,
   peso_estimado,
   es_damnificado,
   tiene_carga_familiar,
+  es_recien_nacido DEFAULT 0,
+  edad_manual NULL,
   activo,
   created_at
 )
@@ -242,6 +257,58 @@ configuracion (
   activo,
   updated_at
 )
+
+carpa (
+  id,
+  codigo UNIQUE,
+  ubicacion,
+  capacidad,
+  activo,
+  created_at,
+  updated_at
+)
+
+carpa_paciente (
+  id,
+  carpa_id FK,
+  paciente_id FK,
+  activo,
+  created_at
+)
+
+catalogo_patologia (
+  id,
+  nombre,
+  activo,
+  created_at,
+  updated_at
+)
+
+catalogo_necesidad (
+  id,
+  nombre,
+  activo,
+  created_at,
+  updated_at
+)
+
+paciente_patologia (
+  id,
+  paciente_id FK,
+  patologia_id FK,
+  carpa_id FK NULL,
+  activo,
+  created_at
+)
+
+paciente_necesidad (
+  id,
+  paciente_id FK,
+  necesidad_id FK,
+  carpa_id FK NULL,
+  activo,
+  created_at
+)
 ```
 
 ### Reglas globales
@@ -289,6 +356,9 @@ configuracion (
 5. `Administración` es exclusivo de `admin`.
 6. La gestión de umbrales es exclusiva de `admin`.
 7. Los usuarios inactivos permanecen en el sistema pero no pueden acceder a la aplicación.
+8. La edad del paciente se computa automáticamente desde `fechaNacimiento`; `edadManual` y `esRecienNacido` son alternativas explícitas.
+9. Las carpas censales son independientes del núcleo familiar clínico.
+10. El tablero estadístico se refresca en cada `ionViewWillEnter` (no hay caché entre visitas).
 
 ---
 

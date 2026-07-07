@@ -33,8 +33,12 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { ruta: '/dispensacion', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion', roles: [Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/historial', label: 'Historial', icon: 'time-outline', activePrefix: '/historial', roles: [Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/censo/carpas', label: 'Censo - Carpas', icon: 'home-outline', activePrefix: '/censo/carpas', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
+  { ruta: '/censo/tablero', label: 'Censo - Tablero', icon: 'stats-chart-outline', activePrefix: '/censo/tablero', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
   { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline', activePrefix: '/inventario/umbrales', roles: [Rol.ADMIN] },
-  { ruta: '/admin/usuarios', label: 'Admin', icon: 'shield-outline', activePrefix: '/admin', roles: [Rol.ADMIN] },
+  { ruta: '/admin/usuarios', label: 'Admin - Usuarios', icon: 'shield-outline', activePrefix: '/admin/usuarios', roles: [Rol.ADMIN] },
+  { ruta: '/admin/patologias', label: 'Admin - Patologías', icon: 'pulse-outline', activePrefix: '/admin/patologias', roles: [Rol.ADMIN, Rol.SURVEYOR] },
+  { ruta: '/admin/necesidades', label: 'Admin - Necesidades', icon: 'list-outline', activePrefix: '/admin/necesidades', roles: [Rol.ADMIN, Rol.SURVEYOR] },
 ];
 
 @Component({

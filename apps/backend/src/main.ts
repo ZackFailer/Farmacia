@@ -1,8 +1,3 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -11,6 +6,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app/app.module';
+
+process.env.DB_PATH = process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite');
 
 async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<void> {
   const columns = await dataSource.query("PRAGMA table_info('paciente')") as Array<{ name: string }>;

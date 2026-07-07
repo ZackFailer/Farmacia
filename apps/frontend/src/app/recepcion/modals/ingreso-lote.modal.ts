@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader,
@@ -96,17 +96,6 @@ import { NuevoMedicamentoModal } from './nuevo-medicamento.modal';
       <div class="datetime-field">
         <ion-label class="datetime-label">Fecha de Vencimiento *</ion-label>
         <ion-datetime-button class="datetime-button" datetime="loteVencimiento"></ion-datetime-button>
-        <ion-modal [keepContentsMounted]="true">
-          <ng-template>
-            <ion-datetime
-              id="loteVencimiento"
-              presentation="date"
-              preferWheel="true"
-              [value]="fechaVencimiento || null"
-              (ionChange)="onFechaChange($event)"
-            ></ion-datetime>
-          </ng-template>
-        </ion-modal>
       </div>
 
       @if (fechaVencimiento) {
@@ -134,6 +123,16 @@ import { NuevoMedicamentoModal } from './nuevo-medicamento.modal';
         <p class="form-error">{{ errorFormulario() }}</p>
       }
     </ion-content>
+
+    <ion-modal [keepContentsMounted]="true">
+      <ion-datetime
+        id="loteVencimiento"
+        presentation="date"
+        preferWheel="true"
+        [value]="fechaVencimiento || null"
+        (ionChange)="onFechaChange($event)"
+      ></ion-datetime>
+    </ion-modal>
 
     <ion-footer>
       <ion-toolbar>
@@ -218,10 +217,8 @@ import { NuevoMedicamentoModal } from './nuevo-medicamento.modal';
   `],
 })
 export class IngresoLoteModal {
-  constructor(
-    private modalCtrl: ModalController,
-    private recepcionService: RecepcionService,
-  ) {}
+  private readonly modalCtrl = inject(ModalController);
+  private readonly recepcionService = inject(RecepcionService);
 
   @Input({ required: true }) medicamentos: Medicamento[] = [];
 
@@ -291,20 +288,21 @@ export class IngresoLoteModal {
   }
 
   guardar() {
-    if (!this.puedeGuardar()) {
+    const medicamento = this.medicamentoSeleccionado;
+    if (!this.puedeGuardar() || !medicamento) {
       this.errorFormulario.set('Complete medicamento, cantidad y fecha de vencimiento para continuar.');
       return;
     }
 
     this.errorFormulario.set('');
     this.modalCtrl.dismiss({
-      medicamento_id: this.medicamentoSeleccionado!.id,
-      cantidad_inicial: this.cantidad!,
-      cantidad_actual: this.cantidad!,
+      medicamento_id: medicamento.id,
+      cantidad_inicial: this.cantidad,
+      cantidad_actual: this.cantidad,
       fecha_vencimiento: this.fechaVencimiento,
       donante: this.donante || undefined,
       ubicacion: this.ubicacion || undefined,
-      medicamento: this.medicamentoSeleccionado,
+      medicamento,
     });
   }
 

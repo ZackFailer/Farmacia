@@ -18,6 +18,8 @@ export interface Dispensacion {
   usuario_id: number;
   fecha_hora: string;
   observaciones?: string;
+  receta_id?: number;
+  activo?: boolean;
   items: DispensacionDetalle[];
   despachado_por?: string;
   paciente?: Paciente;

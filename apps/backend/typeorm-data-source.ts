@@ -1,26 +1,26 @@
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { join } from 'node:path';
 import { NodeSqliteCompat } from './src/app/common/node-sqlite-compat';
 
 const mockSqlite = {
   verbose: () => ({
     Database: class Mock {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      constructor(..._args: any[]) {}
+      /* noop */
       run() { return this; }
-      close() {}
+      close() { /* noop */ }
     },
   }),
 };
 
 const options = {
   type: 'sqlite' as const,
-  database: 'apps/backend/data/farmacia.sqlite',
+  database: process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite'),
   entities: ['apps/backend/src/app/common/entities/*.entity.ts'],
   migrations: ['apps/backend/src/app/common/migrations/*.ts'],
   synchronize: false,
   driver: mockSqlite,
-} as any;
+} as unknown as DataSourceOptions;
 
 export const AppDataSource = new DataSource(options);
 

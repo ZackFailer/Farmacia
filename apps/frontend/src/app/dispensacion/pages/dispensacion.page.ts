@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,14 +13,17 @@ import {
   IonList,
   IonSpinner,
   IonToast,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonButtons,
+  IonMenuButton,
   ModalController,
   ViewWillEnter,
 } from '@ionic/angular/standalone';
-import { EncabezadoPasoComponent } from '../components/encabezado-paso.component';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import { DispensacionService } from '../services/dispensacion.service';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
-import { BusquedaPacienteModal } from '../../pacientes/modals/busqueda-paciente.modal';
 import { RegistroPacienteModal } from '../../pacientes/modals/registro-paciente.modal';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Receta } from '../../shared/models/receta.model';
@@ -39,16 +42,25 @@ import type { Receta } from '../../shared/models/receta.model';
     IonList,
     IonSpinner,
     IonToast,
-    EncabezadoPasoComponent,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonMenuButton,
     EscanerQrComponent,
   ],
   template: `
-    <app-encabezado-paso [paso]="1"></app-encabezado-paso>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-buttons slot="start">
+          <ion-menu-button></ion-menu-button>
+        </ion-buttons>
+        <ion-title>Dispensación</ion-title>
+      </ion-toolbar>
+    </ion-header>
 
     <ion-content class="ion-padding">
-      <p class="page-subtitle">Paso 1 de 3: seleccionar paciente por QR, cédula/ID o receta pendiente.</p>
-
-      <h3>Identificación manual</h3>
+      <h3>Identificación del paciente</h3>
       @if (!pacienteIdentificado()) {
         <div style="text-align: center; padding: var(--app-space-2xl) 0;">
           <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
@@ -56,15 +68,24 @@ import type { Receta } from '../../shared/models/receta.model';
 
           <ion-searchbar [(ngModel)]="codigoBuscado" (ionInput)="buscarPorCodigo()" placeholder="Buscar por ID emergencia o cédula..." debounce="500"></ion-searchbar>
 
-          <div style="display: flex; flex-direction: column; gap: var(--app-space-md); margin-top: var(--app-space-xl);">
-            <ion-button expand="block" fill="outline" (click)="abrirBusquedaManual()">
-              Buscar paciente manual
-            </ion-button>
-            <ion-button expand="block" fill="outline" (click)="abrirRegistroPaciente()">
-              Registrar nuevo paciente
-            </ion-button>
-          </div>
+          @if (!codigoBuscado || !codigoBuscado.trim()) {
+            <p class="app-text-secondary" style="text-align:center;font-size:var(--app-font-size-sm);margin:0 0 var(--app-space-lg);">Ingrese el ID de emergencia, nombre o cédula del paciente. También puede escanear su código QR.</p>
+          }
         </div>
+      }
+
+      @if (resultadosBusqueda().length > 0 && !pacienteIdentificado()) {
+        <ion-list>
+          @for (p of resultadosBusqueda(); track p.id) {
+            <ion-item button (click)="seleccionarPaciente(p)">
+              <ion-label>
+                <h2>{{ p.nombre }} {{ p.apellido }}</h2>
+                <p>{{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
+                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada ?? 0 }} años</ion-note>
+              </ion-label>
+            </ion-item>
+          }
+        </ion-list>
       }
 
       @if (errorMsg()) {
@@ -81,7 +102,7 @@ import type { Receta } from '../../shared/models/receta.model';
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
-            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
             <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }} @if (p.es_titular) { · Titular de núcleo familiar } @else if (p.tiene_carga_familiar) { · Carga familiar }</ion-note>
           </ion-label>
         </ion-item>
@@ -92,7 +113,7 @@ import type { Receta } from '../../shared/models/receta.model';
             @for (f of p.familiares; track f.id) {
               <div class="familiar-row">
                 <span class="familiar-nombre">{{ f.nombre }} {{ f.apellido }}</span>
-                <span class="familiar-detalle">{{ f.relacion }} · {{ f.edad_estimada }} años · {{ f.peso_estimado }} kg · {{ f.sexo === 'M' ? 'M' : 'F' }} @if (f.es_damnificado) { · Damnificado }</span>
+                <span class="familiar-detalle">{{ f.relacion }} · {{ f.edad_estimada ?? 0 }} años · {{ f.peso_estimado }} kg · {{ f.sexo === 'M' ? 'M' : 'F' }} @if (f.es_damnificado) { · Damnificado }</span>
               </div>
             }
           </div>
@@ -140,10 +161,44 @@ import type { Receta } from '../../shared/models/receta.model';
       (didDismiss)="showToast.set(false)"
     ></ion-toast>
   `,
+  styles: [`
+    .familiares-card {
+      margin: var(--app-space-md) 0;
+      padding: var(--app-space-md);
+      background: var(--app-bg);
+      border-radius: var(--app-radius-md);
+      border-left: 3px solid var(--app-primary-light);
+    }
+    .familiares-title {
+      font-size: var(--app-font-size-sm);
+      font-weight: 600;
+      color: var(--app-text-secondary);
+      margin: 0 0 var(--app-space-sm);
+    }
+    .familiar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--app-space-xs) 0;
+      border-bottom: 1px solid var(--app-divider);
+    }
+    .familiar-row:last-child {
+      border-bottom: none;
+    }
+    .familiar-nombre {
+      font-size: var(--app-font-size-sm);
+      font-weight: 500;
+    }
+    .familiar-detalle {
+      font-size: var(--app-font-size-xs);
+      color: var(--app-text-secondary);
+    }
+  `],
 })
-export class Paso1EscanearPacientePage implements ViewWillEnter {
+export class DispensacionPage implements ViewWillEnter {
   codigoBuscado = '';
   pacienteIdentificado = signal<Paciente | null>(null);
+  resultadosBusqueda = signal<Paciente[]>([]);
   errorMsg = signal('');
   recetasPendientes = signal<Receta[]>([]);
   cargandoRecetas = signal(false);
@@ -151,15 +206,14 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
   toastMessage = signal('');
   toastColor = signal<'success' | 'danger'>('success');
 
-  constructor(
-    private dispensacionService: DispensacionService,
-    private pacientesService: PacientesService,
-    private modalCtrl: ModalController,
-    private router: Router,
-  ) {}
+  private readonly dispensacionService = inject(DispensacionService);
+  private readonly pacientesService = inject(PacientesService);
+  private readonly modalCtrl = inject(ModalController);
+  private readonly router = inject(Router);
 
   ionViewWillEnter(): void {
     this.pacienteIdentificado.set(null);
+    this.resultadosBusqueda.set([]);
     this.codigoBuscado = '';
     this.errorMsg.set('');
     this.cargarRecetasPendientes();
@@ -178,15 +232,28 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
       next: (p) => {
         if (p.length === 0) {
           this.errorMsg.set('Paciente no encontrado con ese criterio');
+          this.resultadosBusqueda.set([]);
           return;
         }
-        this.pacienteIdentificado.set(p[0]);
+        if (p.length === 1 && term.startsWith('EM-')) {
+          this.pacienteIdentificado.set(p[0]);
+          this.resultadosBusqueda.set([]);
+        } else {
+          this.resultadosBusqueda.set(p);
+        }
         this.errorMsg.set('');
       },
       error: () => {
         this.errorMsg.set('Paciente no encontrado con ese criterio');
+        this.resultadosBusqueda.set([]);
       },
     });
+  }
+
+  seleccionarPaciente(p: Paciente): void {
+    this.pacienteIdentificado.set(p);
+    this.resultadosBusqueda.set([]);
+    this.codigoBuscado = '';
   }
 
   private cargarRecetasPendientes(): void {
@@ -205,22 +272,7 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
   seleccionarRecetaPendiente(receta: Receta): void {
     this.dispensacionService.setReceta(receta);
-    this.router.navigate(['/dispensacion/paso2']);
-  }
-
-  async abrirBusquedaManual(): Promise<void> {
-    const modal = await this.modalCtrl.create({
-      component: BusquedaPacienteModal,
-    });
-    modal.present();
-    const { data, role } = await modal.onWillDismiss();
-
-    if (role === 'seleccionar' && data?.paciente) {
-      this.pacienteIdentificado.set(data.paciente);
-      this.errorMsg.set('');
-    } else if (role === 'registrar') {
-      this.abrirRegistroPaciente();
-    }
+    this.router.navigate(['/dispensacion/medicamentos']);
   }
 
   async abrirRegistroPaciente(): Promise<void> {
@@ -254,14 +306,14 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
 
   cancelar(): void {
     this.dispensacionService.reiniciar();
-    this.router.navigate(['/dispensacion/paso1']);
+    this.router.navigate(['/dispensacion']);
   }
 
   siguiente(): void {
     const p = this.pacienteIdentificado();
     if (!p) return;
     this.dispensacionService.setPaciente(p);
-    this.router.navigate(['/dispensacion/paso2']);
+    this.router.navigate(['/dispensacion/medicamentos']);
   }
 
   limpiarError(): void {
@@ -285,38 +337,4 @@ export class Paso1EscanearPacientePage implements ViewWillEnter {
     }
     return fallback;
   }
-
-  static styles = [`
-    .familiares-card {
-      margin: var(--app-space-md) 0;
-      padding: var(--app-space-md);
-      background: var(--app-bg);
-      border-radius: var(--app-radius-md);
-      border-left: 3px solid var(--app-primary-light);
-    }
-    .familiares-title {
-      font-size: var(--app-font-size-sm);
-      font-weight: 600;
-      color: var(--app-text-secondary);
-      margin: 0 0 var(--app-space-sm);
-    }
-    .familiar-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--app-space-xs) 0;
-      border-bottom: 1px solid var(--app-divider);
-    }
-    .familiar-row:last-child {
-      border-bottom: none;
-    }
-    .familiar-nombre {
-      font-size: var(--app-font-size-sm);
-      font-weight: 500;
-    }
-    .familiar-detalle {
-      font-size: var(--app-font-size-xs);
-      color: var(--app-text-secondary);
-    }
-  `];
 }

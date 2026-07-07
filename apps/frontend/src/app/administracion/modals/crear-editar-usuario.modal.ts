@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
@@ -26,6 +26,11 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
     </ion-header>
 
     <ion-content class="ion-padding">
+      <ion-item>
+        <ion-label position="stacked">Nombre de usuario *</ion-label>
+        <ion-input [(ngModel)]="username" placeholder="ej: juan_perez" maxlength="50"></ion-input>
+      </ion-item>
+
       <ion-item>
         <ion-label position="stacked">Nombre *</ion-label>
         <ion-input [(ngModel)]="nombre" placeholder="Nombre completo"></ion-input>
@@ -76,9 +81,10 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
 export class CrearEditarUsuarioModal {
   readonly rolEnum = Rol;
 
-  @Input() set usuario(value: { id: number; nombre: string; rol: Rol }) {
+  @Input() set usuario(value: { id: number; username: string; nombre: string; rol: Rol }) {
     if (value) {
       this.editando.set(true);
+      this.username = value.username;
       this.nombre = value.nombre;
       this.rol = value.rol;
       this.usuarioId = value.id;
@@ -87,15 +93,18 @@ export class CrearEditarUsuarioModal {
 
   editando = signal(false);
   usuarioId = 0;
+  username = '';
   nombre = '';
   rol: Rol = Rol.RECEPTIONIST;
   pin = '';
   confirmarPin = '';
   errorMsg = signal('');
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   formValido(): boolean {
+    if (!this.username.trim()) return false;
+    if (!/^[a-zA-Z0-9_]+$/.test(this.username.trim())) return false;
     if (!this.nombre.trim()) return false;
     if (this.editando()) {
       if (this.pin && (this.pin.length < 4 || this.pin.length > 6)) return false;
@@ -109,7 +118,7 @@ export class CrearEditarUsuarioModal {
     this.errorMsg.set('');
 
     if (this.editando()) {
-      const dto: UpdateUsuarioDto = { nombre: this.nombre.trim(), rol: this.rol };
+      const dto: UpdateUsuarioDto = { username: this.username.trim(), nombre: this.nombre.trim(), rol: this.rol };
       if (this.pin) dto.pin = this.pin;
       this.modalCtrl.dismiss(dto, 'editar');
     } else {
@@ -118,6 +127,7 @@ export class CrearEditarUsuarioModal {
         return;
       }
       const dto: CreateUsuarioDto = {
+        username: this.username.trim(),
         nombre: this.nombre.trim(),
         rol: this.rol,
         pin: this.pin,

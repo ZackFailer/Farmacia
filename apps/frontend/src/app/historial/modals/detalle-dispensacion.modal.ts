@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonNote,
@@ -78,7 +78,7 @@ import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
 export class DetalleDispensacionModal {
   @Input({ required: true }) dispensacion!: Dispensacion;
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   dismiss(): void {
     this.modalCtrl.dismiss();

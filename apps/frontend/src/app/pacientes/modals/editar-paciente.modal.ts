@@ -1,9 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
-  IonFooter, ModalController,
+  IonToggle, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
+  ModalController,
 } from '@ionic/angular/standalone';
 import { Sexo } from '../../shared/enums/sexo.enum';
 import type { Paciente } from '../../shared/models/paciente.model';
@@ -13,7 +14,8 @@ import type { Paciente } from '../../shared/models/paciente.model';
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
-    IonFooter, FormsModule,
+    IonToggle, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
+    FormsModule,
   ],
   template: `
     <ion-header>
@@ -55,8 +57,25 @@ import type { Paciente } from '../../shared/models/paciente.model';
       </ion-item>
 
       <ion-item>
-        <ion-label position="stacked">Edad estimada *</ion-label>
-        <ion-input type="number" [(ngModel)]="edad"></ion-input>
+        <ion-label position="stacked">Fecha de nacimiento</ion-label>
+        <ion-datetime-button datetime="editar-nacimiento"></ion-datetime-button>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>No sé la fecha exacta</ion-label>
+        <ion-toggle slot="end" [(ngModel)]="usarEdadManual"></ion-toggle>
+      </ion-item>
+
+      @if (usarEdadManual) {
+        <ion-item>
+          <ion-label position="stacked">Edad (años) *</ion-label>
+          <ion-input type="number" [(ngModel)]="edadManual" placeholder="35" min="0"></ion-input>
+        </ion-item>
+      }
+
+      <ion-item>
+        <ion-label>Es recién nacido</ion-label>
+        <ion-toggle slot="end" [(ngModel)]="esRecienNacido"></ion-toggle>
       </ion-item>
 
       <ion-item>
@@ -72,6 +91,10 @@ import type { Paciente } from '../../shared/models/paciente.model';
         </ion-select>
       </ion-item>
     </ion-content>
+
+    <ion-modal [keepContentsMounted]="true">
+      <ion-datetime id="editar-nacimiento" presentation="date" [(ngModel)]="fechaNacimiento"></ion-datetime>
+    </ion-modal>
 
     <ion-footer>
       <ion-toolbar>
@@ -93,13 +116,16 @@ export class EditarPacienteModal {
   cedula = '';
   telefono = '';
   sexo: Sexo = Sexo.M;
-  edad = '';
+  fechaNacimiento = '';
+  usarEdadManual = false;
+  edadManual = '';
+  esRecienNacido = false;
   peso = '';
   esDamnificado = true;
 
   private paciente!: Paciente;
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   setPaciente(p: Paciente): void {
     this.paciente = p;
@@ -108,17 +134,29 @@ export class EditarPacienteModal {
     this.cedula = p.cedula ?? '';
     this.telefono = p.telefono ?? '';
     this.sexo = p.sexo;
-    this.edad = String(p.edad_estimada);
+    this.fechaNacimiento = p.fecha_nacimiento ?? '';
+    this.usarEdadManual = !p.fecha_nacimiento && p.edad_manual != null;
+    this.edadManual = p.edad_manual != null ? String(p.edad_manual) : '';
+    this.esRecienNacido = p.es_recien_nacido ?? false;
     this.peso = String(p.peso_estimado);
     this.esDamnificado = p.es_damnificado;
   }
 
   formValido(): boolean {
-    return !!(this.nombre.trim() && this.apellido.trim() && this.edad && +this.edad > 0 && this.peso && +this.peso > 0);
+    const tieneEdadValida = this.fechaNacimiento || (this.usarEdadManual && this.edadManual && +this.edadManual > 0) || this.esRecienNacido;
+    return !!(this.nombre.trim() && this.apellido.trim() && tieneEdadValida && this.peso && +this.peso > 0);
   }
 
   guardar(): void {
     if (!this.formValido()) return;
+
+    const edadEstimada = this.esRecienNacido
+      ? 0
+      : this.usarEdadManual && this.edadManual
+        ? +this.edadManual
+        : this.fechaNacimiento
+          ? Math.max(0, new Date().getFullYear() - new Date(this.fechaNacimiento).getFullYear())
+          : this.paciente.edad_estimada;
 
     this.modalCtrl.dismiss({
       nombre: this.nombre.trim(),
@@ -126,7 +164,10 @@ export class EditarPacienteModal {
       cedula: this.cedula.trim() || undefined,
       telefono: this.telefono.trim() || undefined,
       sexo: this.sexo,
-      edad_estimada: +this.edad,
+      edad_estimada: edadEstimada,
+      fecha_nacimiento: this.fechaNacimiento || undefined,
+      edad_manual: this.usarEdadManual && this.edadManual ? +this.edadManual : undefined,
+      es_recien_nacido: this.esRecienNacido || undefined,
       peso_estimado: +this.peso,
       es_damnificado: this.esDamnificado,
     }, 'confirm');

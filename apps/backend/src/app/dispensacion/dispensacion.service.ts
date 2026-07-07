@@ -39,10 +39,7 @@ export class DispensacionService {
       where: { medicamentoId, activo: true },
       relations: { medicamento: true },
     });
-    if (!config) {
-      throw new NotFoundException('Dose configuration not found');
-    }
-    return config;
+    return config ?? null;
   }
 
   async crearDispensacion(dto: CrearDispensacionDto, usuarioId: number) {

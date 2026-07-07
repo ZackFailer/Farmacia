@@ -19,7 +19,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'pacientes',
-    canActivate: [roleGuard([Rol.RECEPTIONIST, Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN])],
+    canActivate: [roleGuard([Rol.RECEPTIONIST, Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN, Rol.SURVEYOR])],
     loadChildren: () => import('./pacientes/pacientes.routes').then(m => m.pacientesRoutes),
   },
   {
@@ -39,8 +39,12 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'admin',
-    canActivate: [roleGuard([Rol.ADMIN])],
     loadChildren: () => import('./administracion/administracion.routes').then(m => m.administracionRoutes),
+  },
+  {
+    path: 'censo',
+    canActivate: [roleGuard([Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN])],
+    loadChildren: () => import('./censo/censo.routes').then(m => m.censoRoutes),
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
 ];

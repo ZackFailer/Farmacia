@@ -17,7 +17,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/role.enum';
 
 @Controller('pacientes')
-@Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN)
+@Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.ADMIN, UserRole.SURVEYOR)
 export class PacientesController {
   constructor(private readonly pacientesService: PacientesService) {}
 
@@ -29,8 +29,11 @@ export class PacientesController {
 
   @Get()
   @Roles(UserRole.RECEPTIONIST, UserRole.DOCTOR, UserRole.PHARMACEUTICAL, UserRole.ADMIN)
-  searchPacientes(@Query('q') query: string) {
-    return this.pacientesService.searchPacientes(query);
+  searchPacientes(
+    @Query('q') query: string,
+    @Query('incluirInactivos') incluirInactivos?: string,
+  ) {
+    return this.pacientesService.searchPacientes(query, incluirInactivos === 'true');
   }
 
   @Get('emergencia/:idEmergencia')
@@ -54,8 +57,9 @@ export class PacientesController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   deletePaciente(@Param('id', ParseIntPipe) id: number) {
-    return this.pacientesService.softDeletePaciente(id);
+    return this.pacientesService.deletePaciente(id);
   }
 
   @Get(':id/nucleo')

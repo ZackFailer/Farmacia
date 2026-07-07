@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { DispensacionService } from './dispensacion.service';
@@ -18,14 +19,16 @@ describe('DispensacionService', () => {
   // ── Paciente ──
 
   it('debe buscar paciente por ID de emergencia', async () => {
-    const p = await firstValueFrom(service.buscarPaciente('EM-2026-001'));
-    expect(p.id_emergencia).toBe('EM-2026-001');
-    expect(p.sexo).toBe(Sexo.M);
-    expect(p.peso_estimado).toBe(70);
+    const items = await firstValueFrom(service.buscarPaciente('EM-2026-001'));
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0].id_emergencia).toBe('EM-2026-001');
+    expect(items[0].sexo).toBe(Sexo.M);
+    expect(items[0].peso_estimado).toBe(70);
   });
 
-  it('debe rechazar busqueda de paciente inexistente', async () => {
-    await expect(firstValueFrom(service.buscarPaciente('XX-999'))).rejects.toThrow('Paciente no encontrado');
+  it('debe retornar lista vacia para paciente inexistente', async () => {
+    const items = await firstValueFrom(service.buscarPaciente('XX-999'));
+    expect(items.length).toBe(0);
   });
 
   it('debe registrar un nuevo paciente exitosamente', async () => {
@@ -43,8 +46,9 @@ describe('DispensacionService', () => {
     expect(p.id).toBeGreaterThan(0);
     expect(p.created_at).toBeTruthy();
 
-    const buscado = await firstValueFrom(service.buscarPaciente('EM-2026-099'));
-    expect(buscado.id).toBe(p.id);
+    const items = await firstValueFrom(service.buscarPaciente('EM-2026-099'));
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0].id).toBe(p.id);
   });
 
   it('debe rechazar registro con ID de emergencia duplicado', async () => {

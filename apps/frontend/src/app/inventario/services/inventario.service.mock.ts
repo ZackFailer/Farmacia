@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
@@ -25,13 +26,11 @@ const MEDICAMENTOS: Medicamento[] = [
   { id: 15, nombre_generico: 'Albendazol', presentacion: 'Tableta', concentracion: 400, unidad_concentracion: 'mg', created_at: '', updated_at: '' },
 ];
 
-const VITALES_IDS = [1, 3, 5, 11];
-
 const CONFIGURACIONES: Configuracion[] = MEDICAMENTOS.map(m => ({
   id: m.id,
   medicamento_id: m.id,
   medicamento: m,
-  umbral_minimo: VITALES_IDS.includes(m.id) ? 50 : 20,
+  umbral_minimo: m.es_vital ? 50 : 20,
   dosis_maxima_mg_kg: m.id === 1 ? 10 : m.id === 2 ? 15 : undefined,
   peso_referencia_kg: m.id === 1 ? 70 : m.id === 2 ? 70 : undefined,
   updated_at: '',
@@ -66,8 +65,8 @@ export class MockInventarioService extends InventarioService {
       const term = params.search.toLowerCase();
       items = items.filter(i => i.medicamento.nombre_generico.toLowerCase().includes(term));
     }
-    const vitales = items.filter(i => VITALES_IDS.includes(i.medicamento.id));
-    const otros = items.filter(i => !VITALES_IDS.includes(i.medicamento.id));
+    const vitales = items.filter(i => i.medicamento.es_vital === true);
+    const otros = items.filter(i => i.medicamento.es_vital !== true);
     return of([...vitales, ...otros]);
   }
 

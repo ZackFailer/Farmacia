@@ -7,6 +7,7 @@ export interface Configuracion {
   umbral_minimo: number;
   dosis_maxima_mg_kg?: number;
   peso_referencia_kg?: number;
+  activo?: boolean;
   updated_at: string;
 }
 

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { RecetasService } from './recetas.service';
@@ -43,9 +43,7 @@ interface ApiReceta {
 
 @Injectable()
 export class ApiRecetasService extends RecetasService {
-  constructor(private readonly http: HttpClient) {
-    super();
-  }
+  private readonly http = inject(HttpClient);
 
   crearReceta(dto: CreateRecetaDto): Observable<Receta> {
     return this.http

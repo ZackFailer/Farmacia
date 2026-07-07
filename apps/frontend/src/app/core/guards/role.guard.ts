@@ -7,9 +7,10 @@ import { Rol } from '../../shared/enums/rol.enum';
 const HOME_BY_ROLE: Record<Rol, string> = {
   [Rol.ADMIN]: '/admin',
   [Rol.DOCTOR]: '/recetas',
-  [Rol.PHARMACEUTICAL]: '/dispensacion/paso1',
+  [Rol.PHARMACEUTICAL]: '/dispensacion',
   [Rol.RECEPTIONIST]: '/pacientes',
   [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
+  [Rol.SURVEYOR]: '/censo/crear-carpa',
 };
 
 export function roleGuard(allowedRoles: Rol[]): CanActivateFn {

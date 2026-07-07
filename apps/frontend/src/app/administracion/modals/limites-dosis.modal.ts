@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
@@ -17,7 +17,7 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
   template: `
     <ion-header>
       <ion-toolbar>
-        <ion-title>Límite de Dosis</ion-title>
+        <ion-title>Configurar Medicamento</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="dismiss()">✕</ion-button>
         </ion-buttons>
@@ -29,6 +29,11 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
         <ion-label>
           <h2>{{ configuracion.medicamento?.nombre_generico ?? 'Medicamento' }}</h2>
         </ion-label>
+      </ion-item>
+
+      <ion-item>
+        <ion-label position="stacked">Umbral mínimo (unds) *</ion-label>
+        <ion-input type="number" min="0" [(ngModel)]="umbralMinimo" placeholder="Ej: 10"></ion-input>
       </ion-item>
 
       <ion-item>
@@ -58,13 +63,15 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
     </ion-footer>
   `,
 })
-export class LimitesDosisModal {
+export class LimitesDosisModal implements OnInit {
   @Input({ required: true }) configuracion!: Configuracion;
   errorMsg = signal('');
+  umbralMinimo = '';
   dosisMaxima = '';
   pesoReferencia = '';
 
   ngOnInit(): void {
+    this.umbralMinimo = String(this.configuracion.umbral_minimo ?? 10);
     if (this.configuracion.dosis_maxima_mg_kg !== undefined && this.configuracion.dosis_maxima_mg_kg !== null) {
       this.dosisMaxima = String(this.configuracion.dosis_maxima_mg_kg);
     }
@@ -73,10 +80,18 @@ export class LimitesDosisModal {
     }
   }
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   guardar(): void {
     const dto: UpdateConfiguracionDto = {};
+
+    const umbral = parseInt(this.umbralMinimo, 10);
+    if (isNaN(umbral) || umbral < 0) {
+      this.errorMsg.set('El umbral mínimo debe ser un número entero positivo');
+      return;
+    }
+    dto.umbral_minimo = umbral;
+
     if (this.dosisMaxima !== '') {
       const val = parseFloat(this.dosisMaxima);
       if (isNaN(val) || val < 0) {

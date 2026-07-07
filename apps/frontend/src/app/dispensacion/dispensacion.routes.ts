@@ -2,20 +2,19 @@ import type { Route } from '@angular/router';
 import { pasoGuard } from './guards/paso.guard';
 
 export const dispensacionRoutes: Route[] = [
-  { path: 'cola', redirectTo: 'paso1', pathMatch: 'full' },
+  { path: 'cola', redirectTo: '', pathMatch: 'full' },
   {
-    path: 'paso1',
-    loadComponent: () => import('./pages/paso1-escanear-paciente.page').then(m => m.Paso1EscanearPacientePage),
+    path: '',
+    loadComponent: () => import('./pages/dispensacion.page').then(m => m.DispensacionPage),
   },
   {
-    path: 'paso2',
+    path: 'medicamentos',
     canActivate: [pasoGuard],
-    loadComponent: () => import('./pages/paso2-seleccionar-meds.page').then(m => m.Paso2SeleccionarMedsPage),
+    loadComponent: () => import('./pages/seleccionar-medicamentos.page').then(m => m.SeleccionarMedicamentosPage),
   },
   {
-    path: 'paso3',
+    path: 'confirmacion',
     canActivate: [pasoGuard],
-    loadComponent: () => import('./pages/paso3-confirmar.page').then(m => m.Paso3ConfirmarPage),
+    loadComponent: () => import('./pages/confirmar-entrega.page').then(m => m.ConfirmarEntregaPage),
   },
-  { path: '', redirectTo: 'paso1', pathMatch: 'full' },
 ];

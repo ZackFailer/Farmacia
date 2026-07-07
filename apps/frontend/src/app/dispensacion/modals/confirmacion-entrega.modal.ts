@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonSpinner,
   IonContent, IonItem, IonLabel, IonNote,
@@ -73,7 +73,7 @@ export class ConfirmacionEntregaModal {
 
   cargando = signal(false);
 
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   confirmar(): void {
     this.cargando.set(true);

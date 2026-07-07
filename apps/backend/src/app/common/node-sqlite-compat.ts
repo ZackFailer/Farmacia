@@ -82,7 +82,7 @@ export class NodeSqliteCompat {
     }
   }
 
-  on(_event: string, _handler: (...args: unknown[]) => void): this {
+  on(): this {
     return this;
   }
 }

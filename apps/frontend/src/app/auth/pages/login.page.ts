@@ -1,12 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonContent, IonToast } from '@ionic/angular/standalone';
+import { IonContent, IonInput, IonItem, IonLabel, IonToast } from '@ionic/angular/standalone';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { Rol } from '../../shared/enums/rol.enum';
 
 @Component({
   standalone: true,
-  imports: [IonContent, IonToast],
+  imports: [IonContent, IonInput, IonItem, IonLabel, IonToast, FormsModule],
   template: `
     <ion-content class="ion-padding">
       <div class="login-container">
@@ -14,6 +15,18 @@ import { Rol } from '../../shared/enums/rol.enum';
           <div class="login-logo-icon">+</div>
           <h1>ApoPharma</h1>
           <p class="login-subtitle">Farmácia de Emergencia</p>
+        </div>
+
+        <div class="login-field">
+          <ion-item>
+            <ion-label position="stacked">Nombre de usuario</ion-label>
+            <ion-input
+              [(ngModel)]="username"
+              placeholder="ej: admin"
+              (ionInput)="onUsernameChange()"
+              autocomplete="username"
+            ></ion-input>
+          </ion-item>
         </div>
 
         <div class="pin-display">
@@ -28,13 +41,17 @@ import { Rol } from '../../shared/enums/rol.enum';
 
         <div class="numpad">
           @for (n of numpadKeys(); track n) {
-            <button class="numpad-btn" (click)="pressKey(n)">
+            <button
+              class="numpad-btn"
+              (click)="pressKey(n)"
+              [class.disabled]="!username().trim() && n !== '⌫'"
+            >
               {{ n }}
             </button>
           }
         </div>
 
-        <p class="login-hint">Ingrese su PIN de acceso</p>
+        <p class="login-hint">Ingrese su usuario y PIN de acceso</p>
       </div>
     </ion-content>
 
@@ -86,6 +103,11 @@ import { Rol } from '../../shared/enums/rol.enum';
       font-size: var(--app-font-size-sm);
       color: var(--app-text-secondary);
       margin: var(--app-space-xs) 0 0;
+    }
+
+    .login-field {
+      width: 100%;
+      max-width: 280px;
     }
 
     .pin-display {
@@ -140,6 +162,11 @@ import { Rol } from '../../shared/enums/rol.enum';
       background: var(--app-bg);
     }
 
+    .numpad-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     .login-hint {
       font-size: var(--app-font-size-sm);
       color: var(--app-text-secondary);
@@ -148,6 +175,7 @@ import { Rol } from '../../shared/enums/rol.enum';
   `],
 })
 export class LoginPage {
+  username = signal('');
   pin = signal('');
   pinDots = signal(Array(6).fill(0));
   errorMsg = signal('');
@@ -162,10 +190,12 @@ export class LoginPage {
 
   private isProcessing = false;
 
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-  ) {}
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  onUsernameChange(): void {
+    this.errorMsg.set('');
+  }
 
   pressKey(key: string): void {
     if (this.isProcessing) return;
@@ -179,6 +209,7 @@ export class LoginPage {
     }
 
     if (key === '' || this.pin().length >= 6) return;
+    if (!this.username().trim()) return;
 
     this.pin.update(p => p + key);
     this.errorMsg.set('');
@@ -190,22 +221,23 @@ export class LoginPage {
 
   private attemptLogin(): void {
     this.isProcessing = true;
-    this.authService.login(this.pin()).subscribe({
+    this.authService.login(this.username().trim(), this.pin()).subscribe({
       next: (res) => {
         this.isProcessing = false;
         const ruta = ({
           [Rol.ADMIN]: '/admin',
           [Rol.DOCTOR]: '/recetas',
-          [Rol.PHARMACEUTICAL]: '/dispensacion/paso1',
+          [Rol.PHARMACEUTICAL]: '/dispensacion',
           [Rol.RECEPTIONIST]: '/pacientes',
           [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
+          [Rol.SURVEYOR]: '/censo/crear-carpa',
         } satisfies Record<Rol, string>)[res.usuario.rol] ?? '/recepcion';
         this.router.navigate([ruta]);
       },
       error: () => {
         this.isProcessing = false;
-        this.errorMsg.set('PIN inválido');
-        this.toastMsg.set('PIN inválido. Intente de nuevo.');
+        this.errorMsg.set('Credenciales inválidas');
+        this.toastMsg.set('Usuario o PIN inválido. Intente de nuevo.');
         this.showToast.set(true);
         this.pin.set('');
       },

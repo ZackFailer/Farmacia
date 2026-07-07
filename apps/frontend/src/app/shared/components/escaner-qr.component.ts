@@ -1,4 +1,4 @@
-import { Component, output, signal } from '@angular/core';
+import { Component, output, signal, inject } from '@angular/core';
 import { IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import { EscanerService } from '../../core/services/escaner.service';
 
@@ -9,7 +9,7 @@ import { EscanerService } from '../../core/services/escaner.service';
   template: `
     <div class="escaner-container" #scannerContainer>
       @if (!camaraActiva()) {
-        <div class="escaner-placeholder" (click)="iniciarEscaneo()">
+        <div class="escaner-placeholder" (click)="iniciarEscaneo()" (keydown.enter)="iniciarEscaneo()" tabindex="0" role="button">
           <ion-icon name="scan-outline" class="escaner-icon"></ion-icon>
           <p>Toca para escanear</p>
         </div>
@@ -81,7 +81,7 @@ export class EscanerQrComponent {
   camaraActiva = signal(false);
   errorMsg = signal('');
 
-  constructor(private escanerService: EscanerService) {}
+  private readonly escanerService = inject(EscanerService);
 
   async iniciarEscaneo(): Promise<void> {
     if (this.camaraActiva()) return;

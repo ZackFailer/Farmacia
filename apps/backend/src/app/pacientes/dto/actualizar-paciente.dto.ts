@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
@@ -7,8 +8,11 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Sex } from '../../common/enums/sex.enum';
+import { PacientePatologiaDto } from './crear-paciente.dto';
 
 export class ActualizarPacienteDto {
   @IsOptional()
@@ -41,6 +45,19 @@ export class ActualizarPacienteDto {
   edadEstimada?: number;
 
   @IsOptional()
+  @IsString()
+  fechaNacimiento?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  edadManual?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  esRecienNacido?: boolean;
+
+  @IsOptional()
   @IsNumber()
   @Min(0.1)
   pesoEstimado?: number;
@@ -48,4 +65,28 @@ export class ActualizarPacienteDto {
   @IsOptional()
   @IsBoolean()
   esDamnificado?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  tieneDiscapacidadMotora?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  activo?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  patologiaIds?: number[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PacientePatologiaDto)
+  patologias?: PacientePatologiaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  necesidadIds?: number[];
 }

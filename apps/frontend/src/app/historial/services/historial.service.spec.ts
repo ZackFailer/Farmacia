@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { HistorialService } from './historial.service';

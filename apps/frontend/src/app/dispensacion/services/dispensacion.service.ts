@@ -11,6 +11,7 @@ export interface RecetaItem {
   lote?: Lote;
   medicamento: Medicamento;
   cantidad: number;
+  dias?: number;
   dosisCalculada?: number;
   dosisValida?: boolean;
   dosisMaxima?: number;
@@ -29,7 +30,7 @@ export abstract class DispensacionService {
   readonly estado = this._estado.asReadonly();
 
   abstract registrarPaciente(dto: CreatePacienteDto): Observable<Paciente>;
-  abstract buscarPaciente(searchTerm: string): Observable<Paciente>;
+  abstract buscarPaciente(searchTerm: string): Observable<Paciente[]>;
   abstract buscarMedicamentos(search: string): Observable<Medicamento[]>;
   abstract getLotesDisponibles(medicamentoId: number): Observable<Lote[]>;
   abstract getLoteByQR(codigoQR: string): Observable<Lote>;
@@ -48,10 +49,12 @@ export abstract class DispensacionService {
   }
 
   setReceta(r: Receta): void {
-    const items: RecetaItem[] = (r.detalles ?? []).map(d => ({
-      medicamento: d.medicamento!,
-      cantidad: d.cantidad_recetada,
-    }));
+    const items: RecetaItem[] = (r.detalles ?? []).reduce<RecetaItem[]>((acc, d) => {
+      if (d.medicamento) {
+        acc.push({ medicamento: d.medicamento, cantidad: d.cantidad_recetada, dias: d.dias });
+      }
+      return acc;
+    }, []);
     this._estado.update(e => ({
       ...e,
       paciente: r.paciente ?? null,

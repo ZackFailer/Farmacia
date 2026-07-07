@@ -38,16 +38,14 @@ describe('AuthService', () => {
 
   it('should login with valid pin', async () => {
     const pinHash = await hash('123456', 1);
-    repo.find.mockResolvedValue([
-      {
-        id: 1,
-        nombre: 'admin',
-        rol: UserRole.PHARMACEUTICAL,
-        pinHash,
-      } as Usuario,
-    ]);
+    repo.findOne.mockResolvedValue({
+      id: 1,
+      nombre: 'admin',
+      rol: UserRole.PHARMACEUTICAL,
+      pinHash,
+    } as Usuario);
 
-    const result = await service.login('123456');
+    const result = await service.login('admin', '123456');
 
     expect(result.token).toBe('signed-token');
     expect(result.usuario).toEqual({
@@ -59,16 +57,14 @@ describe('AuthService', () => {
 
   it('should throw with invalid pin', async () => {
     const pinHash = await hash('999999', 1);
-    repo.find.mockResolvedValue([
-      {
-        id: 1,
-        nombre: 'admin',
-        rol: UserRole.PHARMACEUTICAL,
-        pinHash,
-      } as Usuario,
-    ]);
+    repo.findOne.mockResolvedValue({
+      id: 1,
+      nombre: 'admin',
+      rol: UserRole.PHARMACEUTICAL,
+      pinHash,
+    } as Usuario);
 
-    await expect(service.login('123456')).rejects.toBeInstanceOf(
+    await expect(service.login('admin', '123456')).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
   });

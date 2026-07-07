@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { AdministracionService } from './administracion.service';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -21,8 +22,8 @@ export class AdministracionController {
   constructor(private readonly administracionService: AdministracionService) {}
 
   @Get('usuarios')
-  getUsuarios() {
-    return this.administracionService.getUsuarios();
+  getUsuarios(@Query('incluirInactivos') incluirInactivos?: string) {
+    return this.administracionService.getUsuarios(incluirInactivos === 'true');
   }
 
   @Post('usuarios')

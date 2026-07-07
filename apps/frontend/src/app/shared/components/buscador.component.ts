@@ -25,7 +25,7 @@ import { IonSearchbar, IonList, IonItem, IonLabel } from '@ionic/angular/standal
     }
   `,
 })
-export class BuscadorComponent<T extends {}> {
+export class BuscadorComponent<T extends object> {
   items = input.required<T[]>();
   placeholder = input('Buscar…');
   displayFn = input<(item: T) => string>((item: T) => String(item));

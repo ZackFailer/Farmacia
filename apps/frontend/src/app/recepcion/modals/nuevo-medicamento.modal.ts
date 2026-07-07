@@ -1,10 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonFooter, ModalController } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonToggle, IonFooter, ModalController } from '@ionic/angular/standalone';
 
 @Component({
   standalone: true,
-  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonFooter, FormsModule],
+  imports: [IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonSelect, IonSelectOption, IonToggle, IonFooter, FormsModule],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -56,6 +56,11 @@ import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, Ion
         </ion-select>
       </ion-item>
 
+      <ion-item>
+        <ion-label>Medicamento Vital</ion-label>
+        <ion-toggle slot="end" [(ngModel)]="esVital"></ion-toggle>
+      </ion-item>
+
       @if (errorFormulario()) {
         <p class="form-error">{{ errorFormulario() }}</p>
       }
@@ -88,13 +93,14 @@ import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, Ion
   `],
 })
 export class NuevoMedicamentoModal {
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   nombreGenerico = '';
   nombreComercial = '';
   presentacion = '';
   concentracion: number | null = null;
-  unidad: string = 'mg';
+  unidad = 'mg';
+  esVital = false;
   errorFormulario = signal('');
 
   puedeGuardar(): boolean {
@@ -112,8 +118,9 @@ export class NuevoMedicamentoModal {
       nombre_generico: this.nombreGenerico,
       nombre_comercial: this.nombreComercial || undefined,
       presentacion: this.presentacion,
-      concentracion: this.concentracion!,
+      concentracion: this.concentracion,
       unidad_concentracion: this.unidad,
+      es_vital: this.esVital,
     });
   }
 

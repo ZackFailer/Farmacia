@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonNote, IonFooter, ModalController } from '@ionic/angular/standalone';
 import type { Lote } from '../../shared/models/lote.model';
@@ -52,7 +52,7 @@ import type { Lote } from '../../shared/models/lote.model';
   `,
 })
 export class AjusteStockModal {
-  constructor(private modalCtrl: ModalController) {}
+  private readonly modalCtrl = inject(ModalController);
 
   @Input({ required: true }) lote!: Lote;
 
@@ -74,7 +74,7 @@ export class AjusteStockModal {
   }
 
   ajustar() {
-    this.modalCtrl.dismiss({ cantidad_real: this.cantidadReal! });
+    this.modalCtrl.dismiss({ cantidad_real: this.cantidadReal ?? 0 });
   }
 
   dismiss() {

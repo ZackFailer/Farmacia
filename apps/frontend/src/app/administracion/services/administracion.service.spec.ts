@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { AdministracionService } from './administracion.service';
@@ -21,6 +22,7 @@ describe('AdministracionService', () => {
 
   it('debe crear un usuario', async () => {
     const u = await firstValueFrom(service.crearUsuario({
+      username: 'testuser',
       nombre: 'Test User',
       rol: Rol.RECEPTIONIST,
       pin: '1234',
@@ -31,6 +33,7 @@ describe('AdministracionService', () => {
 
   it('debe rechazar creacion con PIN invalido', async () => {
     await expect(firstValueFrom(service.crearUsuario({
+      username: 'test',
       nombre: 'Test',
       rol: Rol.RECEPTIONIST,
       pin: '12',

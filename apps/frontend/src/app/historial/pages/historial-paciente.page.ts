@@ -2,7 +2,7 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
+  IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
   IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonIcon, ModalController,
 } from '@ionic/angular/standalone';
 import { HistorialService } from '../services/historial.service';
@@ -13,7 +13,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
 @Component({
   standalone: true,
   imports: [
-    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
     IonItem, IonLabel, IonNote, IonButton, IonSpinner, IonIcon,
     FechaRelativaPipe,
   ],
@@ -21,7 +21,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-menu-button></ion-menu-button>
+          <ion-back-button defaultHref="/historial"></ion-back-button>
         </ion-buttons>
         <ion-title>Historial</ion-title>
       </ion-toolbar>
@@ -43,7 +43,7 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
             <ion-label>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>ID: {{ p.id_emergencia }}</p>
-              <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+              <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
               <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
             </ion-label>
           </ion-item>

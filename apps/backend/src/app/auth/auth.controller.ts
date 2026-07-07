@@ -12,7 +12,7 @@ export class AuthController {
   @Public()
   @Post('login')
   login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.pin);
+    return this.authService.login(dto.username, dto.pin);
   }
 
   @Get('me')

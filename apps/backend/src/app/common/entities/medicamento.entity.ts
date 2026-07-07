@@ -28,6 +28,12 @@ export class Medicamento {
   @Column({ type: 'float' })
   concentracion!: number;
 
+  @Column({ name: 'unidad_concentracion', type: 'varchar', length: 10, default: 'mg' })
+  unidadConcentracion!: string;
+
+  @Column({ name: 'es_vital', type: 'boolean', default: false })
+  esVital!: boolean;
+
   @Column({ type: 'boolean', default: true })
   activo!: boolean;
 

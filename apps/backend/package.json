@@ -1,0 +1,39 @@
+{
+  "name": "@farmacia/backend",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "webpack --config webpack.termux.config.js && node -e \"const{cpSync,existsSync,mkdirSync}=require('fs'),{join}=require('path');const d=join(__dirname,'dist','certs');!existsSync(d)&&(mkdirSync(d,{recursive:true}),existsSync(join(__dirname,'certs'))&&cpSync(join(__dirname,'certs'),d,{recursive:true}))\"",
+    "start": "node --experimental-sqlite dist/main.js",
+    "build:tsc": "tsc -p tsconfig.app.json && node -e \"const{cpSync,existsSync,mkdirSync}=require('fs'),{join}=require('path');const d=join(__dirname,'..','..','dist','out-tsc','apps','backend','certs');!existsSync(d)&&(mkdirSync(d,{recursive:true}),existsSync(join(__dirname,'certs'))&&cpSync(join(__dirname,'certs'),d,{recursive:true}))\"",
+    "start:tsc": "node --experimental-sqlite ../../dist/out-tsc/apps/backend/src/main.js",
+    "start:tsx": "node --experimental-sqlite --import tsx src/main.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.27",
+    "@nestjs/core": "11.1.27",
+    "@nestjs/jwt": "11.0.2",
+    "@nestjs/passport": "11.0.5",
+    "@nestjs/platform-express": "11.1.27",
+    "@nestjs/typeorm": "11.0.3",
+    "bcryptjs": "2.4.3",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.14.4",
+    "express": "4.22.2",
+    "passport": "0.7.0",
+    "passport-jwt": "4.0.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "typeorm": "0.3.30",
+    "uuid": "11.1.1"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.5.2",
+    "typescript": "~5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^7.0.0"
+  }
+}

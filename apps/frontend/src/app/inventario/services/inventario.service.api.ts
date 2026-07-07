@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
 import { InventarioService } from './inventario.service';
@@ -40,6 +40,7 @@ interface ApiConfiguracion {
   umbralMinimo: number;
   dosisMaximaMgKg: number;
   pesoReferenciaKg: number;
+  activo: boolean;
   updatedAt: string;
 }
 
@@ -65,9 +66,7 @@ interface ApiInventarioRow {
 
 @Injectable()
 export class ApiInventarioService extends InventarioService {
-  constructor(private readonly http: HttpClient) {
-    super();
-  }
+  private readonly http = inject(HttpClient);
 
   getStockGeneral(params?: {
     search?: string;
@@ -130,9 +129,9 @@ export class ApiInventarioService extends InventarioService {
       .pipe(map((items) => items.map((item) => this.toConfiguracion(item))));
   }
 
-  actualizarUmbral(id: number, dto: UpdateConfiguracionDto): Observable<Configuracion> {
+  actualizarUmbral(medicamentoId: number, dto: UpdateConfiguracionDto): Observable<Configuracion> {
     return this.http
-      .patch<ApiConfiguracion>(`${API_BASE_URL}/configuraciones/${id}/umbral`, {
+      .patch<ApiConfiguracion>(`${API_BASE_URL}/configuraciones/medicamento/${medicamentoId}/umbral`, {
         umbralMinimo: dto.umbral_minimo,
       })
       .pipe(map((item) => this.toConfiguracion(item)));
@@ -175,6 +174,7 @@ export class ApiInventarioService extends InventarioService {
       umbral_minimo: item.umbralMinimo,
       dosis_maxima_mg_kg: item.dosisMaximaMgKg,
       peso_referencia_kg: item.pesoReferenciaKg,
+      activo: item.activo,
       updated_at: item.updatedAt,
     };
   }
