@@ -36,15 +36,11 @@ import { CatalogoPatologia } from './common/entities/patologia.entity';
 import { CatalogoNecesidad } from './common/entities/necesidad.entity';
 import { PacientePatologia } from './common/entities/paciente-patologia.entity';
 import { PacienteNecesidad } from './common/entities/paciente-necesidad.entity';
-import { CreateNucleoFamiliar1741190820000 } from './common/migrations/1741190820000-CreateNucleoFamiliar';
-import { AddTitularFk1741190830000 } from './common/migrations/1741190830000-AddTitularFk';
-import { AddActivoAndRoles1741190840000 } from './common/migrations/1741190840000-AddActivoAndRoles';
-import { CreateReceta1741190850000 } from './common/migrations/1741190850000-CreateReceta';
 import { NodeSqliteCompat } from './common/node-sqlite-compat';
 
 const typeOrmOptions = {
   type: 'sqlite' as const,
-  database: process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite'),
+  database: process.env.DB_PATH || join(__dirname, '..', '..', '..', 'apps', 'backend', 'data', 'farmacia.sqlite'),
   entities: [
     Usuario,
     Medicamento,
@@ -63,9 +59,7 @@ const typeOrmOptions = {
     PacientePatologia,
     PacienteNecesidad,
   ],
-  synchronize: true,
-  migrations: [CreateNucleoFamiliar1741190820000, AddTitularFk1741190830000, AddActivoAndRoles1741190840000, CreateReceta1741190850000],
-  migrationsRun: false,
+  synchronize: false,
 };
 
 const mockSqlite = {

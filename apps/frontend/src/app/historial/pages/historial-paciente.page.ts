@@ -43,8 +43,8 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
             <ion-label>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>ID: {{ p.id_emergencia }}</p>
-              <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
-              <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+              <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+               <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }}</ion-note>
             </ion-label>
           </ion-item>
         }
@@ -61,6 +61,9 @@ import type { Dispensacion } from '../../shared/models/dispensacion.model';
             <ion-item button (click)="verDetalle(d)">
               <ion-label>
                 <h2>{{ d.fecha_hora | fechaRelativa }}</h2>
+                @if (d.receta_motivo) {
+                  <p><strong>Motivo:</strong> {{ d.receta_motivo }}</p>
+                }
                 <p>
                   @for (item of d.items; track item.id; let last = $last) {
                     {{ item.medicamento_nombre }}{{ last ? '' : ', ' }}
@@ -133,5 +136,14 @@ export class HistorialPacientePage implements OnInit {
       componentProps: { dispensacion: d },
     });
     modal.present();
+  }
+
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
   }
 }

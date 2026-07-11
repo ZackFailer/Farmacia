@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Paciente } from './paciente.entity';
 import { CatalogoPatologia } from './patologia.entity';
+import { Usuario } from './usuario.entity';
 
 @Entity('paciente_patologia')
 export class PacientePatologia {
@@ -23,4 +24,11 @@ export class PacientePatologia {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   tratamiento!: string | null;
+
+  // Trazabilidad
+  @Column({ name: 'created_by_id', nullable: true })
+  createdById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy?: Usuario;
 }

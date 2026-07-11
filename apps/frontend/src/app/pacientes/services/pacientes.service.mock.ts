@@ -8,6 +8,7 @@ import type { Patologia } from '../../shared/models/patologia.model';
 import type { Necesidad } from '../../shared/models/necesidad.model';
 import type { NucleoFamiliar } from '../../shared/models/nucleo-familiar.model';
 import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.model';
+import type { ExportarCensoResponse } from '../../shared/models/exportar-censo.model';
 import { Sexo } from '../../shared/enums/sexo.enum';
 
 interface NucleoSeed {
@@ -40,12 +41,12 @@ const SEED_NUCLEOS: NucleoSeed[] = [
 ];
 
 const SEED_PACIENTES: Paciente[] = [
-  { id: 1, id_emergencia: 'EM-2026-001', nombre: 'Juan', apellido: 'Perez', telefono: '04141234567', sexo: Sexo.M, edad_estimada: 35, fecha_nacimiento: '1991-03-15', peso_estimado: 70, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T10:00:00Z' },
-  { id: 2, id_emergencia: 'EM-2026-002', nombre: 'Maria', apellido: 'Gonzalez', telefono: '04145551212', sexo: Sexo.F, edad_estimada: 28, fecha_nacimiento: '1998-07-22', peso_estimado: 55, es_damnificado: false, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:30:00Z' },
-  { id: 3, id_emergencia: 'EM-2026-003', nombre: 'Pedro', apellido: 'Ramirez', telefono: '04140001122', sexo: Sexo.M, edad_estimada: 60, fecha_nacimiento: '1966-01-10', peso_estimado: 80, es_damnificado: true, tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T11:00:00Z' },
-  { id: 4, id_emergencia: 'EM-2026-004', nombre: 'Lucía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 8, fecha_nacimiento: '2018-05-20', peso_estimado: 25, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:01Z' },
-  { id: 5, id_emergencia: 'EM-2026-005', nombre: 'Sofía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 5, fecha_nacimiento: '2021-11-08', peso_estimado: 18, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:02Z' },
-  { id: 6, id_emergencia: 'EM-2026-006', nombre: 'Ana', apellido: 'Ramirez', telefono: '04148889900', sexo: Sexo.F, edad_estimada: 55, fecha_nacimiento: '1971-09-03', peso_estimado: 65, es_damnificado: true, tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T11:00:01Z' },
+  { id: 1, id_emergencia: 'EM-2026-001', nombre: 'Juan', apellido: 'Perez', telefono: '04141234567', sexo: Sexo.M, edad_estimada: 35, fecha_nacimiento: '1991-03-15', peso_estimado: 70, situacion_vivienda: 'damnificado', tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T10:00:00Z' },
+  { id: 2, id_emergencia: 'EM-2026-002', nombre: 'Maria', apellido: 'Gonzalez', telefono: '04145551212', sexo: Sexo.F, edad_estimada: 28, fecha_nacimiento: '1998-07-22', peso_estimado: 55, situacion_vivienda: 'no_afectado', tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:30:00Z' },
+  { id: 3, id_emergencia: 'EM-2026-003', nombre: 'Pedro', apellido: 'Ramirez', telefono: '04140001122', sexo: Sexo.M, edad_estimada: 60, fecha_nacimiento: '1966-01-10', peso_estimado: 80, situacion_vivienda: 'damnificado', tiene_carga_familiar: true, familiares: [], created_at: '2026-07-03T11:00:00Z' },
+  { id: 4, id_emergencia: 'EM-2026-004', nombre: 'Lucía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 8, fecha_nacimiento: '2018-05-20', peso_estimado: 25, situacion_vivienda: 'damnificado', tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:01Z' },
+  { id: 5, id_emergencia: 'EM-2026-005', nombre: 'Sofía', apellido: 'Perez', sexo: Sexo.F, edad_estimada: 5, fecha_nacimiento: '2021-11-08', peso_estimado: 18, situacion_vivienda: 'damnificado', tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T10:00:02Z' },
+  { id: 6, id_emergencia: 'EM-2026-006', nombre: 'Ana', apellido: 'Ramirez', telefono: '04148889900', sexo: Sexo.F, edad_estimada: 55, fecha_nacimiento: '1971-09-03', peso_estimado: 65, situacion_vivienda: 'damnificado', tiene_carga_familiar: false, familiares: [], created_at: '2026-07-03T11:00:01Z' },
 ];
 
 const SEED_PATOLOGIAS: Patologia[] = [
@@ -86,7 +87,7 @@ function buildFamiliares(pacienteId: number, nucleo?: NucleoSeed): Familiar[] {
         sexo: familiar.sexo,
         edad_estimada: familiar.edad_estimada,
         peso_estimado: familiar.peso_estimado,
-        es_damnificado: familiar.es_damnificado,
+        situacion_vivienda: familiar.situacion_vivienda,
         tiene_carga_familiar: familiar.tiene_carga_familiar,
         relacion: m.relacion,
         created_at: familiar.created_at,
@@ -149,7 +150,7 @@ export class MockPacientesService extends PacientesService {
       edad_manual: dto.edad_manual,
       es_recien_nacido: dto.es_recien_nacido,
       peso_estimado: dto.peso_estimado,
-      es_damnificado: dto.es_damnificado,
+      situacion_vivienda: dto.situacion_vivienda,
       tiene_carga_familiar: dto.tiene_carga_familiar ?? false,
       familiares: [],
       created_at: new Date().toISOString(),
@@ -179,7 +180,7 @@ export class MockPacientesService extends PacientesService {
           edad_manual: f.edad_manual,
           es_recien_nacido: f.es_recien_nacido,
           peso_estimado: f.peso_estimado,
-          es_damnificado: f.es_damnificado,
+          situacion_vivienda: f.situacion_vivienda,
           tiene_carga_familiar: false,
           familiares: [],
           created_at: new Date().toISOString(),
@@ -247,6 +248,28 @@ export class MockPacientesService extends PacientesService {
     return of({ success: true });
   }
 
+  marcarNecesidadSuplida(_pacienteId: number, _necesidadId: number): Observable<unknown> {
+    const necesidad = SEED_NECESIDADES.find((n) => n.id === _necesidadId);
+    if (!necesidad) return throwError(() => new Error('Necesidad no encontrada'));
+    return of({ success: true, fecha: new Date().toISOString() });
+  }
+
+  agregarPatologia(_pacienteId: number, _dto: { patologiaId: number; tratamiento?: string }): Observable<unknown> {
+    return of({ success: true });
+  }
+
+  quitarPatologia(_pacienteId: number, _patologiaId: number): Observable<{ success: boolean }> {
+    return of({ success: true });
+  }
+
+  agregarNecesidad(_pacienteId: number, _necesidadId: number): Observable<unknown> {
+    return of({ success: true });
+  }
+
+  quitarNecesidad(_pacienteId: number, _necesidadId: number): Observable<{ success: boolean }> {
+    return of({ success: true });
+  }
+
   getPatologias(): Observable<Patologia[]> {
     return of(SEED_PATOLOGIAS);
   }
@@ -290,12 +313,70 @@ export class MockPacientesService extends PacientesService {
       adultos: SEED_PACIENTES.filter(p => this.calcularEdad(p) > 18 && this.calcularEdad(p) <= 59).length,
       adultosMayores: SEED_PACIENTES.filter(p => this.calcularEdad(p) >= 60).length,
       conDiscapacidadMotora: SEED_PACIENTES.filter(p => p.tiene_discapacidad_motora).length,
+      totalNoAfectados: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'no_afectado').length,
+      totalViviendaAfectada: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'vivienda_afectada').length,
+      totalDamnificados: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'damnificado').length,
       totalCarpas: CARPAS.length,
       porPatologia: [],
       porNecesidad: [],
       porUbicacion: [],
     };
     return of(estadisticas);
+  }
+
+  exportarCensoCompleto(): Observable<ExportarCensoResponse> {
+    const pacientesConCarpa = SEED_PACIENTES.map(p => {
+      const nucleo = findNucleo(p.id);
+      return {
+        carpa: nucleo ? `CARPA-${String(nucleo.id).padStart(4, '0')}` : 'SIN CARPA',
+        ubicacion: null,
+        idEmergencia: p.id_emergencia,
+        nombre: p.nombre,
+        apellido: p.apellido,
+        cedula: p.cedula ?? null,
+        telefono: p.telefono ?? null,
+        sexo: p.sexo,
+        edadEstimada: p.edad_estimada,
+        pesoEstimado: p.peso_estimado,
+        situacionVivienda: p.situacion_vivienda,
+        tieneDiscapacidadMotora: p.tiene_discapacidad_motora ?? false,
+        relacion: nucleo?.miembros.find(m => m.pacienteId === p.id)?.relacion ?? 'Titular',
+        patologias: [],
+        necesidades: [],
+      };
+    });
+
+    return of({
+      metrica: {
+        totalPacientes: SEED_PACIENTES.length,
+        masculinos: SEED_PACIENTES.filter(p => p.sexo === Sexo.M).length,
+        femeninos: SEED_PACIENTES.filter(p => p.sexo === Sexo.F).length,
+        recienNacidos: 0,
+        preescolares: 0,
+        escolares: 0,
+        adolescentes: 0,
+        adultos: SEED_PACIENTES.length,
+        adultosMayores: 0,
+        conDiscapacidadMotora: 0,
+        totalNoAfectados: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'no_afectado').length,
+        totalViviendaAfectada: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'vivienda_afectada').length,
+        totalDamnificados: SEED_PACIENTES.filter(p => p.situacion_vivienda === 'damnificado').length,
+        totalCarpas: CARPAS.length,
+        porPatologia: [],
+        porNecesidad: [],
+        porUbicacion: [],
+      },
+      pacientes: pacientesConCarpa,
+      metricaMedicamentos: {
+        totalMedicamentos: 0,
+        totalDispensaciones: 0,
+        totalDosis: 0,
+        promedioDosisPorDia: 0,
+        medicamentosMasDispensados: [],
+        medicamentosSinMovimientos: [],
+      },
+      dispensaciones: [],
+    });
   }
 
   crearCarpa(dto: { ubicacion?: string }): Observable<NucleoFamiliar> {

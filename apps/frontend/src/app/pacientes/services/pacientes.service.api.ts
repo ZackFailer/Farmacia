@@ -5,12 +5,15 @@ import type { Observable } from 'rxjs';
 import { PacientesService } from './pacientes.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import { Sexo } from '../../shared/enums/sexo.enum';
-import type { CreatePacienteDto, Paciente } from '../../shared/models/paciente.model';
+import { Rol } from '../../shared/enums/rol.enum';
+import { SituacionVivienda } from '../../shared/enums/situacion-vivienda.enum';
+import type { CreatePacienteDto, Paciente, PacienteNecesidad } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
 import type { Patologia } from '../../shared/models/patologia.model';
 import type { Necesidad } from '../../shared/models/necesidad.model';
 import type { NucleoFamiliar } from '../../shared/models/nucleo-familiar.model';
 import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.model';
+import type { ExportarCensoResponse } from '../../shared/models/exportar-censo.model';
 
 interface ApiPaciente {
   id: number;
@@ -25,14 +28,14 @@ interface ApiPaciente {
   edadManual?: number;
   esRecienNacido?: boolean;
   pesoEstimado: number;
-  esDamnificado: boolean;
+  situacionVivienda: string;
   tieneCargaFamiliar: boolean;
   tieneDiscapacidadMotora?: boolean;
   esTitular?: boolean;
   codigoCarpa?: string;
   familiares?: ApiNucleoMiembro[];
   pacientePatologias?: Array<{ id: number; patologiaId: number; tratamiento?: string; patologia: { id: number; nombre: string } }>;
-  pacienteNecesidades?: Array<{ id: number; necesidadId: number; necesidad: { id: number; nombre: string } }>;
+  pacienteNecesidades?: Array<{ id: number; necesidadId: number; suplida: boolean; fechaSuplida?: string; suplidaPorId?: number; suplidaPor?: { id: number; nombre: string }; necesidad: { id: number; nombre: string } }>;
   activo: boolean;
   createdAt: string;
 }
@@ -73,7 +76,7 @@ interface ApiPacienteSimple {
   edadManual?: number;
   esRecienNacido?: boolean;
   pesoEstimado: number;
-  esDamnificado: boolean;
+  situacionVivienda: string;
   tieneCargaFamiliar: boolean;
   createdAt: string;
 }
@@ -97,7 +100,7 @@ export class ApiPacientesService extends PacientesService {
       sexo: dto.sexo,
       edadEstimada: dto.edad_estimada,
       pesoEstimado: dto.peso_estimado,
-      esDamnificado: dto.es_damnificado,
+      situacionVivienda: dto.situacion_vivienda,
       tieneCargaFamiliar: dto.tiene_carga_familiar ?? false,
     };
     if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
@@ -121,7 +124,7 @@ export class ApiPacientesService extends PacientesService {
         edadManual: f.edad_manual,
         esRecienNacido: f.es_recien_nacido,
         pesoEstimado: f.peso_estimado,
-        esDamnificado: f.es_damnificado,
+        situacionVivienda: f.situacion_vivienda,
         relacion: f.relacion,
       }));
     }
@@ -139,7 +142,7 @@ export class ApiPacientesService extends PacientesService {
     if (dto.sexo !== undefined) body['sexo'] = dto.sexo;
     if (dto.edad_estimada !== undefined) body['edadEstimada'] = dto.edad_estimada;
     if (dto.peso_estimado !== undefined) body['pesoEstimado'] = dto.peso_estimado;
-    if (dto.es_damnificado !== undefined) body['esDamnificado'] = dto.es_damnificado;
+    if (dto.situacion_vivienda !== undefined) body['situacionVivienda'] = dto.situacion_vivienda;
     if (dto.fecha_nacimiento !== undefined) body['fechaNacimiento'] = dto.fecha_nacimiento;
     if (dto.edad_manual !== undefined) body['edadManual'] = dto.edad_manual;
     if (dto.es_recien_nacido !== undefined) body['esRecienNacido'] = dto.es_recien_nacido;
@@ -182,7 +185,7 @@ export class ApiPacientesService extends PacientesService {
             sexo: item['sexo'] as Sexo,
             edad_estimada: (item['edadEstimada'] as number) ?? 0,
             peso_estimado: (item['pesoEstimado'] as number) ?? 0,
-            es_damnificado: (item['esDamnificado'] as boolean) ?? false,
+            situacion_vivienda: (item['situacionVivienda'] as SituacionVivienda) ?? 'no_afectado',
             tiene_carga_familiar: (item['tieneCargaFamiliar'] as boolean) ?? false,
             relacion: (item['relacion'] as string) ?? '',
             created_at: (item['createdAt'] as string) ?? '',
@@ -202,6 +205,26 @@ export class ApiPacientesService extends PacientesService {
     return this.http.delete<{ success: boolean }>(`${API_BASE_URL}/pacientes/${pacienteId}/nucleo/${miembroId}`);
   }
 
+  marcarNecesidadSuplida(pacienteId: number, necesidadId: number): Observable<unknown> {
+    return this.http.patch(`${API_BASE_URL}/pacientes/${pacienteId}/necesidades/${necesidadId}/suplida`, {});
+  }
+
+  agregarPatologia(pacienteId: number, dto: { patologiaId: number; tratamiento?: string }): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/pacientes/${pacienteId}/patologias`, dto);
+  }
+
+  quitarPatologia(pacienteId: number, patologiaId: number): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${API_BASE_URL}/pacientes/${pacienteId}/patologias/${patologiaId}`);
+  }
+
+  agregarNecesidad(pacienteId: number, necesidadId: number): Observable<unknown> {
+    return this.http.post(`${API_BASE_URL}/pacientes/${pacienteId}/necesidades`, { necesidadId });
+  }
+
+  quitarNecesidad(pacienteId: number, necesidadId: number): Observable<{ success: boolean }> {
+    return this.http.delete<{ success: boolean }>(`${API_BASE_URL}/pacientes/${pacienteId}/necesidades/${necesidadId}`);
+  }
+
   getPatologias(): Observable<Patologia[]> {
     return this.http.get<Patologia[]>(`${API_BASE_URL}/patologias`);
   }
@@ -212,6 +235,10 @@ export class ApiPacientesService extends PacientesService {
 
   getEstadisticasCenso(): Observable<CensoEstadisticas> {
     return this.http.get<CensoEstadisticas>(`${API_BASE_URL}/censo/estadisticas`);
+  }
+
+  exportarCensoCompleto(): Observable<ExportarCensoResponse> {
+    return this.http.get<ExportarCensoResponse>(`${API_BASE_URL}/censo/exportar`);
   }
 
   crearCarpa(dto: { ubicacion?: string }): Observable<NucleoFamiliar> {
@@ -257,7 +284,7 @@ export class ApiPacientesService extends PacientesService {
         sexo: 'M' as Sexo,
         edad_estimada: 0,
         peso_estimado: 0,
-        es_damnificado: false,
+        situacion_vivienda: 'no_afectado',
         tiene_carga_familiar: false,
         relacion: pf.relacion,
         created_at: '',
@@ -273,10 +300,23 @@ export class ApiPacientesService extends PacientesService {
       sexo: p.sexo,
       edad_estimada: p.edadEstimada,
       peso_estimado: p.pesoEstimado,
-      es_damnificado: p.esDamnificado,
+      situacion_vivienda: p.situacionVivienda as SituacionVivienda,
       tiene_carga_familiar: p.tieneCargaFamiliar,
       relacion: pf.relacion,
       created_at: p.createdAt,
+    };
+  }
+
+  private toPacienteNecesidad(pn: NonNullable<ApiPaciente['pacienteNecesidades']>[number]): PacienteNecesidad {
+    return {
+      id: pn.id,
+      necesidadId: pn.necesidadId,
+      necesidad: pn.necesidad,
+      suplida: pn.suplida,
+      fechaSuplida: pn.fechaSuplida,
+      suplidaPorId: pn.suplidaPorId,
+      suplidaPor: pn.suplidaPor ? { id: pn.suplidaPor.id, nombre: pn.suplidaPor.nombre, username: '', rol: '' as Rol, created_at: '', updated_at: '' } : undefined,
+      activo: true,
     };
   }
 
@@ -294,13 +334,13 @@ export class ApiPacientesService extends PacientesService {
       edad_manual: item.edadManual,
       es_recien_nacido: item.esRecienNacido,
       peso_estimado: item.pesoEstimado,
-      es_damnificado: item.esDamnificado,
+      situacion_vivienda: item.situacionVivienda as SituacionVivienda,
       tiene_carga_familiar: item.tieneCargaFamiliar,
       tiene_discapacidad_motora: item.tieneDiscapacidadMotora,
       es_titular: item.esTitular,
       codigo_carpa: item.codigoCarpa,
       pacientePatologias: item.pacientePatologias,
-      pacienteNecesidades: item.pacienteNecesidades,
+      pacienteNecesidades: item.pacienteNecesidades?.map((pn) => this.toPacienteNecesidad(pn)),
       familiares: item.familiares?.map((pf) => this.toFamiliar(pf)),
       activo: item.activo,
       created_at: item.createdAt,

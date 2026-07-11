@@ -44,9 +44,9 @@ import {
   `,
 })
 export class ValidacionDosisModal {
-  @Input({ required: true }) medicamento!: string;
-  @Input({ required: true }) dosisCalculada!: number;
-  @Input({ required: true }) dosisMaxima!: number;
+  @Input() medicamento!: string;
+  @Input() dosisCalculada!: number;
+  @Input() dosisMaxima!: number;
 
   private readonly modalCtrl = inject(ModalController);
 

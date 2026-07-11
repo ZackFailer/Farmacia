@@ -44,6 +44,7 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
           <ion-select-option [value]="rolEnum.DOCTOR">Doctor</ion-select-option>
           <ion-select-option [value]="rolEnum.RECEPTIONIST">Recepcionista</ion-select-option>
           <ion-select-option [value]="rolEnum.MEDICATION_RECEPTIONIST">Recepcionista Med.</ion-select-option>
+          <ion-select-option [value]="rolEnum.SURVEYOR">Encuestador</ion-select-option>
         </ion-select>
       </ion-item>
 
@@ -81,7 +82,7 @@ import type { CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usu
 export class CrearEditarUsuarioModal {
   readonly rolEnum = Rol;
 
-  @Input() set usuario(value: { id: number; username: string; nombre: string; rol: Rol }) {
+  @Input() set usuario(value: { id: number; username: string; nombre: string; rol: Rol } | undefined) {
     if (value) {
       this.editando.set(true);
       this.username = value.username;
@@ -93,6 +94,7 @@ export class CrearEditarUsuarioModal {
 
   editando = signal(false);
   usuarioId = 0;
+
   username = '';
   nombre = '';
   rol: Rol = Rol.RECEPTIONIST;

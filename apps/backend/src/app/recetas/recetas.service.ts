@@ -21,6 +21,7 @@ export class RecetasService {
       doctorId,
       fechaHora: new Date(),
       estado: 'pendiente',
+      motivo: dto.motivo ?? null,
     });
     const saved = await this.recetaRepository.save(receta);
 

@@ -5,14 +5,19 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Sex } from '../enums/sex.enum';
+import { SituacionVivienda } from '../enums/situacion-vivienda.enum';
 import { Dispensacion } from './dispensacion.entity';
 import { NucleoFamiliarMiembro } from './nucleo-familiar-miembro.entity';
 import { PacientePatologia } from './paciente-patologia.entity';
 import { PacienteNecesidad } from './paciente-necesidad.entity';
+import { Usuario } from './usuario.entity';
 
 @Entity('paciente')
 export class Paciente {
@@ -53,8 +58,8 @@ export class Paciente {
   @Column({ name: 'peso_estimado', type: 'float' })
   pesoEstimado!: number;
 
-  @Column({ name: 'es_damnificado', type: 'boolean', default: false })
-  esDamnificado!: boolean;
+  @Column({ name: 'situacion_vivienda', type: 'varchar', length: 20, default: 'no_afectado' })
+  situacionVivienda!: SituacionVivienda;
 
   @Column({ name: 'tiene_carga_familiar', type: 'boolean', default: false })
   tieneCargaFamiliar!: boolean;
@@ -67,6 +72,22 @@ export class Paciente {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt!: Date;
+
+  // Trazabilidad
+  @Column({ name: 'created_by_id', nullable: true })
+  createdById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy?: Usuario;
+
+  @Column({ name: 'updated_by_id', nullable: true })
+  updatedById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'updated_by_id' })
+  updatedBy?: Usuario;
 
   @OneToMany(() => Dispensacion, (dispensacion) => dispensacion.paciente)
   dispensaciones!: Dispensacion[];

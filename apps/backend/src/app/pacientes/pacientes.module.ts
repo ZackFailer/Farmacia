@@ -7,10 +7,12 @@ import { NucleoFamiliar } from '../common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from '../common/entities/nucleo-familiar-miembro.entity';
 import { PacientePatologia } from '../common/entities/paciente-patologia.entity';
 import { PacienteNecesidad } from '../common/entities/paciente-necesidad.entity';
+import { CatalogoPatologia } from '../common/entities/patologia.entity';
+import { CatalogoNecesidad } from '../common/entities/necesidad.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Paciente, NucleoFamiliar, NucleoFamiliarMiembro, PacientePatologia, PacienteNecesidad]),
+    TypeOrmModule.forFeature([Paciente, NucleoFamiliar, NucleoFamiliarMiembro, PacientePatologia, PacienteNecesidad, CatalogoPatologia, CatalogoNecesidad]),
   ],
   controllers: [PacientesController],
   providers: [PacientesService],

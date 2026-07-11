@@ -27,11 +27,6 @@ export class DispensacionController {
     return this.recetasService.getRecetasPendientes();
   }
 
-  @Get('lotes/disponibles/:medicamentoId')
-  getLotesDisponibles(@Param('medicamentoId', ParseIntPipe) medicamentoId: number) {
-    return this.dispensacionService.getLotesDisponibles(medicamentoId);
-  }
-
   @Get('configuraciones/:medicamentoId/dosis')
   getDoseConfig(@Param('medicamentoId', ParseIntPipe) medicamentoId: number) {
     return this.dispensacionService.getDoseConfig(medicamentoId);

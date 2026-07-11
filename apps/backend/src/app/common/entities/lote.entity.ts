@@ -4,12 +4,10 @@ import {
   Entity,
   Index,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { DispensacionDetalle } from './dispensacion-detalle.entity';
 import { Medicamento } from './medicamento.entity';
 
 @Entity('lote')
@@ -17,7 +15,7 @@ export class Lote {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Medicamento, (medicamento) => medicamento.lotes, {
+  @ManyToOne(() => Medicamento, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
@@ -54,7 +52,4 @@ export class Lote {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
-
-  @OneToMany(() => DispensacionDetalle, (detalle) => detalle.lote)
-  dispensacionDetalles!: DispensacionDetalle[];
 }

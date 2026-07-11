@@ -7,9 +7,11 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { NucleoFamiliarMiembro } from './nucleo-familiar-miembro.entity';
 import { Paciente } from './paciente.entity';
+import { Usuario } from './usuario.entity';
 
 @Entity('nucleo_familiar')
 export class NucleoFamiliar {
@@ -35,4 +37,20 @@ export class NucleoFamiliar {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt!: Date;
+
+  // Trazabilidad
+  @Column({ name: 'created_by_id', nullable: true })
+  createdById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy?: Usuario;
+
+  @Column({ name: 'updated_by_id', nullable: true })
+  updatedById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'updated_by_id' })
+  updatedBy?: Usuario;
 }

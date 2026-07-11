@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, input, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonFooter, ModalController } from '@ionic/angular/standalone';
 import type { Configuracion } from '../../shared/models/configuracion.model';
@@ -19,8 +19,8 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ configuracion.medicamento?.nombre_generico }}</h2>
-          <p>Umbral actual: {{ configuracion.umbral_minimo }} unds</p>
+          <h2>{{ configuracion().medicamento?.nombre_generico }}</h2>
+          <p>Umbral actual: {{ configuracion().umbral_minimo }} unds</p>
         </ion-label>
       </ion-item>
 
@@ -42,11 +42,15 @@ import type { Configuracion } from '../../shared/models/configuracion.model';
     </ion-footer>
   `,
 })
-export class EditarUmbralModal {
+export class EditarUmbralModal implements OnInit {
   private readonly modalCtrl = inject(ModalController);
 
-  @Input({ required: true }) configuracion!: Configuracion;
+  readonly configuracion = input.required<Configuracion>();
   nuevoUmbral: number | null = null;
+
+  ngOnInit() {
+    this.nuevoUmbral = this.configuracion().umbral_minimo;
+  }
 
   guardar() {
     this.modalCtrl.dismiss({ umbral_minimo: this.nuevoUmbral ?? 0 });

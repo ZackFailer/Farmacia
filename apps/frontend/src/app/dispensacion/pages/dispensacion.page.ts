@@ -81,7 +81,7 @@ import type { Receta } from '../../shared/models/receta.model';
               <ion-label>
                 <h2>{{ p.nombre }} {{ p.apellido }}</h2>
                 <p>{{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
-                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada ?? 0 }} años</ion-note>
+                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada }} años</ion-note>
               </ion-label>
             </ion-item>
           }
@@ -102,8 +102,8 @@ import type { Receta } from '../../shared/models/receta.model';
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
-            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
-            <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }} @if (p.es_titular) { · Titular de núcleo familiar } @else if (p.tiene_carga_familiar) { · Carga familiar }</ion-note>
+            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+            <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }} @if (p.es_titular) { · Titular de núcleo familiar } @else if (p.tiene_carga_familiar) { · Carga familiar }</ion-note>
           </ion-label>
         </ion-item>
 
@@ -113,7 +113,7 @@ import type { Receta } from '../../shared/models/receta.model';
             @for (f of p.familiares; track f.id) {
               <div class="familiar-row">
                 <span class="familiar-nombre">{{ f.nombre }} {{ f.apellido }}</span>
-                <span class="familiar-detalle">{{ f.relacion }} · {{ f.edad_estimada ?? 0 }} años · {{ f.peso_estimado }} kg · {{ f.sexo === 'M' ? 'M' : 'F' }} @if (f.es_damnificado) { · Damnificado }</span>
+                <span class="familiar-detalle">{{ f.relacion }} · {{ f.edad_estimada }} años · {{ f.peso_estimado }} kg · {{ f.sexo === 'M' ? 'M' : 'F' }} · {{ getSituacionViviendaLabel(f.situacion_vivienda) }}</span>
               </div>
             }
           </div>
@@ -144,6 +144,9 @@ import type { Receta } from '../../shared/models/receta.model';
               <ion-label>
                 <h2>{{ receta.paciente?.nombre }} {{ receta.paciente?.apellido }}</h2>
                 <p>{{ receta.paciente?.id_emergencia }} @if (receta.paciente?.cedula) { · C.I.: {{ receta.paciente?.cedula }} }</p>
+                @if (receta.motivo) {
+                  <ion-note color="primary">{{ receta.motivo }}</ion-note>
+                }
                 <ion-note>{{ receta.detalles.length }} medicamento(s) · Dr. {{ receta.doctor?.nombre ?? 'N/A' }}</ion-note>
               </ion-label>
               <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
@@ -324,6 +327,15 @@ export class DispensacionPage implements ViewWillEnter {
     this.toastMessage.set(message);
     this.toastColor.set(color);
     this.showToast.set(true);
+  }
+
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

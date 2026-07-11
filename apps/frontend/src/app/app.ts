@@ -13,9 +13,11 @@ import {
   IonLabel,
   IonIcon,
   IonButton,
+  IonButtons,
   MenuController,
 } from '@ionic/angular/standalone';
 import { AuthService } from './auth/services/auth.service';
+import { IndicadorSyncComponent } from './shared/components/indicador-sync.component';
 import { Rol, ROL_LABELS } from './shared/enums/rol.enum';
 
 interface MenuItem {
@@ -27,11 +29,12 @@ interface MenuItem {
 }
 
 const ALL_MENU_ITEMS: MenuItem[] = [
-  { ruta: '/recepcion', label: 'Recepción', icon: 'download-outline', activePrefix: '/recepcion', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.ADMIN] },
-  { ruta: '/pacientes', label: 'Pacientes', icon: 'people-outline', activePrefix: '/pacientes', roles: [Rol.RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN] },
+  { ruta: '/recepcion', label: 'Catálogo', icon: 'file-tray-stacked-outline', activePrefix: '/recepcion', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.ADMIN] },
+  { ruta: '/pacientes', label: 'Pacientes', icon: 'people-outline', activePrefix: '/pacientes', roles: [Rol.RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN, Rol.SURVEYOR] },
   { ruta: '/recetas', label: 'Recetas', icon: 'document-text-outline', activePrefix: '/recetas', roles: [Rol.DOCTOR, Rol.ADMIN] },
   { ruta: '/dispensacion', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion', roles: [Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/inventario/metricas', label: 'Métricas', icon: 'analytics-outline', activePrefix: '/inventario/metricas', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/historial', label: 'Historial', icon: 'time-outline', activePrefix: '/historial', roles: [Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/censo/carpas', label: 'Censo - Carpas', icon: 'home-outline', activePrefix: '/censo/carpas', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
   { ruta: '/censo/tablero', label: 'Censo - Tablero', icon: 'stats-chart-outline', activePrefix: '/censo/tablero', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
@@ -46,7 +49,8 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   imports: [
     IonApp, IonRouterOutlet, IonMenu, IonHeader,
     IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel,
-    IonIcon, IonButton,
+    IonIcon, IonButton, IonButtons,
+    IndicadorSyncComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.html',

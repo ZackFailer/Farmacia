@@ -15,6 +15,7 @@ const mockSqlite = {
 
 const options = {
   type: 'sqlite' as const,
+  // __dirname = apps/backend/ (ejecutado con ts-node), DB_PATH para override
   database: process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite'),
   entities: ['apps/backend/src/app/common/entities/*.entity.ts'],
   migrations: ['apps/backend/src/app/common/migrations/*.ts'],
@@ -26,7 +27,7 @@ export const AppDataSource = new DataSource(options);
 
 const driver = AppDataSource.driver as unknown as { connect: () => Promise<void>; disconnect: () => Promise<void>; databaseConnection: NodeSqliteCompat | undefined };
 driver.connect = async () => {
-  driver.databaseConnection = new NodeSqliteCompat(options.database);
+  driver.databaseConnection = new NodeSqliteCompat(options.database as string);
 };
 driver.disconnect = async () => {
   const compat = driver.databaseConnection;

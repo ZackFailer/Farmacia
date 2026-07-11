@@ -1,7 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
+  IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
   IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonIcon, IonSpinner,
   IonToggle, IonRefresher, IonRefresherContent, IonFab, IonFabButton,
   ModalController, AlertController,
@@ -14,7 +14,7 @@ import { Rol } from '../../shared/enums/rol.enum';
 @Component({
   standalone: true,
   imports: [
-    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonMenuButton,
     IonSearchbar, IonItem, IonLabel, IonNote, IonButton, IonIcon, IonSpinner,
     IonToggle, IonRefresher, IonRefresherContent, IonFab, IonFabButton, FormsModule,
   ],
@@ -22,7 +22,7 @@ import { Rol } from '../../shared/enums/rol.enum';
     <ion-header>
       <ion-toolbar color="primary">
         <ion-buttons slot="start">
-          <ion-back-button defaultHref="/recepcion"></ion-back-button>
+          <ion-menu-button></ion-menu-button>
         </ion-buttons>
         <ion-title>Catálogo</ion-title>
       </ion-toolbar>

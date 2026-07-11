@@ -8,6 +8,9 @@ import {
   IonCard, IonCardContent, IonBackButton, IonToast, IonIcon,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
+import { ConnectivityService } from '../../core/services/connectivity.service';
+import { SyncQueueService, SyncOperationType } from '../../core/services/sync-queue.service';
+import { PendingCarpaStore } from '../../core/services/pending-carpa-store.service';
 import type { NucleoFamiliar } from '../../shared/models/nucleo-familiar.model';
 import QRCode from 'qrcode';
 
@@ -255,12 +258,15 @@ export class CrearCarpaPage {
   error = signal('');
   showToast = signal(false);
   toastMessage = signal('');
-  toastColor = signal<'success' | 'danger'>('success');
+  toastColor = signal<'success' | 'danger' | 'warning'>('success');
   qrPreviewDataUrl = signal('');
 
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly pacientesService = inject(PacientesService);
+  private readonly connectivity = inject(ConnectivityService);
+  private readonly syncQueue = inject(SyncQueueService);
+  private readonly pendingCarpaStore = inject(PendingCarpaStore);
 
   protected readonly form = this.fb.nonNullable.group({
     ubicacion: ['', Validators.required],
@@ -284,6 +290,25 @@ export class CrearCarpaPage {
       },
       error: (err: unknown) => {
         this.cargando.set(false);
+        if (this.connectivity.isNetworkError(err)) {
+          const tempCodigo = `PEND-${Date.now()}`;
+          const tempId = -Date.now();
+          this.syncQueue.enqueue({
+            type: SyncOperationType.CREATE_CARPA,
+            endpoint: '/censo/carpas',
+            method: 'POST',
+            body: dto,
+            metadata: { descripcion: 'Crear carpa', tempId, tempCodigo },
+          });
+          this.pendingCarpaStore.add({
+            tempCodigo,
+            ubicacion: dto.ubicacion,
+            createdAt: new Date().toISOString(),
+          });
+          this.presentToast('Carpa guardada sin conexión. Se sincronizará automáticamente.', 'warning');
+          void this.router.navigate(['/censo/carpas']);
+          return;
+        }
         const msg = this.getErrorMessage(err, 'No se pudo crear la carpa.');
         this.error.set(msg);
         this.presentToast(msg, 'danger');
@@ -358,7 +383,7 @@ export class CrearCarpaPage {
     this.descargarQr(file);
   }
 
-  private presentToast(message: string, color: 'success' | 'danger'): void {
+  private presentToast(message: string, color: 'success' | 'danger' | 'warning'): void {
     this.toastMessage.set(message);
     this.toastColor.set(color);
     this.showToast.set(true);

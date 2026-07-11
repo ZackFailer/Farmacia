@@ -31,8 +31,8 @@ export class RecetaDetalle {
   @Column({ name: 'medicamento_id' })
   medicamentoId!: number;
 
-  @Column({ name: 'cantidad_recetada', type: 'int' })
-  cantidadRecetada!: number;
+  @Column({ name: 'cantidad_recetada', type: 'int', nullable: true })
+  cantidadRecetada?: number;
 
   @Column({ type: 'int' })
   dias!: number;

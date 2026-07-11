@@ -1,4 +1,4 @@
-import { Component, Input, signal, inject } from '@angular/core';
+import { Component, input, signal, inject } from '@angular/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonSpinner,
   IonContent, IonItem, IonLabel, IonNote,
@@ -28,19 +28,30 @@ import type { RecetaItem } from '../services/dispensacion.service';
       <h3>Paciente</h3>
       <ion-item>
         <ion-label>
-          <h2>{{ paciente.nombre }} {{ paciente.apellido }}</h2>
-          <p>ID: {{ paciente.id_emergencia }}</p>
-          <p>Peso: {{ paciente.peso_estimado }} kg</p>
-          <ion-note>{{ paciente.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+          <h2>{{ paciente().nombre }} {{ paciente().apellido }}</h2>
+          <p>ID: {{ paciente().id_emergencia }}</p>
+          <p>Peso: {{ paciente().peso_estimado }} kg</p>
+          <ion-note>{{ getSituacionViviendaLabel(paciente().situacion_vivienda) }}</ion-note>
         </ion-label>
       </ion-item>
 
+      @if (recetaMotivo()) {
+        <ion-item>
+          <ion-label>
+            <p><strong>Motivo de la receta:</strong> {{ recetaMotivo() }}</p>
+          </ion-label>
+        </ion-item>
+      }
+
       <h3>Medicamentos</h3>
-      @for (item of items; track $index) {
+      @for (item of items(); track $index) {
         <ion-item>
           <ion-label>
             <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-            <p>Lote: {{ item.lote?.codigo_qr ?? 'Sin asignar' }} | Cant: {{ item.cantidad }}</p>
+            <p>Cant: {{ item.cantidad }}</p>
+            @if (item.dosisIndicada) {
+              <p class="app-dosis-indicada"><strong>Indicación:</strong> {{ item.dosisIndicada }}</p>
+            }
             @if (item.dosisCalculada !== undefined) {
               <ion-note [style.color]="item.dosisValida ? 'var(--stock-ok)' : 'var(--stock-agotado)'">
                 Dosis: {{ item.dosisCalculada.toFixed(2) }} mg/kg
@@ -68,8 +79,9 @@ import type { RecetaItem } from '../services/dispensacion.service';
   `,
 })
 export class ConfirmacionEntregaModal {
-  @Input({ required: true }) paciente!: Paciente;
-  @Input({ required: true }) items!: RecetaItem[];
+  readonly paciente = input.required<Paciente>();
+  readonly items = input.required<RecetaItem[]>();
+  readonly recetaMotivo = input<string>();
 
   cargando = signal(false);
 
@@ -82,5 +94,14 @@ export class ConfirmacionEntregaModal {
 
   dismiss(): void {
     this.modalCtrl.dismiss(false, 'cancel');
+  }
+
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
   }
 }

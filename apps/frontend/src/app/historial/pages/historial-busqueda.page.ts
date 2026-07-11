@@ -79,7 +79,7 @@ import type { Paciente } from '../../shared/models/paciente.model';
               <ion-label>
                 <h2>{{ p.nombre }} {{ p.apellido }}</h2>
                 <p>ID: {{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
-                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada ?? 0 }} años</ion-note>
+                <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} · {{ p.edad_estimada }} años</ion-note>
               </ion-label>
             </ion-item>
           }

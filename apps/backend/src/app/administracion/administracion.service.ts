@@ -31,13 +31,14 @@ export class AdministracionService {
     });
   }
 
-  async createUsuario(dto: CrearUsuarioDto) {
+  async createUsuario(dto: CrearUsuarioDto, usuarioId?: number) {
     const pinHash = await hash(dto.pin, 10);
     const usuario = this.usuarioRepository.create({
       username: dto.username,
       nombre: dto.nombre,
       rol: dto.rol,
       pinHash,
+      createdById: usuarioId ?? null,
     });
     const saved = await this.usuarioRepository.save(usuario);
     return {
@@ -109,7 +110,7 @@ export class AdministracionService {
     });
   }
 
-  async updateConfiguracion(id: number, dto: ActualizarConfiguracionDto) {
+  async updateConfiguracion(id: number, dto: ActualizarConfiguracionDto, usuarioId?: number) {
     const configuracion = await this.configuracionRepository.findOne({
       where: { id },
     });
@@ -127,6 +128,7 @@ export class AdministracionService {
       configuracion.pesoReferenciaKg = dto.pesoReferenciaKg;
     }
 
+    configuracion.updatedById = usuarioId ?? null;
     return this.configuracionRepository.save(configuracion);
   }
 }

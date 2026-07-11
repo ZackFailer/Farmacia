@@ -1,13 +1,10 @@
 import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ModalController, ViewWillEnter, ViewWillLeave } from '@ionic/angular/standalone';
+import { IonHeader, IonToolbar, IonTitle, IonContent, IonSearchbar, IonToast, IonButtons, IonMenuButton, IonButton, IonIcon, IonSpinner, IonRefresher, IonRefresherContent, ViewWillEnter } from '@ionic/angular/standalone';
 import { TarjetaMedicamentoComponent } from '../components/tarjeta-medicamento.component';
 import { InventarioService } from '../services/inventario.service';
-import { RecepcionService } from '../../recepcion/services/recepcion.service';
 import type { StockItem } from '../../shared/models/stock-item.model';
-import type { Lote } from '../../shared/models/lote.model';
-import { interval, type Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
@@ -20,6 +17,9 @@ import { interval, type Subscription } from 'rxjs';
         </ion-buttons>
         <ion-title>Inventario</ion-title>
         <ion-buttons slot="end">
+          <ion-button (click)="irAMetricas()">
+            <ion-icon name="analytics-outline" slot="icon-only"></ion-icon>
+          </ion-button>
           <ion-button (click)="irAlCatalogo()">
             <ion-icon name="file-tray-stacked-outline" slot="icon-only"></ion-icon>
           </ion-button>
@@ -31,12 +31,18 @@ import { interval, type Subscription } from 'rxjs';
       <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
         <ion-refresher-content></ion-refresher-content>
       </ion-refresher>
-      <p class="page-subtitle">Monitorear stock, identificar medicamentos vitales y revisar lotes disponibles.</p>
+      <p class="page-subtitle">Monitorear stock e identificar medicamentos vitales.</p>
 
-      <ion-button expand="block" fill="outline" class="catalogo-btn" (click)="irAlCatalogo()">
-        <ion-icon name="file-tray-stacked-outline" slot="start"></ion-icon>
-        Catálogo de Medicamentos
-      </ion-button>
+      <div style="display: flex; gap: var(--app-space-md); margin-bottom: var(--app-space-md);">
+        <ion-button expand="block" fill="outline" (click)="irAlCatalogo()">
+          <ion-icon name="file-tray-stacked-outline" slot="start"></ion-icon>
+          Catálogo
+        </ion-button>
+        <ion-button expand="block" fill="outline" (click)="irAMetricas()">
+          <ion-icon name="analytics-outline" slot="start"></ion-icon>
+          Métricas
+        </ion-button>
+      </div>
 
       <ion-searchbar [(ngModel)]="searchTerm" (ionInput)="filtrar()" placeholder="Buscar medicamento..." debounce="300"></ion-searchbar>
 
@@ -58,13 +64,13 @@ import { interval, type Subscription } from 'rxjs';
         @if (vitales.length > 0) {
           <h3>Vitales</h3>
           @for (item of vitales; track item.medicamento.id) {
-            <app-tarjeta-medicamento [item]="item" (verLotes)="verDetalleLote(item)" (ajustarStock)="abrirAjusteStock(item)"></app-tarjeta-medicamento>
+            <app-tarjeta-medicamento [item]="item"></app-tarjeta-medicamento>
           }
         }
 
         <h3>Todos los medicamentos</h3>
         @for (item of otros; track item.medicamento.id) {
-          <app-tarjeta-medicamento [item]="item" (verLotes)="verDetalleLote(item)" (ajustarStock)="abrirAjusteStock(item)"></app-tarjeta-medicamento>
+          <app-tarjeta-medicamento [item]="item"></app-tarjeta-medicamento>
         }
       }
     </ion-content>
@@ -78,10 +84,8 @@ import { interval, type Subscription } from 'rxjs';
     ></ion-toast>
   `,
 })
-export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
+export class PanelStockPage implements ViewWillEnter {
   private readonly inventarioService = inject(InventarioService);
-  private readonly recepcionService = inject(RecepcionService);
-  private readonly modalCtrl = inject(ModalController);
   private readonly router = inject(Router);
 
   searchTerm = '';
@@ -89,8 +93,6 @@ export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
   errorMsg = signal('');
   showAlerta = signal(false);
   stockItems = signal<StockItem[]>([]);
-  lotesCache: Lote[] = [];
-  private pollingSub?: Subscription;
 
   get vitales() {
     return this.stockItems().filter(i => i.medicamento.es_vital === true);
@@ -101,37 +103,15 @@ export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
   }
 
   irAlCatalogo(): void {
-    this.router.navigate(['/recepcion/catalogo']);
+    this.router.navigate(['/recepcion']);
+  }
+
+  irAMetricas(): void {
+    this.router.navigate(['/inventario/metricas']);
   }
 
   ionViewWillEnter() {
     this.cargarDatos();
-    this.iniciarPolling();
-  }
-
-  ionViewWillLeave() {
-    this.detenerPolling();
-  }
-
-  private iniciarPolling(): void {
-    this.pollingSub = interval(20000).subscribe(() => this.refrescarSilencioso());
-  }
-
-  private detenerPolling(): void {
-    this.pollingSub?.unsubscribe();
-  }
-
-  private refrescarSilencioso(): void {
-    this.inventarioService.getStockGeneral().subscribe({
-      next: (data) => {
-        this.stockItems.set(data);
-        const bajos = data.filter(i => i.color === 'yellow' && i.medicamento.es_vital === true);
-        if (bajos.length > 0) this.showAlerta.set(true);
-      },
-    });
-    this.recepcionService.getLotes().subscribe({
-      next: (data) => { this.lotesCache = data; },
-    });
   }
 
   private cargarDatos(): void {
@@ -147,9 +127,6 @@ export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
         this.cargando.set(false);
         this.errorMsg.set('No fue posible cargar el inventario.');
       },
-    });
-    this.recepcionService.getLotes().subscribe({
-      next: (data) => { this.lotesCache = data; },
     });
   }
 
@@ -169,36 +146,5 @@ export class PanelStockPage implements ViewWillEnter, ViewWillLeave {
     this.cargando.set(true);
     this.cargarDatos();
     (event.target as HTMLIonRefresherElement).complete();
-  }
-
-  async verDetalleLote(item: StockItem) {
-    const lotes = this.lotesCache.filter(l => l.medicamento_id === item.medicamento.id);
-    if (lotes.length === 0) return;
-
-    const { DetalleLoteModal } = await import('../modals/detalle-lote.modal');
-    const modal = await this.modalCtrl.create({
-      component: DetalleLoteModal,
-      componentProps: { lote: lotes[0] },
-    });
-    await modal.present();
-  }
-
-  async abrirAjusteStock(item: StockItem) {
-    const lotes = this.lotesCache.filter(l => l.medicamento_id === item.medicamento.id);
-    if (lotes.length === 0) return;
-
-    const { AjusteStockModal } = await import('../modals/ajuste-stock.modal');
-    const modal = await this.modalCtrl.create({
-      component: AjusteStockModal,
-      componentProps: { lote: lotes[0] },
-    });
-    await modal.present();
-    const { data, role } = await modal.onWillDismiss();
-    if (role === 'cancel' || !data) return;
-
-    this.inventarioService.ajustarStock(lotes[0].id, data).subscribe({
-      next: () => this.cargarDatos(),
-      error: () => this.errorMsg.set('No fue posible ajustar el stock.'),
-    });
   }
 }

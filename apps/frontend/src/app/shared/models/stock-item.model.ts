@@ -5,8 +5,8 @@ export interface StockItem {
   stock_total: number;
   umbral_minimo: number;
   color: 'green' | 'yellow' | 'red';
-  proximo_vencer: string;
-  cantidad_lotes: number;
+  proximo_vencer?: string;
+  cantidad_lotes?: number;
 }
 
 export interface Movimiento {

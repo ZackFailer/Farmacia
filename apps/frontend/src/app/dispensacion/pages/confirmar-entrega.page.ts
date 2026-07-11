@@ -4,11 +4,8 @@ import { firstValueFrom } from 'rxjs';
 import { IonContent, IonButton, IonItem, IonLabel, IonNote, IonToast, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, ModalController } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
 import { ValidacionDosisModal } from '../modals/validacion-dosis.modal';
-import { ConfirmacionEntregaModal } from '../modals/confirmacion-entrega.modal';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { CreateDispensacionDto } from '../../shared/models/dispensacion.model';
-import type { Lote } from '../../shared/models/lote.model';
-import type { RecetaItem } from '../services/dispensacion.service';
 
 @Component({
   standalone: true,
@@ -30,8 +27,16 @@ import type { RecetaItem } from '../services/dispensacion.service';
           <ion-label>
             <h2>{{ p.nombre }} {{ p.apellido }}</h2>
             <p>ID: {{ p.id_emergencia }}</p>
-            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</p>
-            <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+            <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
+            <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }}</ion-note>
+          </ion-label>
+        </ion-item>
+      }
+
+      @if (estado().recetaMotivo) {
+        <ion-item>
+          <ion-label>
+            <p><strong>Motivo de la receta:</strong> {{ estado().recetaMotivo }}</p>
           </ion-label>
         </ion-item>
       }
@@ -41,7 +46,10 @@ import type { RecetaItem } from '../services/dispensacion.service';
         <ion-item>
           <ion-label>
             <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-            <p>Lote: {{ item.lote?.codigo_qr ?? 'Sin asignar' }} | Cant: {{ item.cantidad }}</p>
+            <p>Cant: {{ item.cantidad }}</p>
+            @if (item.dosisIndicada) {
+              <p class="app-dosis-indicada"><strong>Indicación:</strong> {{ item.dosisIndicada }}</p>
+            }
             @if (item.dosisCalculada !== undefined) {
               <ion-note [style.color]="item.dosisValida ? 'var(--stock-ok)' : 'var(--stock-agotado)'">
                 Dosis: {{ item.dosisCalculada.toFixed(2) }} mg/kg
@@ -115,71 +123,57 @@ export class ConfirmarEntregaPage implements OnInit {
     this.router.navigate(['/dispensacion/medicamentos']);
   }
 
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
+  }
+
   async confirmarEntrega(): Promise<void> {
     const estado = this.estado();
     if (!estado.paciente) return;
 
     const itemsInvalidos = estado.items.filter(i => i.dosisValida === false);
-    if (itemsInvalidos.length > 0) {
-      for (const item of itemsInvalidos) {
-        if (item.dosisCalculada === undefined || item.dosisMaxima === undefined) continue;
-        const modal = await this.modalCtrl.create({
-          component: ValidacionDosisModal,
-          componentProps: {
-            medicamento: item.medicamento.nombre_generico,
-            dosisCalculada: item.dosisCalculada,
-            dosisMaxima: item.dosisMaxima,
-          },
-        });
-        modal.present();
-        await modal.onWillDismiss();
-        return;
-      }
-    }
-
-    const modalConfirm = await this.modalCtrl.create({
-      component: ConfirmacionEntregaModal,
-      componentProps: {
-        paciente: estado.paciente,
-        items: estado.items,
-      },
-    });
-    modalConfirm.present();
-    const { data } = await modalConfirm.onWillDismiss();
-
-    if (data === true) {
-      if (estado.items.some(i => !i.lote)) {
-        this.showToast.set(true);
-        this.toastMsg.set('Todos los items deben tener un lote asignado');
-        this.toastColor.set('danger');
-        return;
-      }
-
-      const dto: CreateDispensacionDto = {
-        paciente_id: estado.paciente.id,
-        receta_id: estado.recetaId,
-        observaciones: '',
-        items: estado.items.filter((i): i is RecetaItem & { lote: Lote } => !!i.lote).map(i => ({
-          lote_id: i.lote.id,
-          medicamento_id: i.medicamento.id,
-          cantidad: i.cantidad,
-        })),
-      };
-
-      this.dispensacionService.crearDispensacion(dto).subscribe({
-        next: () => {
-          this.showToast.set(true);
-          this.toastMsg.set('Dispensación registrada exitosamente');
-          this.toastColor.set('success');
-          this.dispensacionService.reiniciar();
-          setTimeout(() => this.router.navigate(['/dispensacion']), 1500);
-        },
-        error: (err) => {
-          this.showToast.set(true);
-          this.toastMsg.set('Error: ' + err.message);
-          this.toastColor.set('danger');
+    for (const item of itemsInvalidos) {
+      if (item.dosisCalculada === undefined || item.dosisMaxima === undefined) continue;
+      const modal = await this.modalCtrl.create({
+        component: ValidacionDosisModal,
+        componentProps: {
+          medicamento: item.medicamento.nombre_generico,
+          dosisCalculada: item.dosisCalculada,
+          dosisMaxima: item.dosisMaxima,
         },
       });
+      modal.present();
+      await modal.onWillDismiss();
     }
+
+    const dto: CreateDispensacionDto = {
+      paciente_id: estado.paciente.id,
+      receta_id: estado.recetaId,
+      observaciones: '',
+      items: estado.items.map(i => ({
+        medicamento_id: i.medicamento.id,
+        cantidad: i.cantidad,
+      })),
+    };
+
+    this.dispensacionService.crearDispensacion(dto).subscribe({
+      next: () => {
+        this.showToast.set(true);
+        this.toastMsg.set('Dispensación registrada exitosamente');
+        this.toastColor.set('success');
+        this.dispensacionService.reiniciar();
+        setTimeout(() => this.router.navigate(['/dispensacion']), 1500);
+      },
+      error: (err) => {
+        this.showToast.set(true);
+        this.toastMsg.set('Error: ' + err.message);
+        this.toastColor.set('danger');
+      },
+    });
   }
 }

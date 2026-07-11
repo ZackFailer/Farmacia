@@ -1,12 +1,11 @@
-import { DatePipe } from '@angular/common';
 import { Component, input, output } from '@angular/core';
-import { IonItem, IonLabel, IonNote, IonButton } from '@ionic/angular/standalone';
+import { IonItem, IonLabel, IonButton } from '@ionic/angular/standalone';
 import type { RecetaItem } from '../services/dispensacion.service';
 
 @Component({
   standalone: true,
   selector: 'app-resumen-receta',
-  imports: [IonItem, IonLabel, IonNote, IonButton, DatePipe],
+  imports: [IonItem, IonLabel, IonButton],
   template: `
     @if (items().length === 0) {
       <p class="ion-text-center ion-padding">Sin medicamentos agregados</p>
@@ -17,13 +16,6 @@ import type { RecetaItem } from '../services/dispensacion.service';
           <h2 class="med-name">{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
           <p class="med-presentation">{{ item.medicamento.presentacion }}</p>
           <div class="meta-row">
-            @if (item.lote) {
-              <span class="meta-chip">Lote {{ item.lote.codigo_qr }}</span>
-              <span class="meta-chip">Stock {{ item.lote.cantidad_actual }}</span>
-              <ion-note>Vence {{ item.lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
-            } @else {
-              <span class="meta-chip" style="border-color: var(--app-warning);">Sin lote asignado</span>
-            }
             <span class="meta-chip">Cant {{ item.cantidad }}</span>
           </div>
         </ion-label>

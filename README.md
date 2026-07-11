@@ -109,7 +109,7 @@ Farmacia/
 Abrir **PowerShell** (clic derecho → "Ejecutar como administrador") y escribir:
 
 ```powershell
-cd C:\Proyectos\Farmacia
+cd C:\farmacia\Farmacia-master\Farmacia-master
 npm install
 npx nx build backend
 npx nx build frontend
@@ -120,7 +120,7 @@ npx nx build frontend
 Abrir **PowerShell** (sin necesidad de administrador):
 
 ```powershell
-cd C:\Proyectos\Farmacia
+cd C:\farmacia\Farmacia-master\Farmacia-master
 npx nx serve backend          # usa --experimental-sqlite automáticamente
 ```
 
@@ -141,22 +141,32 @@ Presionar `Ctrl + C` en la ventana de PowerShell donde está corriendo.
 
 ---
 
-## Base de Datos (13 tablas)
+## Base de Datos
+
+Ubicación: `apps/backend/data/farmacia.sqlite` (persistente entre builds, no se borra al recompilar).
+
+### 18 tablas
 
 | Tabla | Propósito |
 |---|---|
 | `medicamento` | Catálogo de medicamentos |
 | `lote` | Lotes con código QR, stock, vencimiento |
+| `lote_movimiento` | Movimientos de stock por lote (ingreso, ajuste, egreso) |
 | `paciente` | Registro mínimo de pacientes de emergencia |
+| `nucleo_familiar` | Grupo familiar asociado a un titular |
+| `nucleo_familiar_miembro` | Miembros del núcleo familiar con relación |
+| `receta` | Cabecera de receta médica |
+| `receta_detalle` | Items de cada receta |
 | `dispensacion` | Cabecera de cada entrega |
 | `dispensacion_detalle` | Items de cada dispensación |
 | `usuario` | Usuarios del sistema con PIN y rol |
 | `configuracion` | Umbrales de stock y límites de dosis |
-| `lote_movimiento` | Movimientos de stock por lote (ingreso, ajuste, egreso) |
-| `receta` | Cabecera de receta médica |
-| `receta_detalle` | Items de cada receta |
-| `nucleo_familiar` | Grupo familiar asociado a un titular |
-| `nucleo_familiar_miembro` | Miembros del núcleo familiar con relación |
+| `carpa` | Carpa censal (ubicación, capacidad) |
+| `carpa_paciente` | Asignación paciente ↔ carpa |
+| `catalogo_patologia` | Catálogo de patologías |
+| `catalogo_necesidad` | Catálogo de necesidades |
+| `paciente_patologia` | Patologías por paciente |
+| `paciente_necesidad` | Necesidades por paciente (con trazabilidad de cumplimiento)
 
 ## Módulos Funcionales
 
@@ -216,7 +226,7 @@ pm2 restart apopharma-backend
 Ejecutar **una vez como Administrador**:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Proyectos\Farmacia\scripts\register-pm2-startup.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\farmacia\Farmacia-master\Farmacia-master\scripts\register-pm2-startup.ps1"
 ```
 
 ### Actualizar después de cambios

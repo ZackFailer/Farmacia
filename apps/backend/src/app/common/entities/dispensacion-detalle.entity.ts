@@ -7,7 +7,6 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Dispensacion } from './dispensacion.entity';
-import { Lote } from './lote.entity';
 import { Medicamento } from './medicamento.entity';
 
 @Entity('dispensacion_detalle')
@@ -25,15 +24,9 @@ export class DispensacionDetalle {
   @Column({ name: 'dispensacion_id' })
   dispensacionId!: number;
 
-  @ManyToOne(() => Lote, (lote) => lote.dispensacionDetalles, {
-    nullable: false,
-    onDelete: 'RESTRICT',
-  })
-  @JoinColumn({ name: 'lote_id' })
-  lote!: Lote;
-
-  @Column({ name: 'lote_id' })
-  loteId!: number;
+  /** null para dispensaciones nuevas (sin lote); poblado solo en históricas */
+  @Column({ name: 'lote_id', nullable: true })
+  loteId?: number;
 
   @ManyToOne(() => Medicamento, (medicamento) => medicamento.dispensacionDetalles, {
     nullable: false,

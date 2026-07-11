@@ -5,9 +5,12 @@ import {
   Column,
   UpdateDateColumn,
   OneToMany,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 import { UserRole } from '../enums/role.enum';
 import { Dispensacion } from './dispensacion.entity';
+import { PacienteNecesidad } from './paciente-necesidad.entity';
 
 @Entity('usuario')
 export class Usuario {
@@ -35,6 +38,16 @@ export class Usuario {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
+  // Trazabilidad
+  @Column({ name: 'created_by_id', nullable: true })
+  createdById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy?: Usuario;
+
   @OneToMany(() => Dispensacion, (dispensacion) => dispensacion.usuario)
   dispensaciones!: Dispensacion[];
+
+  @OneToMany(() => PacienteNecesidad, (pn) => pn.suplidaPor)
+  necesidadesSuplidas!: PacienteNecesidad[];
 }

@@ -1,4 +1,4 @@
-import { Component, Input, signal, inject } from '@angular/core';
+import { Component, input, signal, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
@@ -45,6 +45,7 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
           <ion-select-option value="Solución">Solución</ion-select-option>
           <ion-select-option value="Inhalador">Inhalador</ion-select-option>
           <ion-select-option value="Crema">Crema</ion-select-option>
+          <ion-select-option value="Topico">Topico</ion-select-option>
           <ion-select-option value="Gotas">Gotas</ion-select-option>
         </ion-select>
       </ion-item>
@@ -93,17 +94,20 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     }
   `],
 })
-export class EditarMedicamentoModal {
+export class EditarMedicamentoModal implements OnInit {
   private readonly modalCtrl = inject(ModalController);
 
-  @Input() set medicamento(value: Medicamento) {
-    if (value) {
-      this.nombreGenerico = value.nombre_generico;
-      this.nombreComercial = value.nombre_comercial ?? '';
-      this.presentacion = value.presentacion;
-      this.concentracion = value.concentracion;
-      this.unidad = value.unidad_concentracion;
-      this.esVital = value.es_vital ?? false;
+  readonly medicamento = input<Medicamento>();
+
+  ngOnInit() {
+    const m = this.medicamento();
+    if (m) {
+      this.nombreGenerico = m.nombre_generico;
+      this.nombreComercial = m.nombre_comercial ?? '';
+      this.presentacion = m.presentacion;
+      this.concentracion = m.concentracion;
+      this.unidad = m.unidad_concentracion;
+      this.esVital = m.es_vital ?? false;
     }
   }
 

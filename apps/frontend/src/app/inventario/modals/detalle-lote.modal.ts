@@ -1,8 +1,10 @@
-import { Component, Input, OnInit, signal, inject } from '@angular/core';
+/**
+ * @deprecated Lote functionality removed. Kept for historical reference only.
+ */
+import { Component, input, OnInit, signal, inject } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonNote, IonList, IonFooter, ModalController } from '@ionic/angular/standalone';
 import { TitleCasePipe, DatePipe } from '@angular/common';
 import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
-import { InventarioService } from '../services/inventario.service';
 import type { Lote } from '../../shared/models/lote.model';
 import type { Movimiento } from '../../shared/models/stock-item.model';
 import QRCode from 'qrcode';
@@ -23,18 +25,18 @@ import QRCode from 'qrcode';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ lote.medicamento?.nombre_generico }} {{ lote.medicamento?.concentracion }}{{ lote.medicamento?.unidad_concentracion }}</h2>
-          <p>Stock: {{ lote.cantidad_actual }} / {{ lote.cantidad_inicial }} inicial</p>
-          <ion-note>Vencimiento: {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
-          @if (lote.donante) { <ion-note>Donante: {{ lote.donante }}</ion-note> }
-          @if (lote.ubicacion) { <ion-note>Ubicación: {{ lote.ubicacion }}</ion-note> }
+          <h2>{{ lote().medicamento?.nombre_generico }} {{ lote().medicamento?.concentracion }}{{ lote().medicamento?.unidad_concentracion }}</h2>
+          <p>Stock: {{ lote().cantidad_actual }} / {{ lote().cantidad_inicial }} inicial</p>
+          <ion-note>Vencimiento: {{ lote().fecha_vencimiento | date:'dd/MM/yyyy' }}</ion-note>
+          @if (lote().donante) { <ion-note>Donante: {{ lote().donante }}</ion-note> }
+          @if (lote().ubicacion) { <ion-note>Ubicación: {{ lote().ubicacion }}</ion-note> }
         </ion-label>
       </ion-item>
 
       @if (qrDataUrl()) {
         <div class="qr-section">
           <img [src]="qrDataUrl()" alt="QR del lote" class="qr-img" />
-          <p class="qr-code">{{ lote.codigo_qr }}</p>
+          <p class="qr-code">{{ lote().codigo_qr }}</p>
         </div>
       } @else {
         <div class="qr-section">
@@ -104,18 +106,16 @@ import QRCode from 'qrcode';
 })
 export class DetalleLoteModal implements OnInit {
   private readonly modalCtrl = inject(ModalController);
-  private readonly inventarioService = inject(InventarioService);
 
-  @Input({ required: true }) lote!: Lote;
+  readonly lote = input.required<Lote>();
   movimientos: Movimiento[] = [];
   qrDataUrl = signal<string | null>(null);
 
   async ngOnInit() {
-    this.inventarioService.getMovimientosLote(this.lote.id).subscribe({
-      next: (data) => { this.movimientos = data; },
-    });
+    // @deprecated: lote functionality removed - movimientos no longer available
+    this.movimientos = [];
     try {
-      const url = await QRCode.toDataURL(this.lote.codigo_qr, {
+      const url = await QRCode.toDataURL(this.lote().codigo_qr, {
         margin: 1,
         width: 280,
       });

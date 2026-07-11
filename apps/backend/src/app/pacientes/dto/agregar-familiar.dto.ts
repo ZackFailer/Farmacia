@@ -1,7 +1,7 @@
-import { IsNumber, IsString, MaxLength } from 'class-validator';
+import { IsInt, IsString, MaxLength } from 'class-validator';
 
 export class AgregarFamiliarDto {
-  @IsNumber()
+  @IsInt()
   pacienteId!: number;
 
   @IsString()

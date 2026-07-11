@@ -8,9 +8,9 @@ import { DispensacionService } from './dispensacion.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import { Sexo } from '../../shared/enums/sexo.enum';
 import { Rol } from '../../shared/enums/rol.enum';
+import { SituacionVivienda } from '../../shared/enums/situacion-vivienda.enum';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { CreateDispensacionDto, Dispensacion } from '../../shared/models/dispensacion.model';
-import type { Lote } from '../../shared/models/lote.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
 import type { CreatePacienteDto, Paciente } from '../../shared/models/paciente.model';
 import type { Receta } from '../../shared/models/receta.model';
@@ -23,21 +23,6 @@ interface ApiMedicamento {
   concentracion: number;
   unidadConcentracion: string;
   esVital: boolean;
-  activo: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiLote {
-  id: number;
-  medicamentoId: number;
-  medicamento?: ApiMedicamento;
-  codigoQr: string;
-  cantidadInicial: number;
-  cantidadActual: number;
-  fechaVencimiento: string;
-  donante: string | null;
-  ubicacion: string | null;
   activo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -75,7 +60,7 @@ interface ApiPacienteSimple {
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
-  esDamnificado: boolean;
+  situacionVivienda: string;
   tieneCargaFamiliar: boolean;
   activo: boolean;
   createdAt: string;
@@ -91,7 +76,7 @@ interface ApiPaciente {
   sexo: Sexo;
   edadEstimada: number;
   pesoEstimado: number;
-  esDamnificado: boolean;
+  situacionVivienda: string;
   tieneCargaFamiliar: boolean;
   esTitular?: boolean;
   familiares?: ApiNucleoMiembro[];
@@ -125,13 +110,11 @@ interface ApiReceta {
 interface ApiDispensacionDetalle {
   id: number;
   dispensacionId: number;
-  loteId: number;
   medicamentoId: number;
   cantidad: number;
   dosisMgKg: number;
   createdAt: string;
   medicamento?: ApiMedicamento;
-  lote?: ApiLote;
 }
 
 interface ApiDispensacion {
@@ -167,7 +150,7 @@ export class ApiDispensacionService extends DispensacionService {
       sexo: dto.sexo,
       edadEstimada: dto.edad_estimada,
       pesoEstimado: dto.peso_estimado,
-      esDamnificado: dto.es_damnificado,
+      situacionVivienda: dto.situacion_vivienda,
       tieneCargaFamiliar: dto.tiene_carga_familiar ?? false,
     };
     if (dto.id_emergencia) body['idEmergencia'] = dto.id_emergencia;
@@ -182,7 +165,7 @@ export class ApiDispensacionService extends DispensacionService {
         sexo: f.sexo,
         edadEstimada: f.edad_estimada,
         pesoEstimado: f.peso_estimado,
-        esDamnificado: f.es_damnificado,
+        situacionVivienda: f.situacion_vivienda,
         relacion: f.relacion,
       }));
     }
@@ -202,18 +185,6 @@ export class ApiDispensacionService extends DispensacionService {
     return this.http
       .get<ApiMedicamento[]>(`${API_BASE_URL}/medicamentos${query}`)
       .pipe(map((items) => items.map((item) => this.toMedicamento(item))));
-  }
-
-  getLotesDisponibles(medicamentoId: number): Observable<Lote[]> {
-    return this.http
-      .get<ApiLote[]>(`${API_BASE_URL}/lotes/disponibles/${medicamentoId}`)
-      .pipe(map((items) => items.map((item) => this.toLote(item))));
-  }
-
-  getLoteByQR(codigoQR: string): Observable<Lote> {
-    return this.http
-      .get<ApiLote>(`${API_BASE_URL}/lotes/qr/${encodeURIComponent(codigoQR)}`)
-      .pipe(map((item) => this.toLote(item)));
   }
 
   getLimiteDosis(medicamentoId: number): Observable<Configuracion | null> {
@@ -236,7 +207,6 @@ export class ApiDispensacionService extends DispensacionService {
       pacienteId: dto.paciente_id,
       observaciones: dto.observaciones,
       detalles: dto.items.map((item) => ({
-        loteId: item.lote_id,
         medicamentoId: item.medicamento_id,
         cantidad: item.cantidad,
       })),
@@ -286,23 +256,6 @@ export class ApiDispensacionService extends DispensacionService {
     };
   }
 
-  private toLote(item: ApiLote): Lote {
-    return {
-      id: item.id,
-      medicamento_id: item.medicamentoId,
-      medicamento: item.medicamento ? this.toMedicamento(item.medicamento) : undefined,
-      codigo_qr: item.codigoQr,
-      cantidad_inicial: item.cantidadInicial,
-      cantidad_actual: item.cantidadActual,
-      fecha_vencimiento: item.fechaVencimiento,
-      donante: item.donante ?? undefined,
-      ubicacion: item.ubicacion ?? undefined,
-      activo: item.activo,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-    };
-  }
-
   private toFamiliar(pf: ApiNucleoMiembro) {
     const p = pf.paciente ?? pf.nucleo?.miembros?.find((m) => m.pacienteId === pf.pacienteId)?.paciente;
     if (!p) {
@@ -315,7 +268,7 @@ export class ApiDispensacionService extends DispensacionService {
         sexo: 'M' as Sexo,
         edad_estimada: 0,
         peso_estimado: 0,
-        es_damnificado: false,
+        situacion_vivienda: 'no_afectado' as SituacionVivienda,
         tiene_carga_familiar: false,
         relacion: pf.relacion,
         created_at: '',
@@ -330,7 +283,7 @@ export class ApiDispensacionService extends DispensacionService {
       sexo: p.sexo,
       edad_estimada: p.edadEstimada,
       peso_estimado: p.pesoEstimado,
-      es_damnificado: p.esDamnificado,
+      situacion_vivienda: p.situacionVivienda as SituacionVivienda,
       tiene_carga_familiar: p.tieneCargaFamiliar,
       relacion: pf.relacion,
       created_at: p.createdAt,
@@ -348,7 +301,7 @@ export class ApiDispensacionService extends DispensacionService {
       sexo: item.sexo,
       edad_estimada: item.edadEstimada,
       peso_estimado: item.pesoEstimado,
-      es_damnificado: item.esDamnificado,
+      situacion_vivienda: item.situacionVivienda as SituacionVivienda,
       tiene_carga_familiar: item.tieneCargaFamiliar,
       es_titular: item.esTitular,
       familiares: item.familiares?.map((pf) => this.toFamiliar(pf)),
@@ -369,10 +322,8 @@ export class ApiDispensacionService extends DispensacionService {
       items: (item.detalles ?? []).map((detalle) => ({
         id: detalle.id,
         dispensacion_id: detalle.dispensacionId,
-        lote_id: detalle.loteId,
         medicamento_id: detalle.medicamentoId,
         medicamento_nombre: detalle.medicamento?.nombreGenerico,
-        lote_codigo: detalle.lote?.codigoQr,
         cantidad: detalle.cantidad,
         dosis_mg_kg: detalle.dosisMgKg,
         created_at: detalle.createdAt,

@@ -1,4 +1,4 @@
-import { Component, Input, signal, OnInit, inject } from '@angular/core';
+import { Component, input, signal, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
@@ -27,7 +27,7 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ configuracion.medicamento?.nombre_generico ?? 'Medicamento' }}</h2>
+          <h2>{{ configuracion().medicamento?.nombre_generico ?? 'Medicamento' }}</h2>
         </ion-label>
       </ion-item>
 
@@ -64,19 +64,20 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
   `,
 })
 export class LimitesDosisModal implements OnInit {
-  @Input({ required: true }) configuracion!: Configuracion;
+  readonly configuracion = input.required<Configuracion>();
   errorMsg = signal('');
   umbralMinimo = '';
   dosisMaxima = '';
   pesoReferencia = '';
 
   ngOnInit(): void {
-    this.umbralMinimo = String(this.configuracion.umbral_minimo ?? 10);
-    if (this.configuracion.dosis_maxima_mg_kg !== undefined && this.configuracion.dosis_maxima_mg_kg !== null) {
-      this.dosisMaxima = String(this.configuracion.dosis_maxima_mg_kg);
+    const c = this.configuracion();
+    this.umbralMinimo = String(c.umbral_minimo ?? 10);
+    if (c.dosis_maxima_mg_kg !== undefined && c.dosis_maxima_mg_kg !== null) {
+      this.dosisMaxima = String(c.dosis_maxima_mg_kg);
     }
-    if (this.configuracion.peso_referencia_kg !== undefined && this.configuracion.peso_referencia_kg !== null) {
-      this.pesoReferencia = String(this.configuracion.peso_referencia_kg);
+    if (c.peso_referencia_kg !== undefined && c.peso_referencia_kg !== null) {
+      this.pesoReferencia = String(c.peso_referencia_kg);
     }
   }
 

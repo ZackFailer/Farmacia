@@ -230,7 +230,7 @@ export class LoginPage {
           [Rol.PHARMACEUTICAL]: '/dispensacion',
           [Rol.RECEPTIONIST]: '/pacientes',
           [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
-          [Rol.SURVEYOR]: '/censo/crear-carpa',
+          [Rol.SURVEYOR]: '/censo/carpas',
         } satisfies Record<Rol, string>)[res.usuario.rol] ?? '/recepcion';
         this.router.navigate([ruta]);
       },

@@ -1,28 +1,18 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Brackets } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
 import { Medicamento } from '../common/entities/medicamento.entity';
-import { Lote } from '../common/entities/lote.entity';
 import { CrearMedicamentoDto } from './dto/crear-medicamento.dto';
 import { ActualizarMedicamentoDto } from './dto/actualizar-medicamento.dto';
-import { CrearLoteDto } from './dto/crear-lote.dto';
-import { ActualizarLoteDto } from './dto/actualizar-lote.dto';
 import { Configuracion } from '../common/entities/configuracion.entity';
-import { LoteMovimiento } from '../common/entities/lote-movimiento.entity';
-import { MovementType } from '../common/enums/movement-type.enum';
 
 @Injectable()
 export class RecepcionService {
   constructor(
     @InjectRepository(Medicamento)
     private readonly medicamentoRepository: Repository<Medicamento>,
-    @InjectRepository(Lote)
-    private readonly loteRepository: Repository<Lote>,
     @InjectRepository(Configuracion)
     private readonly configuracionRepository: Repository<Configuracion>,
-    @InjectRepository(LoteMovimiento)
-    private readonly movimientoRepository: Repository<LoteMovimiento>,
   ) {}
 
   async getMedicamentos(search?: string, incluirInactivos?: boolean) {
@@ -45,7 +35,7 @@ export class RecepcionService {
     return qb.getMany();
   }
 
-  async createMedicamento(dto: CrearMedicamentoDto) {
+  async createMedicamento(dto: CrearMedicamentoDto, usuarioId?: number) {
     const existing = await this.medicamentoRepository.findOne({
       where: {
         nombreGenerico: dto.nombreGenerico,
@@ -66,6 +56,7 @@ export class RecepcionService {
       concentracion: dto.concentracion,
       unidadConcentracion: dto.unidadConcentracion ?? 'mg',
       esVital: dto.esVital ?? false,
+      createdById: usuarioId ?? null,
     });
 
     const saved = await this.medicamentoRepository.save(medicamento);
@@ -75,13 +66,14 @@ export class RecepcionService {
       umbralMinimo: 10,
       dosisMaximaMgKg: 0,
       pesoReferenciaKg: 70,
+      createdById: usuarioId ?? null,
     });
     await this.configuracionRepository.save(configuracion);
 
     return saved;
   }
 
-  async updateMedicamento(id: number, dto: ActualizarMedicamentoDto) {
+  async updateMedicamento(id: number, dto: ActualizarMedicamentoDto, usuarioId?: number) {
     const medicamento = await this.medicamentoRepository.findOne({ where: { id } });
     if (!medicamento) {
       throw new NotFoundException('Medication not found');
@@ -95,6 +87,7 @@ export class RecepcionService {
     if (dto.esVital !== undefined) medicamento.esVital = dto.esVital;
     if (dto.activo !== undefined) medicamento.activo = dto.activo;
 
+    medicamento.updatedById = usuarioId ?? null;
     return this.medicamentoRepository.save(medicamento);
   }
 
@@ -103,104 +96,9 @@ export class RecepcionService {
     if (!medicamento) {
       throw new NotFoundException('Medication not found');
     }
-    await this.medicamentoRepository.remove(medicamento);
+    medicamento.activo = false;
+    await this.medicamentoRepository.save(medicamento);
     return { success: true };
   }
 
-  async getLotes(page = 1, limit = 20, incluirInactivos?: boolean) {
-    const where = incluirInactivos ? {} : { activo: true };
-    return this.loteRepository.find({
-      where,
-      relations: { medicamento: true },
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-  }
-
-  async createLote(dto: CrearLoteDto) {
-    const medicamento = await this.medicamentoRepository.findOne({
-      where: { id: dto.medicamentoId, activo: true },
-    });
-
-    if (!medicamento) {
-      throw new NotFoundException('Medication not found');
-    }
-
-    const lote = this.loteRepository.create({
-      medicamentoId: medicamento.id,
-      codigoQr: uuidv4(),
-      cantidadInicial: dto.cantidadInicial,
-      cantidadActual: dto.cantidadInicial,
-      fechaVencimiento: dto.fechaVencimiento,
-      donante: dto.donante ?? null,
-      ubicacion: dto.ubicacion ?? null,
-    });
-
-    const savedLote = await this.loteRepository.save(lote);
-
-    await this.movimientoRepository.save(
-      this.movimientoRepository.create({
-        loteId: savedLote.id,
-        tipo: MovementType.INBOUND,
-        cantidad: dto.cantidadInicial,
-        motivo: 'New lot reception',
-        usuarioId: null,
-      }),
-    );
-
-    return this.loteRepository.findOne({
-      where: { id: savedLote.id },
-      relations: { medicamento: true },
-    });
-  }
-
-  async updateLote(id: number, dto: ActualizarLoteDto) {
-    const lote = await this.loteRepository.findOne({ where: { id } });
-    if (!lote) {
-      throw new NotFoundException('Lot not found');
-    }
-
-    if (dto.fechaVencimiento !== undefined) lote.fechaVencimiento = dto.fechaVencimiento;
-    if (dto.donante !== undefined) lote.donante = dto.donante;
-    if (dto.ubicacion !== undefined) lote.ubicacion = dto.ubicacion;
-
-    return this.loteRepository.save(lote);
-  }
-
-  async deleteLote(id: number) {
-    const lote = await this.loteRepository.findOne({ where: { id } });
-    if (!lote) {
-      throw new NotFoundException('Lot not found');
-    }
-    await this.loteRepository.remove(lote);
-    return { success: true };
-  }
-
-  async getLoteById(id: number) {
-    const lote = await this.loteRepository.findOne({
-      where: { id, activo: true },
-      relations: { medicamento: true },
-    });
-    if (!lote) {
-      throw new NotFoundException('Lot not found');
-    }
-    return lote;
-  }
-
-  async getLoteByQR(codigoQr: string) {
-    const lote = await this.loteRepository.findOne({
-      where: { codigoQr, activo: true },
-      relations: { medicamento: true },
-    });
-    if (!lote) {
-      throw new NotFoundException('Lote no encontrado');
-    }
-    return lote;
-  }
-
-  async getLoteQr(id: number) {
-    const lote = await this.getLoteById(id);
-    return { loteId: lote.id, codigoQr: lote.codigoQr };
-  }
 }

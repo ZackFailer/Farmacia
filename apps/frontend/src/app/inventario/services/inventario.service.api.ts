@@ -5,9 +5,8 @@ import type { Observable } from 'rxjs';
 import { InventarioService } from './inventario.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
-import type { Lote } from '../../shared/models/lote.model';
-import type { Medicamento } from '../../shared/models/medicamento.model';
-import type { Movimiento, StockItem } from '../../shared/models/stock-item.model';
+import type { MetricasInventario } from '../../shared/models/metricas-inventario.model';
+import type { StockItem } from '../../shared/models/stock-item.model';
 
 interface ApiMedicamento {
   id: number;
@@ -15,20 +14,6 @@ interface ApiMedicamento {
   nombreComercial: string | null;
   presentacion: string;
   concentracion: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ApiLote {
-  id: number;
-  medicamentoId: number;
-  medicamento?: ApiMedicamento;
-  codigoQr: string;
-  cantidadInicial: number;
-  cantidadActual: number;
-  fechaVencimiento: string;
-  donante: string | null;
-  ubicacion: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,15 +29,6 @@ interface ApiConfiguracion {
   updatedAt: string;
 }
 
-interface ApiMovimiento {
-  id: number;
-  loteId: number;
-  tipo: 'inbound' | 'dispensation' | 'adjustment';
-  cantidad: number;
-  motivo: string | null;
-  createdAt: string;
-}
-
 interface ApiInventarioRow {
   medicamentoId: number;
   nombreGenerico: string;
@@ -64,14 +40,23 @@ interface ApiInventarioRow {
   proximoVencimiento: string;
 }
 
+interface ApiMetricas {
+  pacientesAtendidosTotal: number;
+  pacientesAtendidosHoy: number;
+  pacientesAtendidosSemana: number;
+  dosisTotales: number;
+  promedioDosisPorDia: number;
+  egresosPorDia: { fecha: string; total: number }[];
+  medicamentosMasDispensados: { medicamento: string; medicamentoId: number; totalDosis: number; pacientes: number }[];
+  medicamentosSinMovimientos: { id: number; nombre: string; ultimaDispensacion?: string }[];
+  totalMedicamentos: number;
+}
+
 @Injectable()
 export class ApiInventarioService extends InventarioService {
   private readonly http = inject(HttpClient);
 
-  getStockGeneral(params?: {
-    search?: string;
-    ubicacion?: string;
-  }): Observable<StockItem[]> {
+  getStockGeneral(params?: { search?: string }): Observable<StockItem[]> {
     const query = params?.search?.trim()
       ? `?search=${encodeURIComponent(params.search.trim())}`
       : '';
@@ -103,24 +88,29 @@ export class ApiInventarioService extends InventarioService {
     );
   }
 
-  getProximosVencer(): Observable<Lote[]> {
-    return this.http
-      .get<ApiLote[]>(`${API_BASE_URL}/inventario/proximos-vencer`)
-      .pipe(map((items) => items.map((item) => this.toLote(item))));
-  }
-
-  ajustarStock(loteId: number, cantidadReal: number): Observable<Lote> {
-    return this.http
-      .patch<ApiLote>(`${API_BASE_URL}/lotes/${loteId}/ajustar-stock`, {
-        cantidadReal,
-      })
-      .pipe(map((item) => this.toLote(item)));
-  }
-
-  getMovimientosLote(loteId: number): Observable<Movimiento[]> {
-    return this.http
-      .get<ApiMovimiento[]>(`${API_BASE_URL}/lotes/${loteId}/movimientos`)
-      .pipe(map((items) => items.map((item) => this.toMovimiento(item))));
+  getMetricas(): Observable<MetricasInventario> {
+    return this.http.get<ApiMetricas>(`${API_BASE_URL}/inventario/metricas`).pipe(
+      map((data) => ({
+        pacientesAtendidosTotal: data.pacientesAtendidosTotal,
+        pacientesAtendidosHoy: data.pacientesAtendidosHoy,
+        pacientesAtendidosSemana: data.pacientesAtendidosSemana,
+        dosisTotales: data.dosisTotales,
+        promedioDosisPorDia: data.promedioDosisPorDia,
+        egresosPorDia: data.egresosPorDia.map((e) => ({ fecha: e.fecha, total: e.total })),
+        medicamentosMasDispensados: data.medicamentosMasDispensados.map((m) => ({
+          medicamento: m.medicamento,
+          medicamentoId: m.medicamentoId,
+          totalDosis: m.totalDosis,
+          pacientes: m.pacientes,
+        })),
+        medicamentosSinMovimientos: data.medicamentosSinMovimientos.map((m) => ({
+          id: m.id,
+          nombre: m.nombre,
+          ultimaDispensacion: m.ultimaDispensacion,
+        })),
+        totalMedicamentos: data.totalMedicamentos,
+      })),
+    );
   }
 
   getUmbrales(): Observable<Configuracion[]> {
@@ -137,7 +127,11 @@ export class ApiInventarioService extends InventarioService {
       .pipe(map((item) => this.toConfiguracion(item)));
   }
 
-  private toMedicamento(item: ApiMedicamento): Medicamento {
+  private toMedicamento(item: ApiMedicamento): {
+    id: number; nombre_generico: string; nombre_comercial?: string;
+    presentacion: string; concentracion: number; unidad_concentracion: 'mg';
+    created_at: string; updated_at: string;
+  } {
     return {
       id: item.id,
       nombre_generico: item.nombreGenerico,
@@ -145,22 +139,6 @@ export class ApiInventarioService extends InventarioService {
       presentacion: item.presentacion,
       concentracion: item.concentracion,
       unidad_concentracion: 'mg',
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-    };
-  }
-
-  private toLote(item: ApiLote): Lote {
-    return {
-      id: item.id,
-      medicamento_id: item.medicamentoId,
-      medicamento: item.medicamento ? this.toMedicamento(item.medicamento) : undefined,
-      codigo_qr: item.codigoQr,
-      cantidad_inicial: item.cantidadInicial,
-      cantidad_actual: item.cantidadActual,
-      fecha_vencimiento: item.fechaVencimiento,
-      donante: item.donante ?? undefined,
-      ubicacion: item.ubicacion ?? undefined,
       created_at: item.createdAt,
       updated_at: item.updatedAt,
     };
@@ -179,34 +157,9 @@ export class ApiInventarioService extends InventarioService {
     };
   }
 
-  private toMovimiento(item: ApiMovimiento): Movimiento {
-    return {
-      id: item.id,
-      lote_id: item.loteId,
-      tipo:
-        item.tipo === 'inbound'
-          ? 'ingreso'
-          : item.tipo === 'dispensation'
-            ? 'dispensacion'
-            : 'ajuste',
-      cantidad: item.cantidad,
-      fecha: item.createdAt,
-      descripcion: item.motivo ?? undefined,
-    };
-  }
-
-  private toColor(
-    cantidad: number,
-    umbral: number,
-  ): 'green' | 'yellow' | 'red' {
-    if (cantidad <= 0) {
-      return 'red';
-    }
-
-    if (cantidad <= umbral) {
-      return 'yellow';
-    }
-
+  private toColor(cantidad: number, umbral: number): 'green' | 'yellow' | 'red' {
+    if (cantidad <= 0) return 'red';
+    if (cantidad <= umbral) return 'yellow';
     return 'green';
   }
 }

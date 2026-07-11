@@ -1,6 +1,7 @@
 import type { Route } from '@angular/router';
 import { roleGuard } from '../core/guards/role.guard';
 import { Rol } from '../shared/enums/rol.enum';
+import { DetalleCarpaPage } from './pages/detalle-carpa.page';
 
 export const censoRoutes: Route[] = [
   {
@@ -21,7 +22,7 @@ export const censoRoutes: Route[] = [
   {
     path: 'carpa/:codigo',
     canActivate: [roleGuard([Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN])],
-    loadComponent: () => import('./pages/detalle-carpa.page').then(m => m.DetalleCarpaPage),
+    component: DetalleCarpaPage,
   },
   { path: '', redirectTo: 'carpas', pathMatch: 'full' },
 ];

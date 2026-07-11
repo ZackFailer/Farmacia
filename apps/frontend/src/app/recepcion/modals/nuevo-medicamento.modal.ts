@@ -39,6 +39,7 @@ import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, Ion
           <ion-select-option value="Inhalador">Inhalador</ion-select-option>
           <ion-select-option value="Crema">Crema</ion-select-option>
           <ion-select-option value="Gotas">Gotas</ion-select-option>
+          <ion-select-option value="Tópico">Tópico</ion-select-option>
         </ion-select>
       </ion-item>
 

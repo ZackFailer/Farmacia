@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "migration:run": "typeorm -d apps/backend/typeorm-data-source.ts migration:run",
-    "migration:revert": "typeorm -d apps/backend/typeorm-data-source.ts migration:revert",
-    "migration:show": "typeorm -d apps/backend/typeorm-data-source.ts migration:show"
+    "migration:run": "npx cross-env TS_NODE_PROJECT=apps/backend/tsconfig.app.json typeorm-ts-node-commonjs -d apps/backend/typeorm-data-source.ts migration:run",
+    "migration:revert": "npx cross-env TS_NODE_PROJECT=apps/backend/tsconfig.app.json typeorm-ts-node-commonjs -d apps/backend/typeorm-data-source.ts migration:revert",
+    "migration:show": "npx cross-env TS_NODE_PROJECT=apps/backend/tsconfig.app.json typeorm-ts-node-commonjs -d apps/backend/typeorm-data-source.ts migration:show"
   },
   "private": true,
   "engines": {
@@ -37,6 +37,7 @@
     "@schematics/angular": "~21.2.0",
     "@swc/helpers": "~0.5.18",
     "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
     "@types/jest": "~30.0.0",
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.6",
@@ -45,6 +46,7 @@
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-playwright": "^1.6.2",
+    "express": "^5.2.1",
     "jest": "~30.3.0",
     "jest-environment-node": "~30.3.0",
     "jest-util": "~30.3.0",
@@ -87,12 +89,13 @@
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "exceljs": "^4.4.0",
+    "ionicons": "^8.0.13",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.0",
     "rxjs": "~7.8.0",
-
     "typeorm": "^0.3.27",
     "uuid": "^11.1.0"
   },

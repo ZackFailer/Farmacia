@@ -6,13 +6,14 @@ const RECETA_DRAFT_KEY = 'apoPharma_receta_draft';
 
 interface RecetaDraftItem {
   medicamento: Medicamento;
-  cantidad: number;
   dias: number;
+  dosisIndicada?: string;
 }
 
 export interface RecetaDraft {
   paso: number;
   paciente?: Paciente;
+  motivo?: string;
   medSeleccionados: RecetaDraftItem[];
 }
 

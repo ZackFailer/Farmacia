@@ -6,6 +6,7 @@ import type { Patologia } from '../../shared/models/patologia.model';
 import type { Necesidad } from '../../shared/models/necesidad.model';
 import type { NucleoFamiliar } from '../../shared/models/nucleo-familiar.model';
 import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.model';
+import type { ExportarCensoResponse } from '../../shared/models/exportar-censo.model';
 
 @Injectable()
 export abstract class PacientesService {
@@ -19,9 +20,16 @@ export abstract class PacientesService {
   abstract agregarFamiliar(pacienteId: number, targetPacienteId: number, relacion: string): Observable<unknown>;
   abstract quitarFamiliar(pacienteId: number, miembroId: number): Observable<{ success: boolean }>;
 
+  abstract marcarNecesidadSuplida(pacienteId: number, necesidadId: number): Observable<unknown>;
+
+  abstract agregarPatologia(pacienteId: number, dto: { patologiaId: number; tratamiento?: string }): Observable<unknown>;
+  abstract quitarPatologia(pacienteId: number, patologiaId: number): Observable<{ success: boolean }>;
+  abstract agregarNecesidad(pacienteId: number, necesidadId: number): Observable<unknown>;
+  abstract quitarNecesidad(pacienteId: number, necesidadId: number): Observable<{ success: boolean }>;
   abstract getPatologias(): Observable<Patologia[]>;
   abstract getNecesidades(): Observable<Necesidad[]>;
   abstract getEstadisticasCenso(): Observable<CensoEstadisticas>;
+  abstract exportarCensoCompleto(): Observable<ExportarCensoResponse>;
   abstract crearCarpa(dto: { ubicacion?: string }): Observable<NucleoFamiliar>;
   abstract listarCarpas(): Observable<NucleoFamiliar[]>;
   abstract listarCarpasConMiembros(): Observable<NucleoFamiliar[]>;

@@ -26,7 +26,7 @@
     "prune-lockfile": {
       "dependsOn": ["build"],
       "cache": true,
-      "executor": "@nx/js:prune-lockfile",
+      "executor": "nx:noop",
       "outputs": [
         "{workspaceRoot}/dist/apps/backend/package.json",
         "{workspaceRoot}/dist/apps/backend/package-lock.json"
@@ -57,6 +57,7 @@
         "buildTarget": "backend:build",
         "runBuildTargetDependencies": false,
         "runtimeArgs": ["--experimental-sqlite"],
+        "watch": false,
       },
       "configurations": {
         "development": {

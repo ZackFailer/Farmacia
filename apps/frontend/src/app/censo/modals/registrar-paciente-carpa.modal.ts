@@ -8,7 +8,11 @@ import {
   ModalController,
 } from '@ionic/angular/standalone';
 import { Sexo } from '../../shared/enums/sexo.enum';
+import { SituacionVivienda } from '../../shared/enums/situacion-vivienda.enum';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
+import { ConnectivityService } from '../../core/services/connectivity.service';
+import { SyncQueueService, SyncOperationType } from '../../core/services/sync-queue.service';
+import { CacheCatalogoService } from '../../core/services/cache-catalogo.service';
 import type { Paciente } from '../../shared/models/paciente.model';
 
 interface PatologiaItem {
@@ -64,6 +68,11 @@ interface NecesidadItem {
       </ion-item>
 
       <ion-item>
+        <ion-label position="stacked">Teléfono</ion-label>
+        <ion-input [(ngModel)]="telefono" placeholder="0412-1234567 (opcional)"></ion-input>
+      </ion-item>
+
+      <ion-item>
         <ion-label position="stacked">Sexo *</ion-label>
         <ion-select [(ngModel)]="sexo" interface="action-sheet">
           <ion-select-option [value]="sexoEnum.M">Masculino</ion-select-option>
@@ -99,10 +108,11 @@ interface NecesidadItem {
       </ion-item>
 
       <ion-item>
-        <ion-label position="stacked">¿Es damnificado?</ion-label>
-        <ion-select [(ngModel)]="esDamnificado" interface="action-sheet">
-          <ion-select-option [value]="true">Sí</ion-select-option>
-          <ion-select-option [value]="false">No</ion-select-option>
+        <ion-label position="stacked">Situación de la vivienda</ion-label>
+        <ion-select [(ngModel)]="situacionVivienda" interface="action-sheet">
+          <ion-select-option [value]="situacionViviendaEnum.NO_AFECTADO">No afectado</ion-select-option>
+          <ion-select-option [value]="situacionViviendaEnum.VIVIENDA_AFECTADA">Vivienda afectada</ion-select-option>
+          <ion-select-option [value]="situacionViviendaEnum.DAMNIFICADO">Damnificado</ion-select-option>
         </ion-select>
       </ion-item>
 
@@ -219,19 +229,21 @@ interface NecesidadItem {
 })
 export class RegistrarPacienteCarpaModal implements OnInit {
   readonly sexoEnum = Sexo;
+  readonly situacionViviendaEnum = SituacionVivienda;
 
   codigoCarpa = '';
 
   nombre = '';
   apellido = '';
   cedula = '';
+  telefono = '';
   sexo: Sexo = Sexo.M;
   fechaNacimiento = '';
   usarEdadManual = false;
   edadManual = '';
   esRecienNacido = false;
   peso = '';
-  esDamnificado = true;
+  situacionVivienda: SituacionVivienda = SituacionVivienda.DAMNIFICADO;
   tieneDiscapacidadMotora = false;
   relacion = '';
 
@@ -244,38 +256,36 @@ export class RegistrarPacienteCarpaModal implements OnInit {
 
   private readonly modalCtrl = inject(ModalController);
   private readonly pacientesService = inject(PacientesService);
+  private readonly connectivity = inject(ConnectivityService);
+  private readonly syncQueue = inject(SyncQueueService);
+  private readonly cacheCatalogo = inject(CacheCatalogoService);
 
   ngOnInit(): void {
     this.cargarCatalogos();
   }
 
-  private cargarCatalogos(): void {
-    this.pacientesService.getPatologias().subscribe({
-      next: (pats) => {
-        this.patologiasItems = pats
-          .filter(p => p.activo !== false)
-          .map(p => ({ id: p.id, nombre: p.nombre, seleccionado: false, tratamiento: '' }));
-        this.patologiasCargadas = true;
-        this.verificarCatalogosCargados();
-      },
-      complete: () => {
-        this.patologiasCargadas = true;
-        this.verificarCatalogosCargados();
-      },
-    });
-    this.pacientesService.getNecesidades().subscribe({
-      next: (necs) => {
-        this.necesidadesItems = necs
-          .filter(n => n.activo !== false)
-          .map(n => ({ id: n.id, nombre: n.nombre, seleccionado: false }));
-        this.necesidadesCargadas = true;
-        this.verificarCatalogosCargados();
-      },
-      complete: () => {
-        this.necesidadesCargadas = true;
-        this.verificarCatalogosCargados();
-      },
-    });
+  private async cargarCatalogos(): Promise<void> {
+    try {
+      const pats = await this.cacheCatalogo.getPatologias();
+      this.patologiasItems = pats
+        .filter(p => p.activo !== false)
+        .map(p => ({ id: p.id, nombre: p.nombre, seleccionado: false, tratamiento: '' }));
+    } catch {
+      this.patologiasItems = [];
+    }
+    this.patologiasCargadas = true;
+    this.verificarCatalogosCargados();
+
+    try {
+      const necs = await this.cacheCatalogo.getNecesidades();
+      this.necesidadesItems = necs
+        .filter(n => n.activo !== false)
+        .map(n => ({ id: n.id, nombre: n.nombre, seleccionado: false }));
+    } catch {
+      this.necesidadesItems = [];
+    }
+    this.necesidadesCargadas = true;
+    this.verificarCatalogosCargados();
   }
 
   private verificarCatalogosCargados(): void {
@@ -320,17 +330,20 @@ export class RegistrarPacienteCarpaModal implements OnInit {
       nombre: this.nombre.trim(),
       apellido: this.apellido.trim(),
       cedula: this.cedula.trim() || undefined,
+      telefono: this.telefono.trim() || undefined,
       sexo: this.sexo,
       edad_estimada: edadEstimada,
       fecha_nacimiento: this.fechaNacimiento || undefined,
       edad_manual: this.usarEdadManual && this.edadManual ? +this.edadManual : undefined,
       es_recien_nacido: this.esRecienNacido || undefined,
       peso_estimado: +this.peso,
-      es_damnificado: this.esDamnificado,
+      situacion_vivienda: this.situacionVivienda,
       tiene_discapacidad_motora: this.tieneDiscapacidadMotora,
       patologias: patologiasArray.length > 0 ? patologiasArray : undefined,
       necesidadIds: necesidadIds.length > 0 ? necesidadIds : undefined,
     };
+
+    const tempId = -Date.now();
 
     try {
       const paciente = await new Promise<Paciente>((resolve, reject) => {
@@ -340,15 +353,59 @@ export class RegistrarPacienteCarpaModal implements OnInit {
         });
       });
 
-      await new Promise((resolve, reject) => {
-        this.pacientesService.agregarMiembroCarpa(this.codigoCarpa, paciente.id, this.relacion.trim()).subscribe({
-          next: (r) => resolve(r),
-          error: (e) => reject(e),
+      try {
+        await new Promise((resolve, reject) => {
+          this.pacientesService.agregarMiembroCarpa(this.codigoCarpa, paciente.id, this.relacion.trim()).subscribe({
+            next: (r) => resolve(r),
+            error: (e) => reject(e),
+          });
         });
-      });
+      } catch {
+        this.syncQueue.enqueue({
+          type: SyncOperationType.ADD_MEMBER_CARPA,
+          endpoint: `/censo/carpas/${encodeURIComponent(this.codigoCarpa)}/miembros`,
+          method: 'POST',
+          body: { pacienteId: paciente.id, relacion: this.relacion.trim() || 'Miembro' },
+          metadata: { descripcion: `Vincular paciente #${paciente.id} a carpa ${this.codigoCarpa}` },
+        });
+      }
 
       await this.modalCtrl.dismiss({ success: true, paciente }, 'confirm');
-    } catch {
+    } catch (err: unknown) {
+      if (this.connectivity.isNetworkError(err)) {
+        const createBody: Record<string, unknown> = {
+          nombre: dto.nombre,
+          apellido: dto.apellido,
+          sexo: dto.sexo,
+          edadEstimada: dto.edad_estimada,
+          pesoEstimado: dto.peso_estimado,
+          situacionVivienda: dto.situacion_vivienda,
+        };
+        if (dto.cedula) createBody['cedula'] = dto.cedula;
+        if (dto.telefono) createBody['telefono'] = dto.telefono;
+        if (dto.fecha_nacimiento) createBody['fechaNacimiento'] = dto.fecha_nacimiento;
+        if (dto.edad_manual !== undefined) createBody['edadManual'] = dto.edad_manual;
+        if (dto.es_recien_nacido !== undefined) createBody['esRecienNacido'] = dto.es_recien_nacido;
+        if (dto.tiene_discapacidad_motora !== undefined) createBody['tieneDiscapacidadMotora'] = dto.tiene_discapacidad_motora;
+        if (dto.patologias?.length) createBody['patologias'] = dto.patologias;
+        if (dto.necesidadIds?.length) createBody['necesidadIds'] = dto.necesidadIds;
+        this.syncQueue.enqueue({
+          type: SyncOperationType.CREATE_PATIENT,
+          endpoint: '/pacientes',
+          method: 'POST',
+          body: createBody,
+          metadata: { descripcion: `Registrar paciente: ${dto.nombre} ${dto.apellido}`, tempId },
+        });
+        this.syncQueue.enqueue({
+          type: SyncOperationType.ADD_MEMBER_CARPA,
+          endpoint: `/censo/carpas/${encodeURIComponent(this.codigoCarpa)}/miembros`,
+          method: 'POST',
+          body: { pacienteId: tempId, relacion: this.relacion.trim() || 'Miembro' },
+          metadata: { descripcion: `Vincular a carpa ${this.codigoCarpa}`, dependsOnTempId: tempId },
+        });
+        await this.modalCtrl.dismiss({ success: true, offline: true }, 'confirm');
+        return;
+      }
       this.guardando.set(false);
     }
   }

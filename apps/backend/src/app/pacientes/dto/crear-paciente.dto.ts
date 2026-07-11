@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Sex } from '../../common/enums/sex.enum';
+import { SituacionVivienda } from '../../common/enums/situacion-vivienda.enum';
 
 export class CrearPacienteFamiliarDto {
   @IsString()
@@ -58,8 +59,8 @@ export class CrearPacienteFamiliarDto {
   @Min(0.1)
   pesoEstimado!: number;
 
-  @IsBoolean()
-  esDamnificado!: boolean;
+  @IsEnum(SituacionVivienda)
+  situacionVivienda!: SituacionVivienda;
 
   @IsOptional()
   @IsBoolean()
@@ -145,8 +146,8 @@ export class CrearPacienteDto {
   @Min(0.1)
   pesoEstimado!: number;
 
-  @IsBoolean()
-  esDamnificado!: boolean;
+  @IsEnum(SituacionVivienda)
+  situacionVivienda!: SituacionVivienda;
 
   @IsOptional()
   @IsBoolean()

@@ -1,4 +1,5 @@
 import type { Sexo } from '../enums/sexo.enum';
+import type { SituacionVivienda } from '../enums/situacion-vivienda.enum';
 
 export interface Familiar {
   id: number;
@@ -10,7 +11,7 @@ export interface Familiar {
   sexo: Sexo;
   edad_estimada: number;
   peso_estimado: number;
-  es_damnificado: boolean;
+  situacion_vivienda: SituacionVivienda;
   tiene_carga_familiar: boolean;
   relacion: string;
   es_titular?: boolean;

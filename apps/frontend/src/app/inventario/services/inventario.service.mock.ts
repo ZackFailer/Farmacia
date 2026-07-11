@@ -3,10 +3,10 @@ import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { InventarioService } from './inventario.service';
-import type { StockItem, Movimiento } from '../../shared/models/stock-item.model';
-import type { Lote } from '../../shared/models/lote.model';
+import type { StockItem } from '../../shared/models/stock-item.model';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
+import type { MetricasInventario } from '../../shared/models/metricas-inventario.model';
 
 const MEDICAMENTOS: Medicamento[] = [
   { id: 1, nombre_generico: 'Amoxicilina', presentacion: 'Cápsula', concentracion: 500, unidad_concentracion: 'mg', created_at: '', updated_at: '' },
@@ -49,17 +49,9 @@ const STOCK_ITEMS: StockItem[] = MEDICAMENTOS.map(m => {
   };
 });
 
-const MOVIMIENTOS: Record<number, Movimiento[]> = {
-  1: [
-    { id: 1, lote_id: 1, tipo: 'ingreso', cantidad: 500, fecha: '2026-07-01T10:00:00Z', descripcion: 'Ingreso inicial' },
-    { id: 2, lote_id: 1, tipo: 'dispensacion', cantidad: -30, fecha: '2026-07-02T14:30:00Z', descripcion: 'Dispensación #1' },
-    { id: 3, lote_id: 1, tipo: 'ajuste', cantidad: -5, fecha: '2026-07-03T09:00:00Z', descripcion: 'Conteo físico' },
-  ],
-};
-
 @Injectable()
 export class MockInventarioService extends InventarioService {
-  getStockGeneral(params?: { search?: string; ubicacion?: string }): Observable<StockItem[]> {
+  getStockGeneral(params?: { search?: string }): Observable<StockItem[]> {
     let items = [...STOCK_ITEMS];
     if (params?.search) {
       const term = params.search.toLowerCase();
@@ -70,16 +62,35 @@ export class MockInventarioService extends InventarioService {
     return of([...vitales, ...otros]);
   }
 
-  getProximosVencer(): Observable<Lote[]> {
-    return of([]);
-  }
-
-  ajustarStock(loteId: number, cantidadReal: number): Observable<Lote> {
-    return of({ id: loteId, medicamento_id: 1, codigo_qr: '', cantidad_inicial: 0, cantidad_actual: cantidadReal, fecha_vencimiento: '', created_at: '', updated_at: '' });
-  }
-
-  getMovimientosLote(loteId: number): Observable<Movimiento[]> {
-    return of(MOVIMIENTOS[loteId] ?? []);
+  getMetricas(): Observable<MetricasInventario> {
+    return of({
+      pacientesAtendidosTotal: 42,
+      pacientesAtendidosHoy: 5,
+      pacientesAtendidosSemana: 18,
+      dosisTotales: 156,
+      promedioDosisPorDia: 7.8,
+      egresosPorDia: [
+        { fecha: '2026-07-03', total: 12 },
+        { fecha: '2026-07-04', total: 8 },
+        { fecha: '2026-07-05', total: 15 },
+        { fecha: '2026-07-06', total: 10 },
+        { fecha: '2026-07-07', total: 6 },
+        { fecha: '2026-07-08', total: 14 },
+        { fecha: '2026-07-09', total: 9 },
+      ],
+      medicamentosMasDispensados: [
+        { medicamento: 'Paracetamol', medicamentoId: 2, totalDosis: 45, pacientes: 20 },
+        { medicamento: 'Amoxicilina', medicamentoId: 1, totalDosis: 32, pacientes: 15 },
+        { medicamento: 'Ibuprofeno', medicamentoId: 4, totalDosis: 28, pacientes: 12 },
+        { medicamento: 'Salbutamol', medicamentoId: 5, totalDosis: 18, pacientes: 8 },
+        { medicamento: 'Omeprazol', medicamentoId: 6, totalDosis: 12, pacientes: 7 },
+      ],
+      medicamentosSinMovimientos: [
+        { id: 14, nombre: 'Hidrocortisona' },
+        { id: 15, nombre: 'Albendazol' },
+      ],
+      totalMedicamentos: 15,
+    });
   }
 
   getUmbrales(): Observable<Configuracion[]> {

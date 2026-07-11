@@ -26,7 +26,8 @@ export class HistorialService {
       where: { pacienteId: paciente.id, activo: true },
       relations: {
         usuario: true,
-        detalles: { medicamento: true, lote: true },
+        receta: { detalles: { medicamento: true } },
+        detalles: { medicamento: true },
       },
       order: { fechaHora: 'DESC' },
     });
@@ -38,7 +39,8 @@ export class HistorialService {
       relations: {
         paciente: true,
         usuario: true,
-        detalles: { medicamento: true, lote: true },
+        receta: { detalles: { medicamento: true } },
+        detalles: { medicamento: true },
       },
     });
 

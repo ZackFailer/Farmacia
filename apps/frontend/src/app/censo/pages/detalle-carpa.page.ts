@@ -9,7 +9,13 @@ import {
   IonFab, IonFabButton, IonToast, ModalController,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
+import { ConnectivityService } from '../../core/services/connectivity.service';
+import { CacheCatalogoService } from '../../core/services/cache-catalogo.service';
+import { PendingCarpaStore } from '../../core/services/pending-carpa-store.service';
 import { RegistrarPacienteCarpaModal } from '../modals/registrar-paciente-carpa.modal';
+import { ListaNecesidadesPacienteComponent } from '../../shared/components/lista-necesidades-paciente/lista-necesidades-paciente.component';
+import { AuthService } from '../../auth/services/auth.service';
+import { Rol } from '../../shared/enums/rol.enum';
 import type { NucleoFamiliar, NucleoMiembro } from '../../shared/models/nucleo-familiar.model';
 import type { Paciente } from '../../shared/models/paciente.model';
 import QRCode from 'qrcode';
@@ -22,6 +28,7 @@ import QRCode from 'qrcode';
     IonCard, IonCardContent, IonCardTitle,
     IonList, IonNote, IonIcon, IonBackButton, IonChip,
     IonFab, IonFabButton, IonToast,
+    ListaNecesidadesPacienteComponent,
   ],
   template: `
     <ion-header>
@@ -50,6 +57,19 @@ import QRCode from 'qrcode';
       }
 
       @if (!cargando() && !error() && carpa(); as c) {
+        @if (esPendiente()) {
+          <div class="sync-banner">
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+            <span>Carpa pendiente de sincronizar con el servidor. Puedes registrar pacientes, se sincronizarán automáticamente cuando haya conexión.</span>
+          </div>
+          @if (connectivity.isOnline()) {
+            <ion-button expand="block" fill="outline" color="primary" (click)="recargar()">
+              <ion-icon name="refresh-outline" slot="start"></ion-icon>
+              Recargar datos
+            </ion-button>
+          }
+        }
+
         <!-- Card: Información de la Carpa -->
         <ion-card>
           <ion-card-title>Información de la Carpa</ion-card-title>
@@ -150,13 +170,11 @@ import QRCode from 'qrcode';
                     @if (tieneNecesidades(m.paciente); as necesidades) {
                       <div class="detalle-seccion">
                         <span class="detalle-titulo">Necesidades</span>
-                        <div class="detalle-chips">
-                          @for (pn of necesidades; track pn.id) {
-                            <ion-chip color="primary" class="chip-necesidad">
-                              <ion-label>{{ pn.necesidad.nombre }}</ion-label>
-                            </ion-chip>
-                          }
-                        </div>
+                        <app-lista-necesidades-paciente
+                          [necesidades]="m.paciente!.pacienteNecesidades ?? []"
+                          [pacienteId]="m.pacienteId"
+                          [puedeEditar]="puedeMarcarSuplida()"
+                        ></app-lista-necesidades-paciente>
                       </div>
                     }
                   </div>
@@ -361,6 +379,23 @@ import QRCode from 'qrcode';
       padding: 0;
       background: transparent;
     }
+
+    .sync-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--app-space-sm);
+      padding: var(--app-space-sm) var(--app-space-md);
+      margin-bottom: var(--app-space-md);
+      background: var(--app-warning-bg, #fff3cd);
+      border-radius: var(--app-radius-sm, 6px);
+      font-size: var(--app-font-size-sm);
+      color: var(--app-warning, #856404);
+    }
+
+    .sync-banner ion-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
   `],
 })
 export class DetalleCarpaPage {
@@ -368,18 +403,64 @@ export class DetalleCarpaPage {
   error = signal('');
   carpa = signal<NucleoFamiliar | null>(null);
   miembros = signal<NucleoMiembro[]>([]);
+  esPendiente = signal(false);
   qrPreviewDataUrl = signal('');
   showToast = signal(false);
   toastMessage = signal('');
-  toastColor = signal<'success' | 'danger'>('success');
+  toastColor = signal<'success' | 'danger' | 'warning'>('success');
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly pacientesService = inject(PacientesService);
   private readonly modalCtrl = inject(ModalController);
+  private readonly authService = inject(AuthService);
+  readonly connectivity = inject(ConnectivityService);
+  private readonly cacheCatalogo = inject(CacheCatalogoService);
+  private readonly pendingCarpaStore = inject(PendingCarpaStore);
+
+  private get currentRole(): Rol | null {
+    return this.authService.getUsuario()?.rol ?? null;
+  }
+
+  puedeMarcarSuplida(): boolean {
+    return this.currentRole === Rol.SURVEYOR || this.currentRole === Rol.ADMIN;
+  }
 
   constructor() {
     this.cargar();
+    this.cacheCatalogo.getPatologias();
+    this.cacheCatalogo.getNecesidades();
+  }
+
+  ionViewWillEnter(): void {
+    this.verificarSync();
+  }
+
+  private verificarSync(): void {
+    const codigo = this.route.snapshot.paramMap.get('codigo');
+    if (!codigo || !this.esPendiente()) return;
+    if (!this.connectivity.isOnline()) return;
+
+    const pending = this.pendingCarpaStore.getByCodigo(codigo);
+    if (!pending) {
+      const realCodigo = this.pendingCarpaStore.getRealCodigo(codigo);
+      if (realCodigo) {
+        void this.router.navigate(['/censo/carpa', realCodigo], { replaceUrl: true });
+        return;
+      }
+      this.cargar();
+    }
+  }
+
+  recargar(): void {
+    const codigo = this.route.snapshot.paramMap.get('codigo');
+    if (!codigo) return;
+    const realCodigo = this.pendingCarpaStore.getRealCodigo(codigo);
+    if (realCodigo) {
+      void this.router.navigate(['/censo/carpa', realCodigo], { replaceUrl: true });
+    } else {
+      this.cargar();
+    }
   }
 
   cargar(): void {
@@ -394,6 +475,7 @@ export class DetalleCarpaPage {
     this.error.set('');
     this.carpa.set(null);
     this.miembros.set([]);
+    this.esPendiente.set(false);
     this.qrPreviewDataUrl.set('');
 
     this.pacientesService.getCarpaByCodigo(codigo).subscribe({
@@ -404,7 +486,26 @@ export class DetalleCarpaPage {
         this.cargando.set(false);
       },
       error: (err: unknown) => {
+        // If it's a pending carpa codigo, load from local store
+        const pending = this.pendingCarpaStore.getByCodigo(codigo);
+        if (pending) {
+          this.carpa.set({
+            id: 0,
+            codigoCarpa: pending.tempCodigo,
+            ubicacion: pending.ubicacion,
+            miembros: [],
+            createdAt: pending.createdAt,
+          });
+          this.miembros.set([]);
+          this.esPendiente.set(true);
+          this.cargando.set(false);
+          return;
+        }
         this.cargando.set(false);
+        if (this.connectivity.isNetworkError(err)) {
+          this.error.set('Sin conexión. No se pudieron cargar los datos de la carpa. Toque Reintentar cuando haya conexión.');
+          return;
+        }
         this.error.set(this.getErrorMessage(err, 'No se pudo cargar la información de la carpa.'));
       },
     });
@@ -457,8 +558,12 @@ export class DetalleCarpaPage {
 
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data?.success) {
-      this.presentToast('Paciente registrado y agregado a la carpa.', 'success');
-      this.cargar();
+      if (data?.offline) {
+        this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+      } else {
+        this.presentToast('Paciente registrado y agregado a la carpa.', 'success');
+        this.cargar();
+      }
     }
   }
 
@@ -524,7 +629,7 @@ export class DetalleCarpaPage {
     }
   }
 
-  private presentToast(message: string, color: 'success' | 'danger'): void {
+  private presentToast(message: string, color: 'success' | 'danger' | 'warning'): void {
     this.toastMessage.set(message);
     this.toastColor.set(color);
     this.showToast.set(true);

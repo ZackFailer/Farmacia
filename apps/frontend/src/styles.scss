@@ -170,6 +170,17 @@ ion-item {
   line-height: 1.35;
 }
 
+.app-dosis-indicada {
+  margin: var(--app-space-xs) 0 0;
+  padding: var(--app-space-xs) var(--app-space-sm);
+  border-left: 3px solid var(--app-primary-light);
+  background: color-mix(in srgb, var(--app-primary-light) 8%, var(--app-surface));
+  border-radius: 0 var(--app-radius-sm) var(--app-radius-sm) 0;
+  font-size: var(--app-font-size-sm);
+  color: var(--app-text);
+  line-height: 1.4;
+}
+
 @keyframes appFadeIn {
   from {
     opacity: 0;

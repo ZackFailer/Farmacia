@@ -10,7 +10,7 @@ const HOME_BY_ROLE: Record<Rol, string> = {
   [Rol.PHARMACEUTICAL]: '/dispensacion',
   [Rol.RECEPTIONIST]: '/pacientes',
   [Rol.MEDICATION_RECEPTIONIST]: '/recepcion',
-  [Rol.SURVEYOR]: '/censo/crear-carpa',
+  [Rol.SURVEYOR]: '/censo/carpas',
 };
 
 export function roleGuard(allowedRoles: Rol[]): CanActivateFn {

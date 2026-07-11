@@ -26,14 +26,18 @@ export class PatologiaService {
     return entity;
   }
 
-  create(dto: CrearPatologiaDto): Promise<CatalogoPatologia> {
-    const entity = this.repo.create(dto);
+  create(dto: CrearPatologiaDto, usuarioId?: number): Promise<CatalogoPatologia> {
+    const entity = this.repo.create({
+      ...dto,
+      createdById: usuarioId ?? null,
+    });
     return this.repo.save(entity);
   }
 
-  async update(id: number, dto: ActualizarPatologiaDto): Promise<CatalogoPatologia> {
+  async update(id: number, dto: ActualizarPatologiaDto, usuarioId?: number): Promise<CatalogoPatologia> {
     const entity = await this.findOne(id);
     Object.assign(entity, dto);
+    entity.updatedById = usuarioId ?? null;
     return this.repo.save(entity);
   }
 

@@ -8,6 +8,10 @@ export const inventarioRoutes: Route[] = [
     loadComponent: () => import('./pages/panel-stock.page').then(m => m.PanelStockPage),
   },
   {
+    path: 'metricas',
+    loadComponent: () => import('./pages/metricas-inventario.page').then(m => m.MetricasInventarioPage),
+  },
+  {
     path: 'umbrales',
     canActivate: [roleGuard([Rol.ADMIN])],
     loadComponent: () => import('./pages/configurar-umbrales.page').then(m => m.ConfigurarUmbralesPage),

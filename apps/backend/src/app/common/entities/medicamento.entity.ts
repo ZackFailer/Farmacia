@@ -2,6 +2,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -9,7 +11,7 @@ import {
 } from 'typeorm';
 import { Configuracion } from './configuracion.entity';
 import { DispensacionDetalle } from './dispensacion-detalle.entity';
-import { Lote } from './lote.entity';
+import { Usuario } from './usuario.entity';
 
 @Entity('medicamento')
 export class Medicamento {
@@ -43,8 +45,18 @@ export class Medicamento {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  @OneToMany(() => Lote, (lote) => lote.medicamento)
-  lotes!: Lote[];
+  // Trazabilidad
+  @Column({ name: 'created_by_id', nullable: true })
+  createdById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'created_by_id' })
+  createdBy?: Usuario;
+
+  @Column({ name: 'updated_by_id', nullable: true })
+  updatedById?: number;
+  @ManyToOne(() => Usuario, { nullable: true })
+  @JoinColumn({ name: 'updated_by_id' })
+  updatedBy?: Usuario;
 
   @OneToMany(() => DispensacionDetalle, (detalle) => detalle.medicamento)
   dispensacionDetalles!: DispensacionDetalle[];

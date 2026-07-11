@@ -2,16 +2,15 @@ import { Injectable, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Paciente, CreatePacienteDto } from '../../shared/models/paciente.model';
 import type { Medicamento } from '../../shared/models/medicamento.model';
-import type { Lote } from '../../shared/models/lote.model';
 import type { Configuracion } from '../../shared/models/configuracion.model';
 import type { Dispensacion, CreateDispensacionDto } from '../../shared/models/dispensacion.model';
 import type { Receta } from '../../shared/models/receta.model';
 
 export interface RecetaItem {
-  lote?: Lote;
   medicamento: Medicamento;
   cantidad: number;
   dias?: number;
+  dosisIndicada?: string;
   dosisCalculada?: number;
   dosisValida?: boolean;
   dosisMaxima?: number;
@@ -22,6 +21,7 @@ export interface EstadoDispensacion {
   items: RecetaItem[];
   paso: 1 | 2 | 3;
   recetaId?: number;
+  recetaMotivo?: string;
 }
 
 @Injectable()
@@ -32,8 +32,6 @@ export abstract class DispensacionService {
   abstract registrarPaciente(dto: CreatePacienteDto): Observable<Paciente>;
   abstract buscarPaciente(searchTerm: string): Observable<Paciente[]>;
   abstract buscarMedicamentos(search: string): Observable<Medicamento[]>;
-  abstract getLotesDisponibles(medicamentoId: number): Observable<Lote[]>;
-  abstract getLoteByQR(codigoQR: string): Observable<Lote>;
   abstract getLimiteDosis(medicamentoId: number): Observable<Configuracion | null>;
   abstract crearDispensacion(dto: CreateDispensacionDto): Observable<Dispensacion>;
   abstract getRecetasPendientes(): Observable<Receta[]>;
@@ -51,7 +49,7 @@ export abstract class DispensacionService {
   setReceta(r: Receta): void {
     const items: RecetaItem[] = (r.detalles ?? []).reduce<RecetaItem[]>((acc, d) => {
       if (d.medicamento) {
-        acc.push({ medicamento: d.medicamento, cantidad: d.cantidad_recetada, dias: d.dias });
+        acc.push({ medicamento: d.medicamento, cantidad: d.cantidad_recetada ?? 1, dias: d.dias, dosisIndicada: d.dosis_indicada });
       }
       return acc;
     }, []);
@@ -61,6 +59,7 @@ export abstract class DispensacionService {
       items,
       paso: 2,
       recetaId: r.id,
+      recetaMotivo: r.motivo,
     }));
   }
 
@@ -88,6 +87,6 @@ export abstract class DispensacionService {
   }
 
   reiniciar(): void {
-    this._estado.set({ paciente: null, items: [], paso: 1, recetaId: undefined });
+    this._estado.set({ paciente: null, items: [], paso: 1, recetaId: undefined, recetaMotivo: undefined });
   }
 }

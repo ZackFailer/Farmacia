@@ -1,15 +1,13 @@
 import { Injectable } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { StockItem, Movimiento } from '../../shared/models/stock-item.model';
-import type { Lote } from '../../shared/models/lote.model';
+import type { StockItem } from '../../shared/models/stock-item.model';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
+import type { MetricasInventario } from '../../shared/models/metricas-inventario.model';
 
 @Injectable()
 export abstract class InventarioService {
-  abstract getStockGeneral(params?: { search?: string; ubicacion?: string }): Observable<StockItem[]>;
-  abstract getProximosVencer(): Observable<Lote[]>;
-  abstract ajustarStock(loteId: number, cantidadReal: number): Observable<Lote>;
-  abstract getMovimientosLote(loteId: number): Observable<Movimiento[]>;
+  abstract getStockGeneral(params?: { search?: string }): Observable<StockItem[]>;
+  abstract getMetricas(): Observable<MetricasInventario>;
   abstract getUmbrales(): Observable<Configuracion[]>;
   abstract actualizarUmbral(id: number, dto: UpdateConfiguracionDto): Observable<Configuracion>;
 }

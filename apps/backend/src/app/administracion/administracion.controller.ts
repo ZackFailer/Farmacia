@@ -10,6 +10,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { AdministracionService } from './administracion.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.type';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/role.enum';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
@@ -27,8 +29,11 @@ export class AdministracionController {
   }
 
   @Post('usuarios')
-  createUsuario(@Body() dto: CrearUsuarioDto) {
-    return this.administracionService.createUsuario(dto);
+  createUsuario(
+    @Body() dto: CrearUsuarioDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.administracionService.createUsuario(dto, user.sub);
   }
 
   @Patch('usuarios/:id')
@@ -53,7 +58,8 @@ export class AdministracionController {
   updateConfiguracion(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarConfiguracionDto,
+    @CurrentUser() user: JwtUser,
   ) {
-    return this.administracionService.updateConfiguracion(id, dto);
+    return this.administracionService.updateConfiguracion(id, dto, user.sub);
   }
 }

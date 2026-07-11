@@ -1,4 +1,7 @@
-import { Component, Input, OnInit, signal, inject } from '@angular/core';
+/**
+ * @deprecated Lote functionality removed. This modal is kept for historical reference only.
+ */
+import { Component, input, OnInit, signal, inject } from '@angular/core';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonFooter, ModalController } from '@ionic/angular/standalone';
 import { DatePipe } from '@angular/common';
 import type { Lote } from '../../shared/models/lote.model';
@@ -23,24 +26,24 @@ import QRCode from 'qrcode';
         <div class="etiqueta-divider"></div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Medicamento:</span>
-          <span class="etiqueta-value">{{ lote.medicamento?.nombre_generico ?? '—' }} {{ lote.medicamento?.concentracion }}{{ lote.medicamento?.unidad_concentracion }}</span>
+          <span class="etiqueta-value">{{ lote().medicamento?.nombre_generico ?? '—' }} {{ lote().medicamento?.concentracion }}{{ lote().medicamento?.unidad_concentracion }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Lote:</span>
-          <span class="etiqueta-value">{{ lote.codigo_qr }}</span>
+          <span class="etiqueta-value">{{ lote().codigo_qr }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Vencimiento:</span>
-          <span class="etiqueta-value">{{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}</span>
+          <span class="etiqueta-value">{{ lote().fecha_vencimiento | date:'dd/MM/yyyy' }}</span>
         </div>
         <div class="etiqueta-row">
           <span class="etiqueta-label">Cantidad:</span>
-          <span class="etiqueta-value">{{ lote.cantidad_inicial }} unds</span>
+          <span class="etiqueta-value">{{ lote().cantidad_inicial }} unds</span>
         </div>
-        @if (lote.donante) {
+        @if (lote().donante) {
           <div class="etiqueta-row">
             <span class="etiqueta-label">Donante:</span>
-            <span class="etiqueta-value">{{ lote.donante }}</span>
+            <span class="etiqueta-value">{{ lote().donante }}</span>
           </div>
         }
         <div class="etiqueta-divider"></div>
@@ -120,12 +123,12 @@ import QRCode from 'qrcode';
 export class ImprimirEtiquetaModal implements OnInit {
   private readonly modalCtrl = inject(ModalController);
 
-  @Input({ required: true }) lote!: Lote;
+  readonly lote = input.required<Lote>();
   qrDataUrl = signal<string | null>(null);
 
   async ngOnInit() {
     try {
-      const url = await QRCode.toDataURL(this.lote.codigo_qr, {
+      const url = await QRCode.toDataURL(this.lote().codigo_qr, {
         margin: 1,
         width: 280,
       });

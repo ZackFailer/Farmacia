@@ -37,6 +37,7 @@ interface ApiReceta {
   fechaHora: string;
   estado: string;
   activo: boolean;
+  motivo: string | null;
   detalles: ApiRecetaDetalle[];
   createdAt: string;
 }
@@ -49,6 +50,7 @@ export class ApiRecetasService extends RecetasService {
     return this.http
       .post<ApiReceta>(`${API_BASE_URL}/recetas`, {
         pacienteId: dto.paciente_id,
+        motivo: dto.motivo,
         detalles: dto.detalles.map((det) => ({
           medicamentoId: det.medicamento_id,
           cantidadRecetada: det.cantidad_recetada,
@@ -92,6 +94,7 @@ export class ApiRecetasService extends RecetasService {
       fecha_hora: item.fechaHora,
       estado: item.estado as RecetaEstado,
       activo: item.activo,
+      motivo: item.motivo ?? undefined,
       detalles: item.detalles.map((d) => this.toDetalle(d)),
       created_at: item.createdAt,
     };

@@ -83,7 +83,7 @@ No shared libraries exist yet — everything lives inside apps.
 - **DTOs**: clases con decoradores `class-validator`
 - **ORM**: TypeORM con entidades decoradas
 - **Autenticación**: PIN + JWT (`@nestjs/jwt`, `@nestjs/passport`)
-- **Base de datos**: SQLite via `node:sqlite` nativo (sin `sqlite3` npm package) + TypeORM (synchronize en desarrollo)
+- **Base de datos**: SQLite via `node:sqlite` nativo (sin `sqlite3` npm package) + TypeORM (synchronize: false — NUNCA CAMBIAR A TRUE, destruye datos al recrear tablas)
 
 ### General
 - **Idioma**: español en UI, inglés en código (variables, funciones, tablas DB)
@@ -138,6 +138,66 @@ Ejemplo:
 | `documents/frontend-plan.md` | Plan de implementación del frontend: rutas, componentes, servicios, modales |
 | `documents/backend-plan.md` | Plan de implementación del backend: módulos, entidades, endpoints, DTOs |
 | `documents/modules/*/` | Por módulo: propósito, diseño detallado y tareas |
+
+## ⚠️ CRÍTICO: Base de Datos SQLite — NO ELIMINAR
+
+El archivo `apps/backend/data/farmacia.sqlite` contiene TODOS los datos reales del sistema (pacientes, recetas, dispensaciones, usuarios, medicamentos, lotes, etc.).
+
+**REGLA ABSOLUTA: NUNCA eliminar, renombrar, mover ni borrar el archivo `farmacia.sqlite`.**  
+Cualquier pérdida de este archivo implica pérdida total e irreversible de datos del sistema.
+
+### Qué hacer cuando una columna o tabla falta en la BD
+
+#### 1. Si `synchronize: true` (NUNCA USAR — destructivo, siempre debe estar en false)
+- Solo reiniciar el servidor. TypeORM agrega automáticamente las columnas faltantes sin perder datos.
+- **No hacer nada más.** Si al reiniciar no se agrega la columna, probablemente es porque `synchronize` no puede modificar una tabla existente en SQLite (limitación de SQLite). En ese caso, seguir el paso 3.
+
+#### 2. Si `synchronize: false` (producción)
+- **No tocar la BD.** Crear una migration de TypeORM que agregue la columna.
+- Comando para crear migration: `npx nx run backend:typeorm migration:create ./src/app/common/migrations/NombreMigration`
+- Escribir SQL manual en `up()` con `ALTER TABLE ... ADD COLUMN`, y ejecutar con el servidor.
+
+#### 3. Solución manual directa (cuando synchronize no puede agregar la columna)
+Ejecutar SQL directamente contra la BD:
+```sql
+ALTER TABLE nombre_tabla ADD COLUMN nombre_columna tipo DEFAULT valor_default;
+```
+Para SQLite los tipos comunes son: `integer`, `varchar(N)`, `boolean`, `datetime`, `float`.
+
+**Ejemplo concreto** (lo que debió hacerse en lugar de eliminar la BD):
+```sql
+ALTER TABLE paciente ADD COLUMN situacion_vivienda varchar(20) DEFAULT 'no_afectado';
+ALTER TABLE paciente ADD COLUMN tiene_discapacidad_motora boolean DEFAULT 0;
+```
+
+#### 4. Cómo verificar qué columnas faltan
+```bash
+# Mostrar schema actual de la BD
+node -e "const sqlite = require('node:sqlite'); const db = new sqlite.DatabaseSync('apps/backend/data/farmacia.sqlite'); const r = db.prepare(\"SELECT sql FROM sqlite_master WHERE type='table' AND name='paciente'\").get(); console.log(r.sql); db.close();"
+```
+
+### Resolución de problemas comunes
+
+| Síntoma | Causa probable | Solución |
+|---|---|---|
+| `no such column: p.situacion_vivienda` | Columna agregada a entidad pero no existe en BD | `ALTER TABLE paciente ADD COLUMN ...` |
+| `no such column: p.tiene_discapacidad_motora` | Columna agregada a entidad pero no existe en BD | `ALTER TABLE paciente ADD COLUMN ...` |
+| `ALTER TABLE fails because columns already exist` | La columna ya fue agregada | Verificar con `.schema` sqlite_master |
+| Migration `up()` falla en BD fresca | La migration intenta ADD COLUMN que ya existe por `synchronize` | Usar `INSERT INTO migrations` para marcar como ejecutada, o quitar migration si ya no es necesaria |
+
+### Flujo correcto para sincronizar schema
+
+```
+1. Verificar qué columnas faltan → node -e "SQL contra sqlite_master"
+2. Ejecutar ALTER TABLE manual → preserva todos los datos
+3. Reiniciar servidor
+4. Verificar que el endpoint funciona
+```
+
+**NUNCA ejecutar `Remove-Item`, `rm`, `del` o cualquier comando que elimine `farmacia.sqlite`.**  
+Si se necesita resetear la BD, preguntar primero al usuario y obtener confirmación explícita.
+
+---
 
 ## Notable
 

@@ -9,6 +9,9 @@ export interface CensoEstadisticas {
   adultos: number;
   adultosMayores: number;
   conDiscapacidadMotora: number;
+  totalNoAfectados: number;
+  totalViviendaAfectada: number;
+  totalDamnificados: number;
   totalCarpas: number;
   porPatologia: CatalogoCount[];
   porNecesidad: CatalogoCount[];

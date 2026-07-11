@@ -5,6 +5,7 @@ import type { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 import { clearAppSessionStorage } from './auth.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
+import { SyncQueueService } from '../../core/services/sync-queue.service';
 import { Rol } from '../../shared/enums/rol.enum';
 import type { Usuario } from '../../shared/models/usuario.model';
 
@@ -23,6 +24,7 @@ interface LoginResponse {
 @Injectable()
 export class ApiAuthService extends AuthService {
   private readonly http = inject(HttpClient);
+  private readonly syncQueue = inject(SyncQueueService);
   readonly usuario$: WritableSignal<Usuario | null> = signal<Usuario | null>(this.getUsuario());
 
   login(username: string, pin: string): Observable<{ token: string; usuario: Usuario }> {
@@ -35,6 +37,9 @@ export class ApiAuthService extends AuthService {
         localStorage.setItem('apoPharma_token', response.token);
         localStorage.setItem('apoPharma_usuario', JSON.stringify(response.usuario));
         this.usuario$.set(response.usuario);
+      }),
+      tap(() => {
+        this.syncQueue.processQueue();
       }),
     );
   }

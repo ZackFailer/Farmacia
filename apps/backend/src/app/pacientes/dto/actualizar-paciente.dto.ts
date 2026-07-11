@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Sex } from '../../common/enums/sex.enum';
+import { SituacionVivienda } from '../../common/enums/situacion-vivienda.enum';
 import { PacientePatologiaDto } from './crear-paciente.dto';
 
 export class ActualizarPacienteDto {
@@ -63,8 +64,8 @@ export class ActualizarPacienteDto {
   pesoEstimado?: number;
 
   @IsOptional()
-  @IsBoolean()
-  esDamnificado?: boolean;
+  @IsEnum(SituacionVivienda)
+  situacionVivienda?: SituacionVivienda;
 
   @IsOptional()
   @IsBoolean()

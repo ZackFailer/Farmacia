@@ -39,7 +39,7 @@ describe('DispensacionService', () => {
       sexo: Sexo.F,
       edad_estimada: 25,
       peso_estimado: 60,
-      es_damnificado: false,
+      situacion_vivienda: 'no_afectado',
     };
     const p = await firstValueFrom(service.registrarPaciente(dto));
     expect(p.id_emergencia).toBe('EM-2026-099');
@@ -59,7 +59,7 @@ describe('DispensacionService', () => {
       sexo: Sexo.M,
       edad_estimada: 30,
       peso_estimado: 70,
-      es_damnificado: true,
+      situacion_vivienda: 'damnificado',
     };
     await expect(firstValueFrom(service.registrarPaciente(dto))).rejects.toThrow();
   });
@@ -77,25 +77,6 @@ describe('DispensacionService', () => {
     expect(results.length).toBe(0);
   });
 
-  // ── Lotes FEFO ──
-
-  it('debe retornar lotes disponibles ordenados por vencimiento ASC (FEFO)', async () => {
-    const lotes = await firstValueFrom(service.getLotesDisponibles(1));
-    expect(lotes.length).toBeGreaterThanOrEqual(2);
-    for (let i = 1; i < lotes.length; i++) {
-      const prev = new Date(lotes[i - 1].fecha_vencimiento);
-      const curr = new Date(lotes[i].fecha_vencimiento);
-      expect(prev <= curr || prev.getTime() <= curr.getTime()).toBe(true);
-    }
-  });
-
-  it('debe retornar solo lotes con stock > 0', async () => {
-    const lotes = await firstValueFrom(service.getLotesDisponibles(2));
-    for (const l of lotes) {
-      expect(l.cantidad_actual).toBeGreaterThan(0);
-    }
-  });
-
   // ── Configuración / Dosis ──
 
   it('debe retornar configuracion de dosis para medicamento configurado', async () => {
@@ -109,50 +90,33 @@ describe('DispensacionService', () => {
     expect(config).toBeNull();
   });
 
-  // ── Crear dispensación ──
+  // ── Crear dispensación (sin lotes) ──
 
-  it('debe crear dispensacion y descontar stock del lote indicado', async () => {
-    const antes = await firstValueFrom(service.getLotesDisponibles(1));
-    const stockLote1 = antes.find(l => l.id === 1)!.cantidad_actual;
-
+  it('debe crear dispensacion correctamente', async () => {
     const d = await firstValueFrom(service.crearDispensacion({
       paciente_id: 1,
-      items: [{ lote_id: 1, medicamento_id: 1, cantidad: 10 }],
+      items: [{ medicamento_id: 1, cantidad: 10 }],
     }));
 
     expect(d.id).toBeGreaterThan(0);
     expect(d.items.length).toBe(1);
     expect(d.items[0].cantidad).toBe(10);
-
-    const despues = await firstValueFrom(service.getLotesDisponibles(1));
-    expect(despues.find(l => l.id === 1)!.cantidad_actual).toBe(stockLote1 - 10);
+    expect(d.items[0].medicamento_nombre).toBe('Amoxicilina');
   });
 
   it('debe calcular dosis_mg_kg en el detalle', async () => {
     const d = await firstValueFrom(service.crearDispensacion({
       paciente_id: 1,
-      items: [{ lote_id: 1, medicamento_id: 1, cantidad: 2 }],
+      items: [{ medicamento_id: 1, cantidad: 2 }],
     }));
     // Paciente 1 pesa 70kg, Amoxicilina 250mg, cantidad 2 → (2*250)/70 ≈ 7.14
     expect(d.items[0].dosis_mg_kg).toBeCloseTo(7.14, 1);
   });
 
-  it('debe rechazar dispensacion con stock insuficiente', async () => {
-    try {
-      await firstValueFrom(service.crearDispensacion({
-        paciente_id: 1,
-        items: [{ lote_id: 2, medicamento_id: 1, cantidad: 999 }],
-      }));
-      expect('should have thrown').toBe('did not throw');
-    } catch {
-      expect(true).toBe(true);
-    }
-  });
-
   it('debe rechazar dispensacion con paciente inexistente', async () => {
     await expect(firstValueFrom(service.crearDispensacion({
       paciente_id: 999,
-      items: [{ lote_id: 1, medicamento_id: 1, cantidad: 1 }],
+      items: [{ medicamento_id: 1, cantidad: 1 }],
     }))).rejects.toThrow('Paciente no encontrado');
   });
 
@@ -162,7 +126,7 @@ describe('DispensacionService', () => {
     expect(service.estado().paso).toBe(1);
     expect(service.estado().paciente).toBeNull();
 
-    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, tiene_carga_familiar: false, created_at: '' });
+    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, situacion_vivienda: 'no_afectado', tiene_carga_familiar: false, created_at: '' });
 
     expect(service.estado().paciente).not.toBeNull();
     expect(service.estado().paciente!.id_emergencia).toBe('EM-TEST');
@@ -172,7 +136,7 @@ describe('DispensacionService', () => {
   it('agregarItem debe añadir a la lista', () => {
     expect(service.estado().items.length).toBe(0);
 
-    const item = { medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, lote: { id: 1, medicamento_id: 1, codigo_qr: 'L-TEST', cantidad_inicial: 100, cantidad_actual: 50, fecha_vencimiento: '2027-01-01', created_at: '', updated_at: '' }, cantidad: 5 };
+    const item = { medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, cantidad: 5 };
     service.agregarItem(item);
 
     expect(service.estado().items.length).toBe(1);
@@ -180,7 +144,7 @@ describe('DispensacionService', () => {
   });
 
   it('eliminarItem debe remover por indice', () => {
-    const item = { medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, lote: { id: 1, medicamento_id: 1, codigo_qr: 'L-TEST', cantidad_inicial: 100, cantidad_actual: 50, fecha_vencimiento: '2027-01-01', created_at: '', updated_at: '' }, cantidad: 5 };
+    const item = { medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, cantidad: 5 };
     service.agregarItem(item);
     expect(service.estado().items.length).toBe(1);
 
@@ -189,8 +153,8 @@ describe('DispensacionService', () => {
   });
 
   it('reiniciar debe resetear todo el estado', () => {
-    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, es_damnificado: false, tiene_carga_familiar: false, created_at: '' });
-    service.agregarItem({ medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, lote: { id: 1, medicamento_id: 1, codigo_qr: 'L-TEST', cantidad_inicial: 100, cantidad_actual: 50, fecha_vencimiento: '2027-01-01', created_at: '', updated_at: '' }, cantidad: 5 });
+    service.setPaciente({ id: 1, id_emergencia: 'EM-TEST', nombre: 'Jose', apellido: 'Prueba', sexo: Sexo.M, edad_estimada: 30, peso_estimado: 70, situacion_vivienda: 'no_afectado', tiene_carga_familiar: false, created_at: '' });
+    service.agregarItem({ medicamento: { id: 1, nombre_generico: 'Test', presentacion: '', concentracion: 100, unidad_concentracion: 'mg' as const, created_at: '', updated_at: '' }, cantidad: 5 });
     expect(service.estado().paso).toBe(2);
     expect(service.estado().items.length).toBe(1);
 

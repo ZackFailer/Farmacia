@@ -6,6 +6,8 @@ import { NucleoFamiliar } from '../common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from '../common/entities/nucleo-familiar-miembro.entity';
 import { PacientePatologia } from '../common/entities/paciente-patologia.entity';
 import { PacienteNecesidad } from '../common/entities/paciente-necesidad.entity';
+import { CatalogoPatologia } from '../common/entities/patologia.entity';
+import { CatalogoNecesidad } from '../common/entities/necesidad.entity';
 import { CrearPacienteDto } from './dto/crear-paciente.dto';
 import { ActualizarPacienteDto } from './dto/actualizar-paciente.dto';
 import { AgregarFamiliarDto } from './dto/agregar-familiar.dto';
@@ -27,7 +29,7 @@ export class PacientesService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async createPaciente(dto: CrearPacienteDto) {
+  async createPaciente(dto: CrearPacienteDto, usuarioId?: number) {
     const { familiares, patologiaIds, patologias, necesidadIds, ...pacienteData } = dto;
     let savedId = 0;
 
@@ -44,6 +46,7 @@ export class PacientesService {
           ...pacienteData,
           telefono: pacienteData.telefono ?? null,
           edadEstimada: this.computeEdadEstimada(pacienteData),
+          createdById: usuarioId ?? null,
         },
         dto.idEmergencia,
         manager,
@@ -81,9 +84,10 @@ export class PacientesService {
           edadManual: f.edadManual ?? null,
           esRecienNacido: f.esRecienNacido ?? false,
           pesoEstimado: f.pesoEstimado,
-          esDamnificado: f.esDamnificado,
+          situacionVivienda: f.situacionVivienda,
           tieneCargaFamiliar: false,
           tieneDiscapacidadMotora: f.tieneDiscapacidadMotora ?? false,
+          createdById: usuarioId ?? null,
         }, undefined, manager);
 
         await this.savePacienteRelations(patologiaRepository, necesidadRepository, savedFamiliar.id, fPatologias, fPatologiaIds, fNecesidadIds);
@@ -138,7 +142,7 @@ export class PacientesService {
       relations: {
         _familiaresBacking: { paciente: true, nucleo: { miembros: { paciente: true }, titular: true } },
         pacientePatologias: { patologia: true },
-        pacienteNecesidades: { necesidad: true },
+        pacienteNecesidades: { necesidad: true, suplidaPor: true },
       },
     });
 
@@ -164,6 +168,7 @@ export class PacientesService {
       .leftJoinAndSelect('pp.patologia', 'pat')
       .leftJoinAndSelect('p.pacienteNecesidades', 'pn')
       .leftJoinAndSelect('pn.necesidad', 'nec')
+      .leftJoinAndSelect('pn.suplidaPor', 'sp')
       .where('(LOWER(p.idEmergencia) LIKE :q OR LOWER(p.nombre) LIKE :q OR LOWER(p.apellido) LIKE :q OR p.cedula LIKE :q OR p.telefono LIKE :q)', { q: `%${q}%` })
       .take(20);
     if (!incluirInactivos) {
@@ -172,7 +177,7 @@ export class PacientesService {
     return qb.getMany();
   }
 
-  async updatePaciente(id: number, dto: ActualizarPacienteDto) {
+  async updatePaciente(id: number, dto: ActualizarPacienteDto, usuarioId?: number) {
     const paciente = await this.pacienteRepository.findOne({
       where: { id },
       relations: {
@@ -203,9 +208,11 @@ export class PacientesService {
         edadManual: dto.edadManual ?? paciente.edadManual ?? undefined,
       });
     }
-    if (dto.esDamnificado !== undefined) paciente.esDamnificado = dto.esDamnificado;
+    if (dto.situacionVivienda !== undefined) paciente.situacionVivienda = dto.situacionVivienda;
     if (dto.tieneDiscapacidadMotora !== undefined) paciente.tieneDiscapacidadMotora = dto.tieneDiscapacidadMotora;
     if (dto.activo !== undefined) paciente.activo = dto.activo;
+
+    paciente.updatedById = usuarioId ?? null;
 
     if (dto.patologias !== undefined || dto.patologiaIds !== undefined) {
       await this.pacientePatologiaRepository.delete({ pacienteId: id });
@@ -225,10 +232,20 @@ export class PacientesService {
     }
 
     if (dto.necesidadIds !== undefined) {
-      await this.pacienteNecesidadRepository.delete({ pacienteId: id });
+      const noSuplidas = await this.pacienteNecesidadRepository.find({
+        where: { pacienteId: id, activo: true, suplida: false },
+      });
+      const toKeep = new Set(dto.necesidadIds);
+      const toDelete = noSuplidas.filter((n) => !toKeep.has(n.necesidadId));
+      if (toDelete.length > 0) {
+        await this.pacienteNecesidadRepository.delete(toDelete.map((n) => n.id));
+      }
+      const existingNoSuplidaIds = new Set(noSuplidas.map((n) => n.necesidadId));
       for (const nid of dto.necesidadIds) {
-        const entity = this.pacienteNecesidadRepository.create({ pacienteId: id, necesidadId: nid });
-        await this.pacienteNecesidadRepository.save(entity);
+        if (!existingNoSuplidaIds.has(nid)) {
+          const entity = this.pacienteNecesidadRepository.create({ pacienteId: id, necesidadId: nid });
+          await this.pacienteNecesidadRepository.save(entity);
+        }
       }
     }
 
@@ -243,7 +260,8 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Patient not found');
     }
-    await this.pacienteRepository.remove(paciente);
+    paciente.activo = false;
+    await this.pacienteRepository.save(paciente);
     return { success: true };
   }
 
@@ -294,13 +312,74 @@ export class PacientesService {
     return { success: true };
   }
 
+  async marcarNecesidadSuplida(pacienteId: number, necesidadId: number, usuarioId: number): Promise<PacienteNecesidad> {
+    const necesidad = await this.pacienteNecesidadRepository.findOne({
+      where: { id: necesidadId, pacienteId, activo: true, suplida: false },
+      relations: { necesidad: true, suplidaPor: true },
+    });
+    if (!necesidad) {
+      throw new NotFoundException('Necesidad no encontrada o ya suplida');
+    }
+    necesidad.suplida = true;
+    necesidad.fechaSuplida = new Date();
+    necesidad.suplidaPorId = usuarioId;
+    return this.pacienteNecesidadRepository.save(necesidad);
+  }
+
+  async agregarPatologia(pacienteId: number, dto: { patologiaId: number; tratamiento?: string }, usuarioId: number): Promise<PacientePatologia> {
+    const paciente = await this.pacienteRepository.findOne({ where: { id: pacienteId, activo: true } });
+    if (!paciente) throw new NotFoundException('Patient not found');
+
+    const catalogoPatologia = await this.dataSource.manager.findOne(CatalogoPatologia, { where: { id: dto.patologiaId } });
+    if (!catalogoPatologia) throw new NotFoundException('Patología no encontrada en el catálogo');
+
+    const entity = this.pacientePatologiaRepository.create({
+      pacienteId,
+      patologiaId: dto.patologiaId,
+      tratamiento: dto.tratamiento ?? null,
+      createdById: usuarioId,
+    });
+    return this.pacientePatologiaRepository.save(entity);
+  }
+
+  async quitarPatologia(pacienteId: number, patologiaId: number): Promise<{ success: boolean }> {
+    const result = await this.pacientePatologiaRepository.delete({ pacienteId, patologiaId });
+    if (result.affected === 0) throw new NotFoundException('Patologia no encontrada');
+    return { success: true };
+  }
+
+  async agregarNecesidad(pacienteId: number, necesidadId: number, usuarioId: number): Promise<PacienteNecesidad> {
+    const paciente = await this.pacienteRepository.findOne({ where: { id: pacienteId, activo: true } });
+    if (!paciente) throw new NotFoundException('Patient not found');
+
+    const catalogo = await this.dataSource.manager.findOne(CatalogoNecesidad, { where: { id: necesidadId } });
+    if (!catalogo) throw new NotFoundException('Necesidad no encontrada en el catálogo');
+
+    const entity = this.pacienteNecesidadRepository.create({
+      pacienteId,
+      necesidadId,
+      createdById: usuarioId,
+    });
+    return this.pacienteNecesidadRepository.save(entity);
+  }
+
+  async quitarNecesidad(pacienteId: number, necesidadId: number): Promise<{ success: boolean }> {
+    const necesidad = await this.pacienteNecesidadRepository.findOne({
+      where: { necesidadId, pacienteId, activo: true },
+    });
+    if (!necesidad) throw new NotFoundException('Necesidad no encontrada');
+    necesidad.activo = false;
+    await this.pacienteNecesidadRepository.save(necesidad);
+    return { success: true };
+  }
+
   private async loadPacienteConNucleo(id: number) {
     const paciente = await this.pacienteRepository.findOne({
       where: { id, activo: true },
       relations: {
         _familiaresBacking: { paciente: true, nucleo: { miembros: { paciente: true }, titular: true } },
         pacientePatologias: { patologia: true },
-        pacienteNecesidades: { necesidad: true },
+        pacienteNecesidades: { necesidad: true, suplidaPor: true },
       },
     });
     if (!paciente) throw new NotFoundException('Patient not found');

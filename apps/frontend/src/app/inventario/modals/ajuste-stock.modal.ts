@@ -1,4 +1,7 @@
-import { Component, Input, signal, inject } from '@angular/core';
+/**
+ * @deprecated Lote functionality removed. Kept for historical reference only.
+ */
+import { Component, input, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonItem, IonLabel, IonInput, IonNote, IonFooter, ModalController } from '@ionic/angular/standalone';
 import type { Lote } from '../../shared/models/lote.model';
@@ -19,9 +22,9 @@ import type { Lote } from '../../shared/models/lote.model';
     <ion-content class="ion-padding">
       <ion-item>
         <ion-label>
-          <h2>{{ lote.medicamento?.nombre_generico }}</h2>
-          <p>Lote: {{ lote.codigo_qr.slice(-8) }}</p>
-          <ion-note>Stock actual: {{ lote.cantidad_actual }}</ion-note>
+          <h2>{{ lote().medicamento?.nombre_generico }}</h2>
+          <p>Lote: {{ lote().codigo_qr.slice(-8) }}</p>
+          <ion-note>Stock actual: {{ lote().cantidad_actual }}</ion-note>
         </ion-label>
       </ion-item>
 
@@ -54,7 +57,7 @@ import type { Lote } from '../../shared/models/lote.model';
 export class AjusteStockModal {
   private readonly modalCtrl = inject(ModalController);
 
-  @Input({ required: true }) lote!: Lote;
+  readonly lote = input.required<Lote>();
 
   cantidadReal: number | null = null;
   diferencia = signal<number | null>(null);
@@ -64,7 +67,7 @@ export class AjusteStockModal {
       this.diferencia.set(null);
       return;
     }
-    this.diferencia.set(this.cantidadReal - this.lote.cantidad_actual);
+    this.diferencia.set(this.cantidadReal - this.lote().cantidad_actual);
   }
 
   get diferenciaColor(): string {

@@ -32,6 +32,14 @@ import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
         </ion-label>
       </ion-item>
 
+      @if (dispensacion.receta_motivo) {
+        <ion-item>
+          <ion-label>
+            <p><strong>Motivo de la receta:</strong> {{ dispensacion.receta_motivo }}</p>
+          </ion-label>
+        </ion-item>
+      }
+
       @if (dispensacion.paciente; as p) {
         <ion-item>
           <ion-label>
@@ -39,17 +47,25 @@ import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
             <p>Nombre: {{ p.nombre }} {{ p.apellido }}</p>
             <p>ID: {{ p.id_emergencia }}</p>
             <p>Peso: {{ p.peso_estimado }} kg</p>
-            <ion-note>{{ p.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+            <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }}</ion-note>
           </ion-label>
         </ion-item>
       }
 
-      <h3>Medicamentos entregados</h3>
+      <h3>Medicamentos</h3>
       @for (item of dispensacion.items; track item.id) {
         <ion-item>
           <ion-label>
             <h2>{{ item.medicamento_nombre }}</h2>
-            <p>Lote: {{ item.lote_codigo }} | Cant: {{ item.cantidad }}</p>
+            @if (item.dias || item.dosis_indicada) {
+              <p>
+                Receta:
+                @if (item.dias) { <strong>{{ item.dias }} días</strong> }
+                @if (item.dias && item.dosis_indicada) { · }
+                @if (item.dosis_indicada) { {{ item.dosis_indicada }} }
+              </p>
+            }
+            <p>Despachado: <strong>{{ item.cantidad }} dosis</strong></p>
             @if (item.dosis_mg_kg !== undefined && item.dosis_mg_kg !== null) {
               <ion-note>Dosis: {{ item.dosis_mg_kg.toFixed(2) }} mg/kg</ion-note>
             }
@@ -76,11 +92,20 @@ import { FechaRelativaPipe } from '../../shared/pipes/fecha-relativa.pipe';
   `,
 })
 export class DetalleDispensacionModal {
-  @Input({ required: true }) dispensacion!: Dispensacion;
+  @Input() dispensacion!: Dispensacion;
 
   private readonly modalCtrl = inject(ModalController);
 
   dismiss(): void {
     this.modalCtrl.dismiss();
+  }
+
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
   }
 }

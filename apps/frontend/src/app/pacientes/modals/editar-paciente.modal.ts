@@ -1,13 +1,31 @@
-import { Component, inject } from '@angular/core';
+import { Component, input, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
   IonToggle, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
+  IonCheckbox,
   ModalController,
 } from '@ionic/angular/standalone';
 import { Sexo } from '../../shared/enums/sexo.enum';
+import { SituacionVivienda } from '../../shared/enums/situacion-vivienda.enum';
 import type { Paciente } from '../../shared/models/paciente.model';
+import type { Patologia } from '../../shared/models/patologia.model';
+import type { Necesidad } from '../../shared/models/necesidad.model';
+import { CacheCatalogoService } from '../../core/services/cache-catalogo.service';
+
+interface PatologiaItem {
+  id: number;
+  nombre: string;
+  seleccionado: boolean;
+  tratamiento: string;
+}
+
+interface NecesidadItem {
+  id: number;
+  nombre: string;
+  seleccionado: boolean;
+}
 
 @Component({
   standalone: true,
@@ -15,8 +33,21 @@ import type { Paciente } from '../../shared/models/paciente.model';
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
     IonToggle, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
+    IonCheckbox,
     FormsModule,
   ],
+  styles: [`
+    .seccion-divider {
+      margin-top: var(--app-space-xl);
+      border-top: 1px solid var(--app-border);
+    }
+    .section-title {
+      font-size: var(--app-font-size-lg);
+      font-weight: 600;
+      margin: var(--app-space-md) 0;
+      color: var(--app-text);
+    }
+  `],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -84,12 +115,59 @@ import type { Paciente } from '../../shared/models/paciente.model';
       </ion-item>
 
       <ion-item>
-        <ion-label position="stacked">¿Es damnificado?</ion-label>
-        <ion-select [(ngModel)]="esDamnificado" interface="action-sheet">
-          <ion-select-option [value]="true">Sí</ion-select-option>
-          <ion-select-option [value]="false">No</ion-select-option>
+        <ion-label position="stacked">Situación de la vivienda</ion-label>
+        <ion-select [(ngModel)]="situacionVivienda" interface="action-sheet">
+          <ion-select-option [value]="situacionViviendaEnum.NO_AFECTADO">No afectado</ion-select-option>
+          <ion-select-option [value]="situacionViviendaEnum.VIVIENDA_AFECTADA">Vivienda afectada</ion-select-option>
+          <ion-select-option [value]="situacionViviendaEnum.DAMNIFICADO">Damnificado</ion-select-option>
         </ion-select>
       </ion-item>
+
+      <div class="seccion-divider"></div>
+      <h3 class="section-title">Patologías</h3>
+
+      @if (cargandoCatalogos) {
+        <ion-item>
+          <ion-label class="ion-text-center">
+            <p>Cargando catálogos...</p>
+          </ion-label>
+        </ion-item>
+      } @else {
+        @for (p of patologiasItems; track p.id) {
+          <ion-item>
+            <ion-checkbox slot="start" [(ngModel)]="p.seleccionado"></ion-checkbox>
+            <ion-label>
+              <h2>{{ p.nombre }}</h2>
+            </ion-label>
+          </ion-item>
+          @if (p.seleccionado) {
+            <ion-item>
+              <ion-label position="stacked">Tratamiento</ion-label>
+              <ion-input [(ngModel)]="p.tratamiento" placeholder="Ej: 500mg cada 8h"></ion-input>
+            </ion-item>
+          }
+        }
+      }
+
+      <div class="seccion-divider"></div>
+      <h3 class="section-title">Necesidades</h3>
+
+      @if (cargandoCatalogos) {
+        <ion-item>
+          <ion-label class="ion-text-center">
+            <p>Cargando catálogos...</p>
+          </ion-label>
+        </ion-item>
+      } @else {
+        @for (n of necesidadesItems; track n.id) {
+          <ion-item>
+            <ion-checkbox slot="start" [(ngModel)]="n.seleccionado"></ion-checkbox>
+            <ion-label>
+              <h2>{{ n.nombre }}</h2>
+            </ion-label>
+          </ion-item>
+        }
+      }
     </ion-content>
 
     <ion-modal [keepContentsMounted]="true">
@@ -108,8 +186,12 @@ import type { Paciente } from '../../shared/models/paciente.model';
     </ion-footer>
   `,
 })
-export class EditarPacienteModal {
+export class EditarPacienteModal implements OnInit {
+  /** Holder para transferir datos desde la pagina llamadora, ya que componentProps no resuelve input() signals */
+  static pendingPaciente: Paciente | null = null;
+
   readonly sexoEnum = Sexo;
+  readonly situacionViviendaEnum = SituacionVivienda;
 
   nombre = '';
   apellido = '';
@@ -121,14 +203,49 @@ export class EditarPacienteModal {
   edadManual = '';
   esRecienNacido = false;
   peso = '';
-  esDamnificado = true;
+  situacionVivienda: SituacionVivienda = SituacionVivienda.DAMNIFICADO;
 
-  private paciente!: Paciente;
+  private edadEstimadaPaciente = 0;
+  patologiasItems: PatologiaItem[] = [];
+  necesidadesItems: NecesidadItem[] = [];
+  cargandoCatalogos = true;
 
   private readonly modalCtrl = inject(ModalController);
+  private readonly cacheCatalogo = inject(CacheCatalogoService);
 
-  setPaciente(p: Paciente): void {
-    this.paciente = p;
+  async ngOnInit(): Promise<void> {
+    try {
+      const [patologias, necesidades] = await Promise.all([
+        this.cacheCatalogo.getPatologias(),
+        this.cacheCatalogo.getNecesidades(),
+      ]);
+      this.patologiasItems = (patologias ?? []).map((p: Patologia) => ({
+        id: p.id,
+        nombre: p.nombre,
+        seleccionado: false,
+        tratamiento: '',
+      }));
+      this.necesidadesItems = (necesidades ?? []).map((n: Necesidad) => ({
+        id: n.id,
+        nombre: n.nombre,
+        seleccionado: false,
+      }));
+    } catch {
+      this.patologiasItems = [];
+      this.necesidadesItems = [];
+    } finally {
+      this.cargandoCatalogos = false;
+    }
+
+    // Catálogos cargados → aplicar datos del paciente
+    const p = EditarPacienteModal.pendingPaciente;
+    EditarPacienteModal.pendingPaciente = null;
+    if (p) {
+      this.aplicarPaciente(p);
+    }
+  }
+
+  private aplicarPaciente(p: Paciente): void {
     this.nombre = p.nombre;
     this.apellido = p.apellido;
     this.cedula = p.cedula ?? '';
@@ -139,7 +256,26 @@ export class EditarPacienteModal {
     this.edadManual = p.edad_manual != null ? String(p.edad_manual) : '';
     this.esRecienNacido = p.es_recien_nacido ?? false;
     this.peso = String(p.peso_estimado);
-    this.esDamnificado = p.es_damnificado;
+    this.situacionVivienda = p.situacion_vivienda;
+    this.edadEstimadaPaciente = p.edad_estimada;
+
+    if (p.pacientePatologias) {
+      for (const pp of p.pacientePatologias) {
+        const item = this.patologiasItems.find((x) => x.id === pp.patologiaId);
+        if (item) {
+          item.seleccionado = true;
+          item.tratamiento = pp.tratamiento ?? '';
+        }
+      }
+    }
+    if (p.pacienteNecesidades) {
+      for (const pn of p.pacienteNecesidades) {
+        if (!pn.suplida) {
+          const item = this.necesidadesItems.find((x) => x.id === pn.necesidadId);
+          if (item) item.seleccionado = true;
+        }
+      }
+    }
   }
 
   formValido(): boolean {
@@ -156,7 +292,14 @@ export class EditarPacienteModal {
         ? +this.edadManual
         : this.fechaNacimiento
           ? Math.max(0, new Date().getFullYear() - new Date(this.fechaNacimiento).getFullYear())
-          : this.paciente.edad_estimada;
+          : (this.edadEstimadaPaciente ?? 0);
+
+    const patologiasArray = this.patologiasItems
+      .filter((p) => p.seleccionado)
+      .map((p) => ({ patologiaId: p.id, tratamiento: p.tratamiento || undefined }));
+    const necesidadIds = this.necesidadesItems
+      .filter((n) => n.seleccionado)
+      .map((n) => n.id);
 
     this.modalCtrl.dismiss({
       nombre: this.nombre.trim(),
@@ -169,7 +312,9 @@ export class EditarPacienteModal {
       edad_manual: this.usarEdadManual && this.edadManual ? +this.edadManual : undefined,
       es_recien_nacido: this.esRecienNacido || undefined,
       peso_estimado: +this.peso,
-      es_damnificado: this.esDamnificado,
+      situacion_vivienda: this.situacionVivienda,
+      patologias: patologiasArray.length > 0 ? patologiasArray : undefined,
+      necesidadIds: necesidadIds.length > 0 ? necesidadIds : undefined,
     }, 'confirm');
   }
 

@@ -2,6 +2,8 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query 
 import { PatologiaService } from './patologia.service';
 import { CrearPatologiaDto } from './dto/crear-patologia.dto';
 import { ActualizarPatologiaDto } from './dto/actualizar-patologia.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.type';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/role.enum';
 
@@ -24,14 +26,21 @@ export class PatologiaController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  create(@Body() dto: CrearPatologiaDto) {
-    return this.service.create(dto);
+  create(
+    @Body() dto: CrearPatologiaDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.service.create(dto, user.sub);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: ActualizarPatologiaDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarPatologiaDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.service.update(id, dto, user.sub);
   }
 
   @Delete(':id')

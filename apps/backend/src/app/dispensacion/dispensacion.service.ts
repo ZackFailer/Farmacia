@@ -5,15 +5,14 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { Medicamento } from '../common/entities/medicamento.entity';
 import { Paciente } from '../common/entities/paciente.entity';
 import { Receta } from '../common/entities/receta.entity';
-import { Lote } from '../common/entities/lote.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { Dispensacion } from '../common/entities/dispensacion.entity';
 import { DispensacionDetalle } from '../common/entities/dispensacion-detalle.entity';
+import { Lote } from '../common/entities/lote.entity';
 import { CrearDispensacionDto } from './dto/crear-dispensacion.dto';
-import { MovementType } from '../common/enums/movement-type.enum';
-import { LoteMovimiento } from '../common/entities/lote-movimiento.entity';
 
 @Injectable()
 export class DispensacionService {
@@ -21,18 +20,6 @@ export class DispensacionService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
-
-  getLotesDisponibles(medicamentoId: number) {
-    return this.dataSource.manager
-      .createQueryBuilder(Lote, 'l')
-      .leftJoinAndSelect('l.medicamento', 'm')
-      .where('l.activo = :activo', { activo: true })
-      .andWhere('l.medicamento_id = :medicamentoId', { medicamentoId })
-      .andWhere('l.cantidad_actual > 0')
-      .orderBy('l.fecha_vencimiento', 'ASC')
-      .addOrderBy('l.id', 'ASC')
-      .getMany();
-  }
 
   async getDoseConfig(medicamentoId: number) {
     const config = await this.dataSource.manager.findOne(Configuracion, {
@@ -75,41 +62,11 @@ export class DispensacionService {
       const savedDispensacion = await manager.save(Dispensacion, dispensacion);
 
       for (const item of dto.detalles) {
-        const firstAvailable = await manager
-          .createQueryBuilder(Lote, 'l')
-          .where('l.activo = :activo', { activo: true })
-          .andWhere('l.medicamento_id = :medicamentoId', {
-            medicamentoId: item.medicamentoId,
-          })
-          .andWhere('l.cantidad_actual > 0')
-          .orderBy('l.fecha_vencimiento', 'ASC')
-          .addOrderBy('l.id', 'ASC')
-          .getOne();
-
-        if (firstAvailable && firstAvailable.id !== item.loteId) {
-          throw new BadRequestException(
-            `Dispensation must follow FEFO. Next lot is ${firstAvailable.id}`,
-          );
-        }
-
-        const lote = await manager.findOne(Lote, {
-          where: { id: item.loteId, activo: true },
-          relations: { medicamento: true },
+        const medicamento = await manager.findOne(Medicamento, {
+          where: { id: item.medicamentoId, activo: true },
         });
-        if (!lote) {
-          throw new NotFoundException(`Lot ${item.loteId} not found`);
-        }
-
-        if (lote.medicamentoId !== item.medicamentoId) {
-          throw new BadRequestException(
-            `Lot ${item.loteId} does not belong to medication ${item.medicamentoId}`,
-          );
-        }
-
-        if (lote.cantidadActual < item.cantidad) {
-          throw new BadRequestException(
-            `Insufficient stock for lot ${item.loteId}`,
-          );
+        if (!medicamento) {
+          throw new NotFoundException(`Medication ${item.medicamentoId} not found`);
         }
 
         const config = await manager.findOne(Configuracion, {
@@ -117,7 +74,7 @@ export class DispensacionService {
         });
 
         const peso = paciente.pesoEstimado || (config?.pesoReferenciaKg ?? 70);
-        const dosisMgKg = (item.cantidad * lote.medicamento.concentracion) / peso;
+        const dosisMgKg = (item.cantidad * medicamento.concentracion) / peso;
 
         if (
           config &&
@@ -129,26 +86,30 @@ export class DispensacionService {
           );
         }
 
+        if (item.loteId) {
+          const lote = await manager.findOne(Lote, {
+            where: { id: item.loteId, medicamentoId: item.medicamentoId, activo: true },
+          });
+          if (!lote) {
+            throw new NotFoundException(`Lote ${item.loteId} not found for medication ${item.medicamentoId}`);
+          }
+          if (lote.cantidadActual < item.cantidad) {
+            throw new BadRequestException(
+              `Insufficient stock in lote ${item.loteId}: available ${lote.cantidadActual}, requested ${item.cantidad}`,
+            );
+          }
+          lote.cantidadActual -= item.cantidad;
+          await manager.save(Lote, lote);
+        }
+
         const detalle = manager.create(DispensacionDetalle, {
           dispensacionId: savedDispensacion.id,
-          loteId: lote.id,
           medicamentoId: item.medicamentoId,
           cantidad: item.cantidad,
           dosisMgKg,
+          loteId: item.loteId ?? undefined,
         });
         await manager.save(DispensacionDetalle, detalle);
-
-        lote.cantidadActual -= item.cantidad;
-        await manager.save(Lote, lote);
-
-        const movement = manager.create(LoteMovimiento, {
-          loteId: lote.id,
-          tipo: MovementType.DISPENSATION,
-          cantidad: -item.cantidad,
-          motivo: `Dispensation #${savedDispensacion.id}`,
-          usuarioId,
-        });
-        await manager.save(LoteMovimiento, movement);
       }
 
       return manager.findOne(Dispensacion, {
@@ -156,7 +117,7 @@ export class DispensacionService {
         relations: {
           paciente: true,
           usuario: true,
-          detalles: { lote: true, medicamento: true },
+          detalles: { medicamento: true },
         },
       });
     });

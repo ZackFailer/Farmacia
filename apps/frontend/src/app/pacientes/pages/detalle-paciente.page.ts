@@ -3,12 +3,18 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonLabel, IonNote, IonIcon,
-  IonBackButton, IonSpinner, ModalController,
+  IonBackButton, IonSpinner, IonChip, IonList,
+  ModalController, IonToast,
 } from '@ionic/angular/standalone';
+import { ListaNecesidadesPacienteComponent } from '../../shared/components/lista-necesidades-paciente/lista-necesidades-paciente.component';
 import { PacientesService } from '../services/pacientes.service';
+import { ConnectivityService } from '../../core/services/connectivity.service';
+import { SyncQueueService, SyncOperationType } from '../../core/services/sync-queue.service';
 import type { Paciente } from '../../shared/models/paciente.model';
 import type { Familiar } from '../../shared/models/familiar.model';
 import { EditarPacienteModal } from '../modals/editar-paciente.modal';
+import { AgregarPatologiaModal } from '../modals/agregar-patologia.modal';
+import { AgregarNecesidadModal } from '../modals/agregar-necesidad.modal';
 import { AuthService } from '../../auth/services/auth.service';
 import { Rol } from '../../shared/enums/rol.enum';
 import QRCode from 'qrcode';
@@ -19,7 +25,8 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
   imports: [
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonLabel, IonNote, IonIcon,
-    IonBackButton, IonSpinner,
+    IonBackButton, IonSpinner, IonChip, IonToast,
+    ListaNecesidadesPacienteComponent,
   ],
   template: `
     <ion-header>
@@ -54,7 +61,7 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
             @if (p.telefono) { <p>Teléfono: {{ p.telefono }}</p> }
             <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ formatearEdadSimple(p) }} | {{ p.peso_estimado }} kg</p>
-            <ion-note>@if (p.es_damnificado) { Damnificado } @else { No damnificado }@if (p.es_titular) { · Titular de núcleo }</ion-note>
+            <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }}@if (p.es_titular) { · Titular de núcleo }</ion-note>
           </ion-label>
         </ion-item>
 
@@ -98,11 +105,52 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
             <ion-item>
               <ion-label>
                 <h2>{{ fam.nombre }} {{ fam.apellido }}</h2>
-                <p>{{ fam.id_emergencia }} · {{ fam.relacion }} · {{ fam.edad_estimada ?? 0 }} años · {{ fam.peso_estimado }} kg</p>
-                <ion-note>{{ fam.es_damnificado ? 'Damnificado' : 'No damnificado' }}</ion-note>
+                <p>{{ fam.id_emergencia }} · {{ fam.relacion }} · {{ fam.edad_estimada }} años · {{ fam.peso_estimado }} kg</p>
+                <ion-note>{{ getSituacionViviendaLabel(fam.situacion_vivienda) }}</ion-note>
               </ion-label>
             </ion-item>
           }
+        }
+
+        <h3>Patologías</h3>
+        @if (p.pacientePatologias && p.pacientePatologias.length > 0) {
+          <ion-item>
+            <ion-label>
+              @for (pp of p.pacientePatologias; track pp.id) {
+                <ion-chip color="danger">
+                  <ion-label>{{ pp.patologia.nombre }}</ion-label>
+                </ion-chip>
+                @if (pp.tratamiento) {
+                  <p class="tratamiento-text">{{ pp.tratamiento }}</p>
+                }
+              }
+            </ion-label>
+          </ion-item>
+        } @else {
+          <p>Sin patologías registradas</p>
+        }
+        @if (puedeEditar()) {
+          <ion-button expand="block" fill="outline" (click)="agregarPatologia()">
+            Agregar patología
+          </ion-button>
+        }
+
+        <h3>Necesidades</h3>
+        @if (p.pacienteNecesidades && p.pacienteNecesidades.length > 0) {
+          <app-lista-necesidades-paciente
+            [necesidades]="p.pacienteNecesidades"
+            [pacienteId]="p.id"
+            [puedeEditar]="puedeMarcarSuplida()"
+            (suplidaChange)="onNecesidadSuplida()"
+          ></app-lista-necesidades-paciente>
+        } @else {
+          <p>Sin necesidades registradas</p>
+        }
+
+        @if (puedeEditar()) {
+          <ion-button expand="block" fill="outline" (click)="agregarNecesidad()">
+            Agregar necesidad
+          </ion-button>
         }
 
         @if (puedeEliminar()) {
@@ -112,6 +160,14 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
         }
       }
     </ion-content>
+
+    <ion-toast
+      [isOpen]="showToast()"
+      [message]="toastMessage()"
+      [duration]="3000"
+      [color]="toastColor()"
+      (didDismiss)="showToast.set(false)"
+    ></ion-toast>
   `,
   styles: [`
     .qr-preview-card {
@@ -149,6 +205,12 @@ import { buildPacienteQrPayload, normalizePacienteQrId } from '../../shared/util
       color: var(--app-text-secondary);
       font-size: var(--app-font-size-sm);
     }
+    .tratamiento-text {
+      margin: var(--app-space-xs) 0 var(--app-space-sm) 0;
+      font-size: var(--app-font-size-sm);
+      color: var(--app-text-secondary);
+      padding-left: var(--app-space-md);
+    }
   `]
 })
 export class DetallePacientePage {
@@ -156,6 +218,9 @@ export class DetallePacientePage {
   paciente = signal<Paciente | null>(null);
   familiares = signal<Familiar[]>([]);
   qrPreviewDataUrl = signal('');
+  showToast = signal(false);
+  toastMessage = signal('');
+  toastColor = signal<'success' | 'danger' | 'warning'>('success');
   private pacienteId = 0;
 
   private readonly route = inject(ActivatedRoute);
@@ -163,6 +228,8 @@ export class DetallePacientePage {
   private readonly pacientesService = inject(PacientesService);
   private readonly modalCtrl = inject(ModalController);
   private readonly authService = inject(AuthService);
+  private readonly connectivity = inject(ConnectivityService);
+  private readonly syncQueue = inject(SyncQueueService);
 
   constructor() {
     this.pacienteId = Number(this.route.snapshot.paramMap.get('id'));
@@ -185,6 +252,14 @@ export class DetallePacientePage {
     return this.currentRole === Rol.RECEPTIONIST || this.currentRole === Rol.ADMIN;
   }
 
+  puedeMarcarSuplida(): boolean {
+    return this.currentRole === Rol.SURVEYOR || this.currentRole === Rol.ADMIN;
+  }
+
+  onNecesidadSuplida(): void {
+    this.cargar();
+  }
+
   private cargar(): void {
     this.cargando.set(true);
     this.pacientesService.getPacienteById(this.pacienteId).subscribe({
@@ -194,7 +269,13 @@ export class DetallePacientePage {
         this.generarVistaPreviaQr(p.id_emergencia);
         this.cargando.set(false);
       },
-      error: () => this.cargando.set(false),
+      error: (err: unknown) => {
+        this.cargando.set(false);
+        if (this.connectivity.isNetworkError(err)) {
+          this.presentToast('Sin conexión. No se pudieron cargar los datos.', 'warning');
+          return;
+        }
+      },
     });
   }
 
@@ -231,18 +312,91 @@ export class DetallePacientePage {
   async editar(): Promise<void> {
     const p = this.paciente();
     if (!p) return;
+    EditarPacienteModal.pendingPaciente = p;
     const modal = await this.modalCtrl.create({
       component: EditarPacienteModal,
     });
-    const instance = modal.component as unknown as { setPaciente: (p: Paciente) => void };
-    if (instance.setPaciente) instance.setPaciente(p);
     modal.present();
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data) {
       this.pacientesService.actualizarPaciente(this.pacienteId, data).subscribe({
         next: () => this.cargar(),
+        error: (err: unknown) => {
+          if (this.connectivity.isNetworkError(err)) {
+            this.syncQueue.enqueue({
+              type: SyncOperationType.UPDATE_PATIENT,
+              endpoint: `/pacientes/${this.pacienteId}`,
+              method: 'PATCH',
+              body: data,
+              metadata: { descripcion: `Actualizar paciente: ${p.nombre} ${p.apellido}` },
+            });
+            this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+            return;
+          }
+          this.presentToast('Error al actualizar.', 'danger');
+        },
       });
     }
+  }
+
+  async agregarPatologia(): Promise<void> {
+    const p = this.paciente();
+    if (!p) return;
+
+    const modal = await this.modalCtrl.create({
+      component: AgregarPatologiaModal,
+    });
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role !== 'confirm' || !data) return;
+
+    this.pacientesService.agregarPatologia(p.id, data).subscribe({
+      next: () => this.cargar(),
+      error: (err: unknown) => {
+        if (this.connectivity.isNetworkError(err)) {
+          this.syncQueue.enqueue({
+            type: SyncOperationType.UPDATE_PATIENT,
+            endpoint: `/pacientes/${p.id}/patologias`,
+            method: 'POST',
+            body: data,
+            metadata: { descripcion: `Agregar patología a paciente: ${p.nombre} ${p.apellido}` },
+          });
+          this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+          return;
+        }
+        this.presentToast('Error al agregar patología.', 'danger');
+      },
+    });
+  }
+
+  async agregarNecesidad(): Promise<void> {
+    const p = this.paciente();
+    if (!p) return;
+
+    const modal = await this.modalCtrl.create({
+      component: AgregarNecesidadModal,
+    });
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role !== 'confirm' || !data) return;
+
+    this.pacientesService.agregarNecesidad(p.id, data.necesidadId).subscribe({
+      next: () => this.cargar(),
+      error: (err: unknown) => {
+        if (this.connectivity.isNetworkError(err)) {
+          this.syncQueue.enqueue({
+            type: SyncOperationType.UPDATE_PATIENT,
+            endpoint: `/pacientes/${p.id}/necesidades`,
+            method: 'POST',
+            body: data,
+            metadata: { descripcion: `Agregar necesidad a paciente: ${p.nombre} ${p.apellido}` },
+          });
+          this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+          return;
+        }
+        this.presentToast('Error al agregar necesidad.', 'danger');
+      },
+    });
   }
 
   compartirQrWhatsApp(): void {
@@ -342,6 +496,36 @@ export class DetallePacientePage {
   eliminar(): void {
     this.pacientesService.eliminarPaciente(this.pacienteId).subscribe({
       next: () => this.router.navigate(['/pacientes']),
+      error: (err: unknown) => {
+        if (this.connectivity.isNetworkError(err)) {
+          const p = this.paciente();
+          this.syncQueue.enqueue({
+            type: SyncOperationType.DELETE_PATIENT,
+            endpoint: `/pacientes/${this.pacienteId}`,
+            method: 'DELETE',
+            body: null,
+            metadata: { descripcion: `Eliminar paciente: ${p?.nombre} ${p?.apellido}` },
+          });
+          this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+          return;
+        }
+        this.presentToast('Error al dar de baja.', 'danger');
+      },
     });
+  }
+
+  getSituacionViviendaLabel(value: string | undefined | null): string {
+    const labels: Record<string, string> = {
+      'no_afectado': 'No afectado',
+      'vivienda_afectada': 'Vivienda afectada',
+      'damnificado': 'Damnificado',
+    };
+    return labels[value ?? ''] ?? value ?? 'No afectado';
+  }
+
+  private presentToast(message: string, color: 'success' | 'danger' | 'warning'): void {
+    this.toastMessage.set(message);
+    this.toastColor.set(color);
+    this.showToast.set(true);
   }
 }

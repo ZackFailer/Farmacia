@@ -2,7 +2,6 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -10,12 +9,13 @@ import {
 } from 'class-validator';
 
 export class CrearRecetaDetalleDto {
-  @IsNumber()
+  @IsInt()
   medicamentoId!: number;
 
+  @IsOptional()
   @IsInt()
   @Min(1)
-  cantidadRecetada!: number;
+  cantidadRecetada?: number;
 
   @IsInt()
   @Min(1)
@@ -27,8 +27,12 @@ export class CrearRecetaDetalleDto {
 }
 
 export class CrearRecetaDto {
-  @IsNumber()
+  @IsInt()
   pacienteId!: number;
+
+  @IsOptional()
+  @IsString()
+  motivo?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -1,3 +1,7 @@
+/**
+ * @deprecated Lote functionality removed. This component is kept for historical reference only.
+ * All lotes-related functionality has been removed from the system.
+ */
 import { Component, input, output } from '@angular/core';
 import { IonItem, IonLabel, IonNote, IonButton, IonIcon } from '@ionic/angular/standalone';
 import type { Lote } from '../../shared/models/lote.model';

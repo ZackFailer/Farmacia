@@ -12,7 +12,6 @@ import { interval, type Subscription } from 'rxjs';
 import { RecetasService } from '../services/recetas.service';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
 import { RecepcionService } from '../../recepcion/services/recepcion.service';
-import { InventarioService } from '../../inventario/services/inventario.service';
 import type { StockItem } from '../../shared/models/stock-item.model';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
 import type { Paciente } from '../../shared/models/paciente.model';
@@ -22,8 +21,8 @@ import { RecetaDraftService } from '../services/receta-draft.service';
 
 interface RecetaMedItem {
   medicamento: Medicamento;
-  cantidad: number;
   dias: number;
+  dosisIndicada: string;
 }
 
 @Component({
@@ -36,6 +35,40 @@ interface RecetaMedItem {
   IonCard, IonCardContent,
     EscanerQrComponent,
   ],
+  styles: `
+    .carrito-section {
+      background: var(--app-bg);
+      border-radius: var(--app-radius-md);
+      padding: var(--app-space-sm) var(--app-space-md);
+      margin-bottom: var(--app-space-lg);
+      border: 1px solid var(--app-border);
+    }
+    .carrito-section h3 {
+      margin: var(--app-space-sm) 0;
+      font-size: var(--app-font-size-md);
+      font-weight: 600;
+      color: var(--app-text);
+    }
+    .carrito-item {
+      background: var(--app-surface);
+      border-radius: var(--app-radius-sm);
+      margin-bottom: var(--app-space-sm);
+      border: 1px solid var(--app-divider);
+    }
+    .carrito-item-header {
+      --padding-start: var(--app-space-md);
+      --padding-end: 0;
+      --inner-padding-end: 0;
+    }
+    .carrito-opciones {
+      --padding-start: var(--app-space-lg);
+      --padding-end: var(--app-space-md);
+    }
+    .med-seleccionado {
+      --background: var(--stock-ok-bg);
+      opacity: 0.85;
+    }
+  `,
   template: `
     <ion-header>
       <ion-toolbar color="primary">
@@ -74,7 +107,7 @@ interface RecetaMedItem {
                   <ion-label>
                     <h2>{{ p.nombre }} {{ p.apellido }}</h2>
                     <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
-                    <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
+                    <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
                   </ion-label>
                 </ion-item>
               }
@@ -94,7 +127,7 @@ interface RecetaMedItem {
             <ion-card-content>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>ID: {{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
-              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
+              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
             </ion-card-content>
           </ion-card>
 
@@ -123,6 +156,38 @@ interface RecetaMedItem {
       @if (paso() === 2) {
         <h2>Seleccionar medicamentos</h2>
 
+        <ion-item>
+          <ion-label position="stacked">Motivo de la receta</ion-label>
+          <ion-input [ngModel]="motivo()" (ngModelChange)="motivo.set($event ?? '')" placeholder="Ej: Hipertensión arterial, control mensual"></ion-input>
+        </ion-item>
+
+        @if (medSeleccionados().length > 0) {
+          <div class="carrito-section">
+            <h3>Medicamentos seleccionados ({{ medSeleccionados().length }})</h3>
+            @for (item of medSeleccionados(); track item.medicamento.id; let i = $index) {
+              <div class="carrito-item">
+                <ion-item class="carrito-item-header">
+                  <ion-label>
+                    <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
+                    <p>{{ item.medicamento.presentacion }}</p>
+                  </ion-label>
+                  <ion-button fill="clear" color="danger" slot="end" (click)="eliminarMed(i)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                </ion-item>
+                <ion-item class="carrito-opciones">
+                  <ion-label position="stacked">Días *</ion-label>
+                  <ion-input type="number" [ngModel]="item.dias" (ngModelChange)="actualizarDias(i, $event)" placeholder="7" min="1"></ion-input>
+                </ion-item>
+                <ion-item class="carrito-opciones">
+                  <ion-label position="stacked">Indicaciones</ion-label>
+                  <ion-input [ngModel]="item.dosisIndicada" (ngModelChange)="actualizarDosisIndicada(i, $event)" placeholder="Ej: tomar cada 8h con comida"></ion-input>
+                </ion-item>
+              </div>
+            }
+          </div>
+        }
+
         <ion-searchbar
           [(ngModel)]="medSearchTerm"
           (ionInput)="buscarMedicamentos()"
@@ -143,11 +208,10 @@ interface RecetaMedItem {
         @if (medResultados().length > 0) {
           <ion-list>
             @for (item of medResultados(); track item.medicamento.id) {
-              <ion-item button (click)="agregarMed(item)" [disabled]="isMedSeleccionado(item.medicamento.id)">
+              <ion-item button (click)="toggleMed(item)" [class.med-seleccionado]="isMedSeleccionado(item.medicamento.id)">
                 <ion-label>
                   <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
                   <p>{{ item.medicamento.presentacion }}</p>
-                  <ion-note>Stock: {{ item.stock_total }} unidades</ion-note>
                 </ion-label>
                 <ion-icon
                   [name]="isMedSeleccionado(item.medicamento.id) ? 'checkmark-circle-outline' : 'add-circle-outline'"
@@ -159,29 +223,6 @@ interface RecetaMedItem {
           </ion-list>
         } @else if (!cargandoMedicamentos()) {
           <p class="app-text-secondary">No hay medicamentos disponibles para el criterio de búsqueda.</p>
-        }
-
-        @if (medSeleccionados().length > 0) {
-          <h3>Carrito de receta ({{ medSeleccionados().length }})</h3>
-          @for (item of medSeleccionados(); track item.medicamento.id; let i = $index) {
-            <ion-item>
-              <ion-label>
-                <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-                <p>{{ item.medicamento.presentacion }}</p>
-              </ion-label>
-              <ion-button fill="clear" color="danger" slot="end" (click)="eliminarMed(i)">
-                <ion-icon name="trash-outline"></ion-icon>
-              </ion-button>
-            </ion-item>
-            <ion-item>
-              <ion-label position="stacked">Cantidad *</ion-label>
-              <ion-input type="number" [ngModel]="item.cantidad" (ngModelChange)="actualizarCantidad(i, $event)" placeholder="1" min="1"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-label position="stacked">Días *</ion-label>
-              <ion-input type="number" [ngModel]="item.dias" (ngModelChange)="actualizarDias(i, $event)" placeholder="7" min="1"></ion-input>
-            </ion-item>
-          }
         }
       }
 
@@ -195,12 +236,22 @@ interface RecetaMedItem {
             </ion-card-content>
           </ion-card>
         }
+        @if (motivo()) {
+          <ion-item>
+            <ion-label>
+              <p><strong>Motivo:</strong> {{ motivo() }}</p>
+            </ion-label>
+          </ion-item>
+        }
         <h3>Medicamentos ({{ medSeleccionados().length }})</h3>
         @for (item of medSeleccionados(); track item.medicamento.id) {
           <ion-item>
             <ion-label>
               <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-              <p>Cantidad: {{ item.cantidad }} · {{ item.dias }} días</p>
+              <p>{{ item.dias }} días</p>
+              @if (item.dosisIndicada.trim()) {
+                <ion-note>{{ item.dosisIndicada.trim() }}</ion-note>
+              }
             </ion-label>
           </ion-item>
         }
@@ -250,6 +301,7 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   toastColor = signal<'success' | 'danger'>('success');
 
   searchTerm = '';
+  motivo = signal('');
   medSearchTerm = '';
   medicamentosEnStock = signal<StockItem[]>([]);
   medResultados = signal<StockItem[]>([]);
@@ -259,7 +311,6 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   private readonly recetasService = inject(RecetasService);
   private readonly pacientesService = inject(PacientesService);
   private readonly recepcionService = inject(RecepcionService);
-  private readonly inventarioService = inject(InventarioService);
   private readonly recetaDraftService = inject(RecetaDraftService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -297,11 +348,9 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   }
 
   private refrescarStockSilencioso(): void {
-    this.inventarioService.getStockGeneral().subscribe({
+    this.recepcionService.getMedicamentos().subscribe({
       next: (items) => {
-        const disponibles = items
-          .filter(item => item.stock_total > 0)
-          .sort((a, b) => a.medicamento.nombre_generico.localeCompare(b.medicamento.nombre_generico));
+        const disponibles = this.medicamentosToStockItems(items);
         this.medicamentosEnStock.set(disponibles);
         this.aplicarFiltroMedicamentos();
       },
@@ -324,12 +373,16 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
       this.cargarHistorial(draft.paciente.id);
     }
 
+    if (draft.motivo) {
+      this.motivo.set(draft.motivo);
+    }
+
     if (draft.medSeleccionados.length > 0) {
       this.medSeleccionados.set(
         draft.medSeleccionados.map((item) => ({
           medicamento: item.medicamento,
-          cantidad: this.normalizePositiveInteger(item.cantidad, 1),
           dias: this.normalizePositiveInteger(item.dias, 7),
+          dosisIndicada: item.dosisIndicada ?? '',
         })),
       );
     }
@@ -350,6 +403,7 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
     this.recetaDraftService.saveDraft({
       paso: this.paso(),
       paciente: paciente ?? undefined,
+      motivo: this.motivo() || undefined,
       medSeleccionados,
     });
   }
@@ -444,43 +498,31 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   private cargarMedicamentosEnStock(): void {
     this.cargandoMedicamentos.set(true);
     this.errorMedicamentos.set('');
-    this.inventarioService.getStockGeneral().subscribe({
+    this.recepcionService.getMedicamentos().subscribe({
       next: (items) => {
-        const disponibles = items
-          .filter((item) => item.stock_total > 0)
-          .sort((a, b) => a.medicamento.nombre_generico.localeCompare(b.medicamento.nombre_generico));
+        const disponibles = this.medicamentosToStockItems(items);
         this.medicamentosEnStock.set(disponibles);
         this.cargandoMedicamentos.set(false);
         this.aplicarFiltroMedicamentos();
       },
       error: () => {
-        this.cargarMedicamentosFallback();
+        this.cargandoMedicamentos.set(false);
+        this.errorMedicamentos.set('No se pudieron cargar los medicamentos. Intente nuevamente.');
       },
     });
   }
 
-  private cargarMedicamentosFallback(): void {
-    this.recepcionService.getMedicamentos().subscribe({
-      next: (items) => {
-        this.medicamentosEnStock.set(
-          items.map((medicamento) => ({
-            medicamento,
-            stock_total: 0,
-            umbral_minimo: 0,
-            color: 'green',
-            proximo_vencer: '',
-            cantidad_lotes: 0,
-          } satisfies StockItem)),
-        );
-        this.cargandoMedicamentos.set(false);
-        this.errorMedicamentos.set('No se pudo validar stock en tiempo real. Se muestran medicamentos activos.');
-        this.aplicarFiltroMedicamentos();
-      },
-      error: () => {
-        this.cargandoMedicamentos.set(false);
-        this.errorMedicamentos.set('No se pudieron cargar medicamentos disponibles. Intente nuevamente.');
-      },
-    });
+  private medicamentosToStockItems(items: Medicamento[]): StockItem[] {
+    return items
+      .map((medicamento) => ({
+        medicamento,
+        stock_total: 0,
+        umbral_minimo: 0,
+        color: 'green' as const,
+        proximo_vencer: '',
+        cantidad_lotes: 0,
+      } satisfies StockItem))
+      .sort((a, b) => a.medicamento.nombre_generico.localeCompare(b.medicamento.nombre_generico));
   }
 
   private aplicarFiltroMedicamentos(): void {
@@ -500,14 +542,18 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
     );
   }
 
-  agregarMed(stockItem: StockItem): void {
+  toggleMed(stockItem: StockItem): void {
     const medicamento = stockItem.medicamento;
-    if (this.medSeleccionados().some((item) => item.medicamento.id === medicamento.id)) return;
-    this.medSeleccionados.update((items) => [
-      ...items,
-      { medicamento, cantidad: 1, dias: 7 },
-    ]);
-    this.persistirBorrador();
+    const idx = this.medSeleccionados().findIndex((item) => item.medicamento.id === medicamento.id);
+    if (idx >= 0) {
+      this.eliminarMed(idx);
+    } else {
+      this.medSeleccionados.update((items) => [
+        ...items,
+        { medicamento, dias: 7, dosisIndicada: '' },
+      ]);
+      this.persistirBorrador();
+    }
   }
 
   eliminarMed(index: number): void {
@@ -515,15 +561,15 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
     this.persistirBorrador();
   }
 
-  actualizarCantidad(index: number, value: number | string | null | undefined): void {
-    const cantidad = this.normalizePositiveInteger(value, 1);
-    this.medSeleccionados.update((items) => items.map((item, i) => (i === index ? { ...item, cantidad } : item)));
-    this.persistirBorrador();
-  }
-
   actualizarDias(index: number, value: number | string | null | undefined): void {
     const dias = this.normalizePositiveInteger(value, 7);
     this.medSeleccionados.update((items) => items.map((item, i) => (i === index ? { ...item, dias } : item)));
+    this.persistirBorrador();
+  }
+
+  actualizarDosisIndicada(index: number, value: string | null | undefined): void {
+    const dosis = value ?? '';
+    this.medSeleccionados.update((items) => items.map((item, i) => (i === index ? { ...item, dosisIndicada: dosis } : item)));
     this.persistirBorrador();
   }
 
@@ -542,7 +588,7 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
   pasoValido(): boolean {
     if (this.paso() === 1) return this.pacienteEncontrado() !== null;
     if (this.paso() === 2) {
-      return this.medSeleccionados().length > 0 && this.medSeleccionados().every((item) => item.cantidad > 0 && item.dias > 0);
+      return this.medSeleccionados().length > 0 && this.medSeleccionados().every((item) => item.dias > 0);
     }
     return true;
   }
@@ -573,10 +619,11 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
     this.guardando.set(true);
     const dto: CreateRecetaDto = {
       paciente_id: paciente.id,
+      motivo: this.motivo().trim() || undefined,
       detalles: this.medSeleccionados().map((item) => ({
         medicamento_id: item.medicamento.id,
-        cantidad_recetada: item.cantidad,
         dias: item.dias,
+        dosis_indicada: item.dosisIndicada.trim() || undefined,
       })),
     };
 
@@ -587,9 +634,10 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
         this.resetRecetaForm();
         this.showFeedback('success', 'Receta creada correctamente.');
       },
-      error: () => {
+      error: (err) => {
         this.guardando.set(false);
-        this.showFeedback('danger', 'No se pudo crear la receta. Intente nuevamente.');
+        const msg = err?.error?.message?.[0] || err?.error?.error || 'No se pudo crear la receta. Intente nuevamente.';
+        this.showFeedback('danger', msg);
       },
     });
   }
@@ -598,6 +646,7 @@ export class RecetarPage implements OnInit, OnDestroy, ViewWillEnter, ViewWillLe
     this.paso.set(1);
     this.searchTerm = '';
     this.medSearchTerm = '';
+    this.motivo.set('');
     this.pacientesEncontrados.set([]);
     this.pacienteEncontrado.set(null);
     this.recetasAnteriores.set([]);

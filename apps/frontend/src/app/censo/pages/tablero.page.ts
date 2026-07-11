@@ -3,7 +3,9 @@ import { Component, signal, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonSpinner, IonIcon, IonMenuButton, IonCard, IonCardContent, IonCardTitle, IonChip, IonLabel, ViewWillEnter } from '@ionic/angular/standalone';
 import { PacientesService } from '../../pacientes/services/pacientes.service';
+import { ExcelExportService } from '../../core/services/excel-export.service';
 import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.model';
+import type { ExportarCensoResponse } from '../../shared/models/exportar-censo.model';
 
 @Component({
   standalone: true,
@@ -22,7 +24,7 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
         <ion-title>Tablero Estadístico</ion-title>
         <ion-buttons slot="end">
           @if (data(); as stats) {
-            <ion-button (click)="exportarCsv(stats)" fill="clear" slot="icon-only">
+            <ion-button (click)="exportarCsv(stats)" fill="clear" slot="icon-only" title="Exportar estadísticas">
               <ion-icon name="download-outline"></ion-icon>
             </ion-button>
           }
@@ -51,10 +53,19 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
           <ion-chip color="primary">
             <ion-label>Actualizado: {{ ahora | date:'dd/MM/yyyy HH:mm' }}</ion-label>
           </ion-chip>
-          <ion-button fill="outline" size="small" (click)="exportarCsv(stats)">
-            <ion-icon name="download-outline" slot="start"></ion-icon>
-            Exportar CSV
-          </ion-button>
+          <div class="tablero-actions">
+            <ion-button fill="outline" size="small" (click)="exportarCsv(stats)">
+              <ion-icon name="download-outline" slot="start"></ion-icon>
+              Exportar Estadísticas
+            </ion-button>
+            <ion-button fill="solid" size="small" color="primary" (click)="exportarCensoCompleto()" [disabled]="exportandoCompleto()">
+              <ion-icon name="download-outline" slot="start"></ion-icon>
+              @if (exportandoCompleto()) {
+                <ion-spinner name="crescent" slot="start"></ion-spinner>
+              }
+              Exportar Censo Completo
+            </ion-button>
+          </div>
         </div>
 
         <!-- Tabla 1: Población General -->
@@ -152,7 +163,36 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
           </ion-card-content>
         </ion-card>
 
-        <!-- Tabla 4: Por Patología -->
+        <!-- Tabla 4: Situación de Vivienda -->
+        <ion-card>
+          <ion-card-title>Situación de Vivienda</ion-card-title>
+          <ion-card-content class="card-content-no-padding">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Estado</th>
+                  <th class="col-cantidad">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>No afectados</td>
+                  <td class="col-cantidad">{{ stats.totalNoAfectados }}</td>
+                </tr>
+                <tr>
+                  <td>Vivienda afectada</td>
+                  <td class="col-cantidad">{{ stats.totalViviendaAfectada }}</td>
+                </tr>
+                <tr>
+                  <td>Damnificados</td>
+                  <td class="col-cantidad">{{ stats.totalDamnificados }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </ion-card-content>
+        </ion-card>
+
+        <!-- Tabla 5: Por Patología -->
         @if (stats.porPatologia.length > 0) {
           <ion-card>
             <ion-card-title>Por Patología</ion-card-title>
@@ -177,7 +217,7 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
           </ion-card>
         }
 
-        <!-- Tabla 5: Por Necesidad -->
+        <!-- Tabla 6: Por Necesidad -->
         @if (stats.porNecesidad.length > 0) {
           <ion-card>
             <ion-card-title>Por Necesidad</ion-card-title>
@@ -202,7 +242,7 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
           </ion-card>
         }
 
-        <!-- Tabla 6: Por Ubicación -->
+        <!-- Tabla 7: Por Ubicación -->
         @if (stats.porUbicacion.length > 0) {
           <ion-card>
             <ion-card-title>Por Ubicación</ion-card-title>
@@ -245,6 +285,12 @@ import type { CensoEstadisticas } from '../../shared/models/censo-estadisticas.m
       flex-wrap: wrap;
       gap: var(--app-space-sm);
       margin-bottom: var(--app-space-lg);
+    }
+
+    .tablero-actions {
+      display: flex;
+      gap: var(--app-space-sm);
+      flex-wrap: wrap;
     }
 
     ion-card {
@@ -325,8 +371,10 @@ export class TableroPage implements ViewWillEnter {
   error = signal('');
   data = signal<CensoEstadisticas | null>(null);
   ahora = Date.now();
+  exportandoCompleto = signal(false);
 
   private readonly pacientesService = inject(PacientesService);
+  private readonly excelExport = inject(ExcelExportService);
 
   ionViewWillEnter(): void {
     this.cargarEstadisticas();
@@ -352,7 +400,6 @@ export class TableroPage implements ViewWillEnter {
   exportarCsv(stats: CensoEstadisticas): void {
     const lines: string[] = [];
 
-    // Sección 1: Población General
     lines.push('Sección,Métrica,Cantidad');
     lines.push(`Población General,Total Pacientes,${stats.totalPacientes}`);
     lines.push(`Población General,Masculinos,${stats.masculinos}`);
@@ -360,7 +407,12 @@ export class TableroPage implements ViewWillEnter {
     lines.push(`Población General,Total Carpas/Familias,${stats.totalCarpas}`);
     lines.push('');
 
-    // Sección 2: Clasificación Etaria
+    lines.push('Sección,Estado,Cantidad');
+    lines.push(`Situación de Vivienda,No afectados,${stats.totalNoAfectados}`);
+    lines.push(`Situación de Vivienda,Vivienda afectada,${stats.totalViviendaAfectada}`);
+    lines.push(`Situación de Vivienda,Damnificados,${stats.totalDamnificados}`);
+    lines.push('');
+
     lines.push('Sección,Grupo,Cantidad');
     lines.push(`Clasificación Etaria,Recién nacidos (0-28d),${stats.recienNacidos}`);
     lines.push(`Clasificación Etaria,Preescolares (<5a),${stats.preescolares}`);
@@ -370,12 +422,10 @@ export class TableroPage implements ViewWillEnter {
     lines.push(`Clasificación Etaria,Adultos mayores (60+),${stats.adultosMayores}`);
     lines.push('');
 
-    // Sección 3: Necesidades Especiales
     lines.push('Sección,Métrica,Cantidad');
     lines.push(`Necesidades Especiales,Con discapacidad motora,${stats.conDiscapacidadMotora}`);
     lines.push('');
 
-    // Sección 4: Por Patología
     if (stats.porPatologia.length > 0) {
       lines.push('Sección,Patología,Pacientes');
       for (const item of stats.porPatologia) {
@@ -385,7 +435,6 @@ export class TableroPage implements ViewWillEnter {
       lines.push('');
     }
 
-    // Sección 5: Por Necesidad
     if (stats.porNecesidad.length > 0) {
       lines.push('Sección,Necesidad,Pacientes');
       for (const item of stats.porNecesidad) {
@@ -395,7 +444,6 @@ export class TableroPage implements ViewWillEnter {
       lines.push('');
     }
 
-    // Sección 6: Por Ubicación
     if (stats.porUbicacion.length > 0) {
       lines.push('Sección,Ubicación,Carpas');
       for (const item of stats.porUbicacion) {
@@ -404,13 +452,36 @@ export class TableroPage implements ViewWillEnter {
       }
     }
 
+    const bom = '\uFEFF';
+    lines.unshift(bom);
+    this.descargarCsv(lines, `estadisticas-censo-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  exportarCensoCompleto(): void {
+    this.exportandoCompleto.set(true);
+
+    this.pacientesService.exportarCensoCompleto().subscribe({
+      next: (data) => {
+        const filename = `censo-completo-${new Date().toISOString().slice(0, 10)}`;
+        this.excelExport.generarExcel(data, filename).then(() => {
+          this.exportandoCompleto.set(false);
+        }).catch(() => {
+          this.exportandoCompleto.set(false);
+        });
+      },
+      error: () => {
+        this.exportandoCompleto.set(false);
+      },
+    });
+  }
+
+  private descargarCsv(lines: string[], filename: string): void {
     const csvContent = lines.join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const timestamp = new Date().toISOString().slice(0, 10);
-    a.download = `censo-estadisticas-${timestamp}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }

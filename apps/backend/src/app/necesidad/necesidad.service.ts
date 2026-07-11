@@ -26,14 +26,18 @@ export class NecesidadService {
     return entity;
   }
 
-  create(dto: CrearNecesidadDto): Promise<CatalogoNecesidad> {
-    const entity = this.repo.create(dto);
+  create(dto: CrearNecesidadDto, usuarioId?: number): Promise<CatalogoNecesidad> {
+    const entity = this.repo.create({
+      ...dto,
+      createdById: usuarioId ?? null,
+    });
     return this.repo.save(entity);
   }
 
-  async update(id: number, dto: ActualizarNecesidadDto): Promise<CatalogoNecesidad> {
+  async update(id: number, dto: ActualizarNecesidadDto, usuarioId?: number): Promise<CatalogoNecesidad> {
     const entity = await this.findOne(id);
     Object.assign(entity, dto);
+    entity.updatedById = usuarioId ?? null;
     return this.repo.save(entity);
   }
 

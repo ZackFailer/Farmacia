@@ -43,6 +43,9 @@ export class Receta {
   @Column({ type: 'boolean', default: true })
   activo!: boolean;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  motivo!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

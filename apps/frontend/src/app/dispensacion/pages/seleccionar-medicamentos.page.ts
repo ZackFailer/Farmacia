@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -9,21 +9,17 @@ import {
   IonToast,
   IonList,
   IonNote,
-  IonSelect,
-  IonSelectOption,
+  IonInput,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonButtons,
   IonBackButton,
+  IonIcon,
   ModalController,
 } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
-import { ResumenRecetaComponent } from '../components/resumen-receta.component';
 import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
-import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
-import type { Lote } from '../../shared/models/lote.model';
-import type { Medicamento } from '../../shared/models/medicamento.model';
 
 @Component({
   standalone: true,
@@ -36,15 +32,13 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     IonToast,
     IonList,
     IonNote,
-    IonSelect,
-    IonSelectOption,
+    IonInput,
     IonHeader,
     IonToolbar,
     IonTitle,
     IonButtons,
     IonBackButton,
-    ResumenRecetaComponent,
-    EscanerQrComponent,
+    IonIcon,
   ],
   template: `
     <ion-header>
@@ -66,66 +60,50 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
         </ion-item>
       }
 
-      @if (estado().recetaId) {
-        <h3>Medicamentos de receta pendiente</h3>
-        <p class="app-text-secondary">Seleccione el medicamento al que desea asignar el lote.</p>
+      <div style="display: flex; gap: var(--app-space-md); margin: var(--app-space-lg) 0;">
+        <ion-button expand="block" fill="outline" (click)="abrirBusquedaMedicamento()">
+          + Agregar medicamento
+        </ion-button>
+      </div>
 
+      @if (estado().recetaMotivo) {
+        <ion-item>
+          <ion-label>
+            <p><strong>Motivo de la receta:</strong> {{ estado().recetaMotivo }}</p>
+          </ion-label>
+        </ion-item>
+      }
+
+      @if (estado().items.length > 0) {
+        <h3>Medicamentos seleccionados</h3>
         <ion-list>
           @for (item of estado().items; track $index; let i = $index) {
-            <ion-item button (click)="seleccionarItem(i)">
+            <ion-item>
               <ion-label>
                 <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
-                <p>Cantidad recetada: {{ item.cantidad }}</p>
-                @if (item.lote) {
-                  <ion-note color="success">Lote asignado: {{ item.lote.codigo_qr }} · Stock {{ item.lote.cantidad_actual }}</ion-note>
-                } @else {
-                  <ion-note color="warning">Sin lote asignado</ion-note>
+                <p>{{ item.medicamento.presentacion }}</p>
+                <ion-note>Cantidad: {{ item.cantidad }} @if (item.dias) { · {{ item.dias }} días }</ion-note>
+                @if (item.dosisIndicada) {
+                  <p class="app-dosis-indicada"><strong>Indicación:</strong> {{ item.dosisIndicada }}</p>
                 }
               </ion-label>
-              @if (selectedItemIndex() === i) {
-                <ion-note slot="end" color="primary">Seleccionado</ion-note>
-              }
+              <ion-button slot="end" fill="clear" color="danger" (click)="eliminarItem(i)">
+                <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            </ion-item>
+            <ion-item>
+              <ion-label position="stacked">Cantidad</ion-label>
+              <ion-input type="number" [value]="item.cantidad" (ionInput)="actualizarCantidad(i, $event)" min="1"></ion-input>
             </ion-item>
           }
         </ion-list>
-
-        <h3>Escanear lote</h3>
-        <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
-
-        <h3>Seleccionar lote existente</h3>
-        @for (item of estado().items; track $index; let i = $index) {
-          <ion-item>
-            <ion-label position="stacked">{{ item.medicamento.nombre_generico }} · Lote *</ion-label>
-            <ion-select
-              [value]="item.lote?.id ?? null"
-              interface="action-sheet"
-              placeholder="Seleccione lote disponible"
-              (ionChange)="onSelectLote(i, item.medicamento.id, $event)"
-            >
-              @for (lote of getLotesMedicamento(item.medicamento.id); track lote.id) {
-                <ion-select-option [value]="lote.id">
-                  {{ item.medicamento.nombre_generico }} · Lote #{{ lote.id }} · {{ lote.codigo_qr }} · Stock {{ lote.cantidad_actual }}
-                </ion-select-option>
-              }
-            </ion-select>
-          </ion-item>
-        }
       } @else {
-        <app-escaner-qr (codigoEscaneado)="onCodigoEscaneado($event)"></app-escaner-qr>
-
-        <div style="display: flex; gap: var(--app-space-md); margin: var(--app-space-lg) 0;">
-          <ion-button expand="block" fill="outline" (click)="abrirBusquedaMedicamento()">
-            + Buscar medicamento
-          </ion-button>
-        </div>
-
-        <h3>Receta manual actual</h3>
-        <app-resumen-receta [items]="estado().items" (eliminar)="eliminarItem($event)"></app-resumen-receta>
+        <p class="app-text-secondary">No hay medicamentos seleccionados. Use el botón superior para agregar.</p>
       }
 
       <div style="display: flex; gap: var(--app-space-md); margin-top: var(--app-space-xl);">
         <ion-button expand="block" fill="outline" color="medium" (click)="anterior()">← Anterior</ion-button>
-        <ion-button expand="block" (click)="siguiente()" [disabled]="!puedeContinuar()">
+        <ion-button expand="block" (click)="siguiente()" [disabled]="estado().items.length === 0">
           Siguiente →
         </ion-button>
       </div>
@@ -141,21 +119,15 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
     ></ion-toast>
   `,
 })
-export class SeleccionarMedicamentosPage implements OnInit {
+export class SeleccionarMedicamentosPage {
   private readonly dispensacionService = inject(DispensacionService);
   private readonly modalCtrl = inject(ModalController);
   private readonly router = inject(Router);
 
   get estado() { return this.dispensacionService.estado; }
-  lotesPorMedicamento = signal<Record<number, Lote[]>>({});
-  selectedItemIndex = signal<number | null>(null);
   showToast = signal(false);
   toastMsg = signal('');
   toastColor = signal<'success' | 'danger' | 'warning'>('success');
-
-  ngOnInit(): void {
-    this.precargarLotesRecetaPendiente();
-  }
 
   private showFeedback(message: string, color: 'success' | 'danger' | 'warning'): void {
     this.showToast.set(false);
@@ -164,81 +136,10 @@ export class SeleccionarMedicamentosPage implements OnInit {
     setTimeout(() => this.showToast.set(true), 0);
   }
 
-  seleccionarItem(index: number): void {
-    this.selectedItemIndex.set(index);
-  }
-
-  private precargarLotesRecetaPendiente(): void {
-    if (!this.estado().recetaId) return;
-
-    const ids = Array.from(new Set(this.estado().items.map((item) => item.medicamento.id)));
-    ids.forEach((medicamentoId) => {
-      this.dispensacionService.getLotesDisponibles(medicamentoId).subscribe({
-        next: (lotes) => {
-          this.lotesPorMedicamento.update((current) => ({
-            ...current,
-            [medicamentoId]: lotes,
-          }));
-        },
-      });
-    });
-  }
-
-  getLotesMedicamento(medicamentoId: number): Lote[] {
-    return this.lotesPorMedicamento()[medicamentoId] ?? [];
-  }
-
-  onSelectLote(index: number, medicamentoId: number, event: CustomEvent<{ value?: number | null }>): void {
-    const loteId = Number(event.detail.value);
-    if (!loteId) return;
-
-    const lote = this.getLotesMedicamento(medicamentoId).find((item) => item.id === loteId);
-    if (!lote) {
-      this.showFeedback('Lote no encontrado en la lista disponible', 'danger');
-      return;
-    }
-
-    this.dispensacionService.actualizarItem(index, { lote });
-    this.showFeedback('Lote asignado correctamente', 'success');
-  }
-
-  onCodigoEscaneado(codigo: string): void {
-    this.dispensacionService.getLoteByQR(codigo).subscribe({
-      next: (lote) => {
-        if (this.estado().recetaId) {
-          if (this.asignarLoteAReceta(lote)) {
-            this.showFeedback('Lote asignado correctamente', 'success');
-          }
-          return;
-        }
-
-        const medicamento = (lote as Lote & { medicamento: Medicamento }).medicamento;
-        this.dispensacionService.agregarItem({ medicamento, lote, cantidad: 1 });
-        this.showFeedback('Medicamento agregado a la receta', 'success');
-      },
-      error: () => this.showFeedback('Lote no encontrado', 'danger'),
-    });
-  }
-
-  private asignarLoteAReceta(lote: Lote): boolean {
-    const estado = this.estado();
-    const explicit = this.selectedItemIndex();
-    const fallback = estado.items.findIndex((item) => !item.lote && item.medicamento.id === lote.medicamento_id);
-    const targetIndex = explicit ?? fallback;
-
-    if (targetIndex === null || targetIndex < 0 || targetIndex >= estado.items.length) {
-      this.showFeedback('Seleccione un medicamento antes de asignar lote', 'warning');
-      return false;
-    }
-
-    const target = estado.items[targetIndex];
-    if (target.medicamento.id !== lote.medicamento_id) {
-      this.showFeedback('El lote no corresponde al medicamento seleccionado', 'danger');
-      return false;
-    }
-
-    this.dispensacionService.actualizarItem(targetIndex, { lote });
-    return true;
+  actualizarCantidad(index: number, event: CustomEvent): void {
+    const value = (event.detail as { value?: string }).value;
+    const cantidad = Math.max(1, parseInt(value ?? '1', 10) || 1);
+    this.dispensacionService.actualizarItem(index, { cantidad });
   }
 
   async abrirBusquedaMedicamento(): Promise<void> {
@@ -248,8 +149,11 @@ export class SeleccionarMedicamentosPage implements OnInit {
     modal.present();
     const { data, role } = await modal.onWillDismiss();
     if (role === 'confirm' && data) {
-      this.dispensacionService.agregarItem(data);
-      this.showFeedback('Medicamento agregado a la receta', 'success');
+      this.dispensacionService.agregarItem({
+        medicamento: data.medicamento,
+        cantidad: data.cantidad,
+      });
+      this.showFeedback('Medicamento agregado', 'success');
     }
   }
 
@@ -263,14 +167,8 @@ export class SeleccionarMedicamentosPage implements OnInit {
     this.router.navigate(['/dispensacion']);
   }
 
-  puedeContinuar(): boolean {
-    if (this.estado().items.length === 0) return false;
-    if (!this.estado().recetaId) return true;
-    return this.estado().items.every((item) => Boolean(item.lote));
-  }
-
   siguiente(): void {
-    if (!this.puedeContinuar()) return;
+    if (this.estado().items.length === 0) return;
     this.router.navigate(['/dispensacion/confirmacion']);
   }
 }

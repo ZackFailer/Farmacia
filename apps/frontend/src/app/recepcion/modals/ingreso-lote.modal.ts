@@ -1,4 +1,7 @@
-import { Component, Input, signal, inject } from '@angular/core';
+/**
+ * @deprecated Lote functionality removed. This modal is kept for historical reference only.
+ */
+import { Component, input, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   IonHeader,
@@ -216,11 +219,16 @@ import { NuevoMedicamentoModal } from './nuevo-medicamento.modal';
     }
   `],
 })
-export class IngresoLoteModal {
+export class IngresoLoteModal implements OnInit {
   private readonly modalCtrl = inject(ModalController);
   private readonly recepcionService = inject(RecepcionService);
 
-  @Input({ required: true }) medicamentos: Medicamento[] = [];
+  readonly medicamentos = input<Medicamento[]>([]);
+  listaMedicamentos: Medicamento[] = [];
+
+  ngOnInit() {
+    this.listaMedicamentos = [...this.medicamentos()];
+  }
 
   searchTerm = '';
   resultados = signal<Medicamento[]>([]);
@@ -238,7 +246,7 @@ export class IngresoLoteModal {
       this.resultados.set([]);
       return;
     }
-    const filtered = this.medicamentos.filter(m =>
+    const filtered = this.listaMedicamentos.filter(m =>
       m.nombre_generico.toLowerCase().includes(term) ||
       (m.nombre_comercial?.toLowerCase().includes(term) ?? false)
     );
@@ -262,7 +270,7 @@ export class IngresoLoteModal {
 
     this.recepcionService.crearMedicamento(data).subscribe({
       next: (nuevo) => {
-        this.medicamentos = [nuevo, ...this.medicamentos];
+        this.listaMedicamentos = [nuevo, ...this.listaMedicamentos];
         this.seleccionarMedicamento(nuevo);
       },
     });

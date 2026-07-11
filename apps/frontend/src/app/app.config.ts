@@ -2,6 +2,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideIonicAngular } from '@ionic/angular/standalone';
+import { provideComponentInputBinding } from '@ionic/angular/common';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
@@ -27,6 +28,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(appRoutes),
     provideIonicAngular(),
+    provideComponentInputBinding(),
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: AuthService, useClass: ApiAuthService },
     { provide: RecepcionService, useClass: ApiRecepcionService },

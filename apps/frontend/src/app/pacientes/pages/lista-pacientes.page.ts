@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, computed } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,11 +6,14 @@ import {
   IonHeader, IonToolbar, IonTitle, IonButtons,
   IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
   IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner,
-  IonToast, IonToggle, IonButton, ModalController, AlertController, ViewWillEnter,
+  IonToast, IonToggle, IonButton, IonChip,
+  ModalController, AlertController, ViewWillEnter,
 } from '@ionic/angular/standalone';
 import { PacientesService } from '../services/pacientes.service';
 import { AuthService } from '../../auth/services/auth.service';
 import { Rol } from '../../shared/enums/rol.enum';
+import { ConnectivityService } from '../../core/services/connectivity.service';
+import { SyncQueueService, SyncOperationType } from '../../core/services/sync-queue.service';
 import type { Paciente, CreatePacienteDto } from '../../shared/models/paciente.model';
 import { RegistroPacienteModal } from '../modals/registro-paciente.modal';
 import { EscanerQrComponent } from '../../shared/components/escaner-qr.component';
@@ -23,7 +26,7 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
     IonHeader, IonToolbar, IonTitle, IonButtons,
     IonContent, IonItem, IonLabel, IonNote, IonSearchbar, IonIcon,
     IonFab, IonFabButton, IonMenuButton, IonList, IonSpinner, IonToast,
-    IonToggle, IonButton,
+    IonToggle, IonButton, IonChip,
     EscanerQrComponent,
   ],
   template: `
@@ -88,13 +91,30 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
         <p class="app-inline-error">{{ errorScan() }}</p>
       }
 
+      @if (pendingCount() > 0 && searchTerm.trim()) {
+        <div class="sync-banner">
+          <ion-icon name="cloud-upload-outline"></ion-icon>
+          <span>Tienes {{ pendingCount() }} operaciones pendientes de sincronizar.</span>
+        </div>
+      }
+
       <ion-list>
         @for (p of pacientes(); track p.id) {
           <ion-item button (click)="verDetalle(p)" [class.item-inactivo]="p.activo === false">
             <ion-label>
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>{{ p.id_emergencia }} @if (p.cedula) { · {{ p.cedula }} }</p>
-              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada ?? 0 }} años | {{ p.peso_estimado }} kg</ion-note>
+              <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+              @if (p.pacientePatologias && p.pacientePatologias.length > 0) {
+                <ion-chip color="danger" class="chip-xs">
+                  <ion-label>{{ p.pacientePatologias.length }} pat.</ion-label>
+                </ion-chip>
+              }
+              @if (p.pacienteNecesidades && p.pacienteNecesidades.length > 0) {
+                <ion-chip color="primary" class="chip-xs">
+                  <ion-label>{{ p.pacienteNecesidades.length }} nec.</ion-label>
+                </ion-chip>
+              }
               @if (p.activo === false) {
                 <ion-note color="medium">Inactivo</ion-note>
               }
@@ -130,6 +150,21 @@ import { normalizePacienteQrId } from '../../shared/utils/paciente-qr.util';
   `,
   styles: [`
     .item-inactivo { opacity: 0.5; }
+    .sync-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--app-space-sm);
+      padding: var(--app-space-sm) var(--app-space-md);
+      margin-bottom: var(--app-space-md);
+      background: var(--app-warning-bg, #fff3cd);
+      border-radius: var(--app-radius-sm, 6px);
+      font-size: var(--app-font-size-sm);
+      color: var(--app-warning, #856404);
+    }
+    .sync-banner ion-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
   `],
 })
 export class ListaPacientesPage implements ViewWillEnter {
@@ -139,7 +174,7 @@ export class ListaPacientesPage implements ViewWillEnter {
   errorScan = signal('');
   showToast = signal(false);
   toastMessage = signal('');
-  toastColor = signal<'success' | 'danger'>('success');
+  toastColor = signal<'success' | 'danger' | 'warning'>('success');
   verInactivos = signal(false);
 
   private readonly pacientesService = inject(PacientesService);
@@ -147,6 +182,10 @@ export class ListaPacientesPage implements ViewWillEnter {
   private readonly alertCtrl = inject(AlertController);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly connectivity = inject(ConnectivityService);
+  private readonly syncQueue = inject(SyncQueueService);
+
+  pendingCount = computed(() => this.syncQueue.pendingCount());
 
   esAdmin(): boolean {
     return this.authService.getUsuario()?.rol === Rol.ADMIN;
@@ -230,6 +269,17 @@ export class ListaPacientesPage implements ViewWillEnter {
         },
         error: (error: unknown) => {
           this.cargando.set(false);
+          if (this.connectivity.isNetworkError(error)) {
+            this.syncQueue.enqueue({
+              type: SyncOperationType.CREATE_PATIENT,
+              endpoint: '/pacientes',
+              method: 'POST',
+              body: data,
+              metadata: { descripcion: `Registrar paciente: ${data.nombre} ${data.apellido}` },
+            });
+            this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+            return;
+          }
           this.presentToast(this.getErrorMessage(error, 'No se pudo registrar el paciente.'), 'danger');
         },
       });
@@ -252,12 +302,38 @@ export class ListaPacientesPage implements ViewWillEnter {
             if (esAdmin) {
               this.pacientesService.eliminarPaciente(p.id).subscribe({
                 next: () => { this.buscar(); this.presentToast('Paciente eliminado permanentemente.', 'success'); },
-                error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al eliminar'), 'danger'),
+                error: (e) => {
+                  if (this.connectivity.isNetworkError(e)) {
+                    this.syncQueue.enqueue({
+                      type: SyncOperationType.DELETE_PATIENT,
+                      endpoint: `/pacientes/${p.id}`,
+                      method: 'DELETE',
+                      body: null,
+                      metadata: { descripcion: `Eliminar paciente: ${p.nombre} ${p.apellido}` },
+                    });
+                    this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+                    return;
+                  }
+                  this.presentToast(this.getErrorMessage(e, 'Error al eliminar'), 'danger');
+                },
               });
             } else {
               this.pacientesService.actualizarPaciente(p.id, { activo: false } as unknown as Partial<CreatePacienteDto>).subscribe({
                 next: () => { this.buscar(); this.presentToast('Paciente desactivado.', 'success'); },
-                error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al desactivar'), 'danger'),
+                error: (e) => {
+                  if (this.connectivity.isNetworkError(e)) {
+                    this.syncQueue.enqueue({
+                      type: SyncOperationType.UPDATE_PATIENT,
+                      endpoint: `/pacientes/${p.id}`,
+                      method: 'PATCH',
+                      body: { activo: false },
+                      metadata: { descripcion: `Desactivar paciente: ${p.nombre} ${p.apellido}` },
+                    });
+                    this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+                    return;
+                  }
+                  this.presentToast(this.getErrorMessage(e, 'Error al desactivar'), 'danger');
+                },
               });
             }
           },
@@ -270,11 +346,24 @@ export class ListaPacientesPage implements ViewWillEnter {
   async reactivarPaciente(p: Paciente): Promise<void> {
     this.pacientesService.actualizarPaciente(p.id, { activo: true } as unknown as Partial<CreatePacienteDto>).subscribe({
       next: () => { this.buscar(); this.presentToast('Paciente reactivado.', 'success'); },
-      error: (e) => this.presentToast(this.getErrorMessage(e, 'Error al reactivar'), 'danger'),
+      error: (e) => {
+        if (this.connectivity.isNetworkError(e)) {
+          this.syncQueue.enqueue({
+            type: SyncOperationType.UPDATE_PATIENT,
+            endpoint: `/pacientes/${p.id}`,
+            method: 'PATCH',
+            body: { activo: true },
+            metadata: { descripcion: `Reactivar paciente: ${p.nombre} ${p.apellido}` },
+          });
+          this.presentToast('Guardado en cola. Se sincronizará cuando haya conexión.', 'warning');
+          return;
+        }
+        this.presentToast(this.getErrorMessage(e, 'Error al reactivar'), 'danger');
+      },
     });
   }
 
-  private presentToast(message: string, color: 'success' | 'danger'): void {
+  private presentToast(message: string, color: 'success' | 'danger' | 'warning'): void {
     this.toastMessage.set(message);
     this.toastColor.set(color);
     this.showToast.set(true);

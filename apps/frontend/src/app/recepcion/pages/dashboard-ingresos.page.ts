@@ -1,3 +1,7 @@
+/**
+ * @deprecated Lote functionality removed. This page is kept for historical reference only.
+ * Replaced by CatalogoMedicamentosPage as the default recepcion page.
+ */
 import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -112,28 +116,14 @@ export class DashboardIngresosPage implements ViewWillEnter, ViewWillLeave {
   }
 
   private refrescarSilencioso(): void {
-    this.recepcionService.getLotes().subscribe({
-      next: (data) => {
-        this.lotes.set(data);
-        this.filtrarLotes();
-      },
-    });
+    // @deprecated: lote functionality removed
   }
 
   private cargarLotes() {
-    this.cargando.set(true);
-    this.errorMsg.set('');
-    this.recepcionService.getLotes().subscribe({
-      next: (data) => {
-        this.lotes.set(data);
-        this.lotesFiltrados.set(data);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.cargando.set(false);
-        this.errorMsg.set('No fue posible cargar los lotes.');
-      },
-    });
+    // @deprecated: lote functionality removed
+    this.cargando.set(false);
+    this.lotes.set([]);
+    this.lotesFiltrados.set([]);
   }
 
   reintentarCarga(): void {
@@ -164,22 +154,7 @@ export class DashboardIngresosPage implements ViewWillEnter, ViewWillLeave {
   }
 
   async abrirIngresoLote() {
-    const { IngresoLoteModal } = await import('../modals/ingreso-lote.modal');
-    const modal = await this.modalCtrl.create({
-      component: IngresoLoteModal,
-      componentProps: { medicamentos: this.medicamentos },
-    });
-    await modal.present();
-    const { data, role } = await modal.onWillDismiss();
-    if (role === 'cancel' || !data) return;
-
-    this.recepcionService.crearLote(data).subscribe({
-      next: (lote) => {
-        this.cargarLotes();
-        this.cargarMedicamentos();
-        this.abrirImprimirEtiqueta(lote);
-      },
-    });
+    // @deprecated: lote functionality removed
   }
 
   async abrirImprimirEtiqueta(lote: Lote) {
