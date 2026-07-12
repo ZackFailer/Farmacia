@@ -25,9 +25,10 @@ async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<voi
 }
 
 async function bootstrap() {
+  const useHttps = !process.env.DISABLE_HTTPS && !process.env.RAILWAY_ENVIRONMENT;
   const certsDir = join(__dirname, 'certs');
   const pfxPath = join(certsDir, 'cert.pfx');
-  const httpsOptions = existsSync(pfxPath)
+  const httpsOptions = useHttps && existsSync(pfxPath)
     ? {
         pfx: readFileSync(pfxPath),
         passphrase: 'apopharma',
