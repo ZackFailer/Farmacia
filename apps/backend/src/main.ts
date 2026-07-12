@@ -7,6 +7,14 @@ import { join } from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app/app.module';
 
+process.on('unhandledRejection', (reason) => {
+  Logger.error('Unhandled promise rejection:', (reason as Error)?.message ?? reason);
+});
+
+process.on('uncaughtException', (error) => {
+  Logger.error('Uncaught exception:', error.message);
+});
+
 process.env.DB_PATH = process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite');
 
 async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<void> {
@@ -19,7 +27,6 @@ async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<voi
       Logger.log('Added missing column paciente.telefono');
     }
   } catch {
-    // Table may not exist yet (will be created by migration)
     Logger.log('Skipped ensurePacienteTelefonoColumn: table not ready.');
   }
 }
@@ -38,22 +45,42 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     httpsOptions,
   });
+
   const globalPrefix = 'api/v1';
   const staticRoot = join(__dirname, '../frontend/browser');
+  const hasStatic = existsSync(staticRoot);
+
+  Logger.log(`Static root: ${staticRoot} (exists: ${hasStatic})`);
 
   app.setGlobalPrefix(globalPrefix);
-  if (existsSync(staticRoot)) {
+
+  if (hasStatic) {
     app.useStaticAssets(staticRoot);
   }
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/api/') || req.method !== 'GET' || !existsSync(staticRoot)) {
+    if (req.path.startsWith('/api/') || req.method !== 'GET' || !hasStatic) {
       next();
       return;
     }
-
-    res.sendFile('index.html', { root: staticRoot });
+    try {
+      res.sendFile('index.html', { root: staticRoot }, (err) => {
+        if (err) {
+          Logger.error(`sendFile error for ${req.path}: ${err.message}`);
+          next();
+        }
+      });
+    } catch (err) {
+      Logger.error(`sendFile threw for ${req.path}: ${(err as Error).message}`);
+      next();
+    }
   });
+
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    Logger.error(`Express error: ${err.message}`);
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -74,4 +101,7 @@ async function bootstrap() {
   );
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  Logger.error(`Bootstrap failed: ${err.message}`, err.stack);
+  process.exit(1);
+});
