@@ -37,6 +37,7 @@ import { CatalogoNecesidad } from './common/entities/necesidad.entity';
 import { PacientePatologia } from './common/entities/paciente-patologia.entity';
 import { PacienteNecesidad } from './common/entities/paciente-necesidad.entity';
 import { NodeSqliteCompat } from './common/node-sqlite-compat';
+import { CreateInitialSchema1741190810000 } from './common/migrations/1741190810000-CreateInitialSchema';
 
 const typeOrmOptions = {
   type: 'sqlite' as const,
@@ -60,6 +61,8 @@ const typeOrmOptions = {
     PacienteNecesidad,
   ],
   synchronize: false,
+  migrations: [CreateInitialSchema1741190810000],
+  migrationsRun: true,
 };
 
 const mockSqlite = {

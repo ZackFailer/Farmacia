@@ -10,12 +10,17 @@ import { AppModule } from './app/app.module';
 process.env.DB_PATH = process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite');
 
 async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<void> {
-  const columns = await dataSource.query("PRAGMA table_info('paciente')") as Array<{ name: string }>;
-  const hasTelefono = columns.some((col) => col.name === 'telefono');
+  try {
+    const columns = await dataSource.query("PRAGMA table_info('paciente')") as Array<{ name: string }>;
+    const hasTelefono = columns.some((col) => col.name === 'telefono');
 
-  if (!hasTelefono) {
-    await dataSource.query("ALTER TABLE paciente ADD COLUMN telefono varchar(20)");
-    Logger.log('Added missing column paciente.telefono');
+    if (!hasTelefono) {
+      await dataSource.query("ALTER TABLE paciente ADD COLUMN telefono varchar(20)");
+      Logger.log('Added missing column paciente.telefono');
+    }
+  } catch {
+    // Table may not exist yet (will be created by migration)
+    Logger.log('Skipped ensurePacienteTelefonoColumn: table not ready.');
   }
 }
 
