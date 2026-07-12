@@ -8,7 +8,15 @@ if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }
 
-process.env.DB_PATH = join(dataDir, 'farmacia.sqlite');
+if (!process.env.DB_PATH) {
+  process.env.DB_PATH = join(dataDir, 'farmacia.sqlite');
+}
+
+// Ensure parent directory of DB_PATH exists (handles Railway volume mount)
+const dbDir = join(process.env.DB_PATH, '..');
+if (!existsSync(dbDir)) {
+  mkdirSync(dbDir, { recursive: true });
+}
 
 chdir(projectRoot);
 
