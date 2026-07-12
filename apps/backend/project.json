@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "inputs": ["default", "!{projectRoot}/data/**"],
       "options": {
-        "command": "webpack-cli build && if exist certs (xcopy certs ..\\..\\dist\\apps\\backend\\certs /E /I /Y >nul) & copy /Y start.js ..\\..\\dist\\apps\\backend\\start.js >nul & cd ..\\..\\dist\\apps\\backend && npm install --omit=dev --ignore-scripts --no-audit --no-fund >nul 2>&1",
+        "command": "webpack-cli build && node ../../scripts/postbuild-backend.js",
         "env": {
           "NODE_ENV": "production"
         },
