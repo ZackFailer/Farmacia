@@ -8,7 +8,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '512M',
-      node_args: '--experimental-sqlite',
+      node_args: '',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,

@@ -11,7 +11,7 @@
     ]
   },
   "deploy": {
-    "startCommand": "node --experimental-sqlite dist/apps/backend/start.js",
+    "startCommand": "node dist/apps/backend/start.js",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",

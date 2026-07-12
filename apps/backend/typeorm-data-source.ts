@@ -1,39 +1,23 @@
 import 'reflect-metadata';
-import { DataSource, DataSourceOptions } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { join } from 'node:path';
-import { NodeSqliteCompat } from './src/app/common/node-sqlite-compat';
 
-const mockSqlite = {
-  verbose: () => ({
-    Database: class Mock {
-      /* noop */
-      run() { return this; }
-      close() { /* noop */ }
-    },
-  }),
-};
+const dbUrl = process.env.DATABASE_URL;
+const connConfig = dbUrl
+  ? { url: dbUrl }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME || process.env.PGUSER || 'postgres',
+      password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
+      database: process.env.DB_NAME || process.env.PGDATABASE || 'farmacia_dev',
+    };
 
-const options = {
-  type: 'sqlite' as const,
-  // __dirname = apps/backend/ (ejecutado con ts-node), DB_PATH para override
-  database: process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite'),
-  entities: ['apps/backend/src/app/common/entities/*.entity.ts'],
-  migrations: ['apps/backend/src/app/common/migrations/*.ts'],
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  ...connConfig,
+  entities: [join(__dirname, 'src/app/common/entities/*.entity.ts')],
+  migrations: [join(__dirname, 'src/app/common/migrations/*.ts')],
   synchronize: false,
-  driver: mockSqlite,
-} as unknown as DataSourceOptions;
-
-export const AppDataSource = new DataSource(options);
-
-const driver = AppDataSource.driver as unknown as { connect: () => Promise<void>; disconnect: () => Promise<void>; databaseConnection: NodeSqliteCompat | undefined };
-driver.connect = async () => {
-  driver.databaseConnection = new NodeSqliteCompat(options.database as string);
-};
-driver.disconnect = async () => {
-  const compat = driver.databaseConnection;
-  if (compat) {
-    await new Promise<void>((resolve, reject) => {
-      compat.close((err) => (err ? reject(err) : resolve()));
-    });
-  }
-};
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+});

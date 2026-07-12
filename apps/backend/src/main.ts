@@ -1,7 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DataSource } from 'typeorm';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
@@ -14,22 +13,6 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (error) => {
   Logger.error('Uncaught exception:', error.message);
 });
-
-process.env.DB_PATH = process.env.DB_PATH || join(__dirname, 'data', 'farmacia.sqlite');
-
-async function ensurePacienteTelefonoColumn(dataSource: DataSource): Promise<void> {
-  try {
-    const columns = await dataSource.query("PRAGMA table_info('paciente')") as Array<{ name: string }>;
-    const hasTelefono = columns.some((col) => col.name === 'telefono');
-
-    if (!hasTelefono) {
-      await dataSource.query("ALTER TABLE paciente ADD COLUMN telefono varchar(20)");
-      Logger.log('Added missing column paciente.telefono');
-    }
-  } catch {
-    Logger.log('Skipped ensurePacienteTelefonoColumn: table not ready.');
-  }
-}
 
 async function bootstrap() {
   const useHttps = !process.env.DISABLE_HTTPS && !process.env.RAILWAY_ENVIRONMENT;
@@ -89,9 +72,6 @@ async function bootstrap() {
     }),
   );
   app.enableCors();
-
-  const dataSource = app.get(DataSource);
-  await ensurePacienteTelefonoColumn(dataSource);
 
   const port = process.env.PORT || 3000;
   const protocol = httpsOptions ? 'https' : 'http';
