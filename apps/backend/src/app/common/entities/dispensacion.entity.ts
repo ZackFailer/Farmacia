@@ -38,7 +38,7 @@ export class Dispensacion {
   @Column({ name: 'usuario_id' })
   usuarioId!: number;
 
-  @Column({ name: 'fecha_hora', type: 'datetime' })
+  @Column({ name: 'fecha_hora', type: 'timestamp' })
   fechaHora!: Date;
 
   @Column({ type: 'text', nullable: true })

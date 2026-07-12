@@ -25,7 +25,7 @@ export class PacienteNecesidad {
   @Column({ default: false })
   suplida!: boolean;
 
-  @Column({ name: 'fecha_suplida', type: 'datetime', nullable: true })
+  @Column({ name: 'fecha_suplida', type: 'timestamp', nullable: true })
   fechaSuplida?: Date;
 
   @Column({ name: 'suplida_por_id', type: 'int', nullable: true })

@@ -34,7 +34,7 @@ export class Receta {
   @Column({ name: 'doctor_id' })
   doctorId!: number;
 
-  @Column({ name: 'fecha_hora', type: 'datetime' })
+  @Column({ name: 'fecha_hora', type: 'timestamp' })
   fechaHora!: Date;
 
   @Column({ type: 'varchar', length: 20, default: 'pendiente' })
