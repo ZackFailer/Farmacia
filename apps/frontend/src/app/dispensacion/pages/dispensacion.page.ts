@@ -104,6 +104,15 @@ import type { Receta } from '../../shared/models/receta.model';
             @if (p.cedula) { <p>C.I.: {{ p.cedula }}</p> }
             <p>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</p>
             <ion-note>{{ getSituacionViviendaLabel(p.situacion_vivienda) }} @if (p.es_titular) { · Titular de núcleo familiar } @else if (p.tiene_carga_familiar) { · Carga familiar }</ion-note>
+            @if (p.pacientePatologias && p.pacientePatologias.length > 0) {
+              <div class="paciente-patologias">
+                <ion-note color="primary">
+                  @for (pp of p.pacientePatologias; track pp.id; let last = $last) {
+                    {{ pp.patologia.nombre }}{{ !last ? ', ' : '' }}
+                  }
+                </ion-note>
+              </div>
+            }
           </ion-label>
         </ion-item>
 
@@ -195,6 +204,9 @@ import type { Receta } from '../../shared/models/receta.model';
     .familiar-detalle {
       font-size: var(--app-font-size-xs);
       color: var(--app-text-secondary);
+    }
+    .paciente-patologias {
+      margin-top: var(--app-space-xs);
     }
   `],
 })

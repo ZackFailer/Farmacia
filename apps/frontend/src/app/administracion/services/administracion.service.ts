@@ -5,6 +5,13 @@ import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/
 import type { Patologia, CreatePatologiaDto } from '../../shared/models/patologia.model';
 import type { Necesidad, CreateNecesidadDto } from '../../shared/models/necesidad.model';
 
+export interface ParametroSistema {
+  id: number;
+  clave: string;
+  valor: string;
+  updatedAt: string;
+}
+
 @Injectable()
 export abstract class AdministracionService {
   abstract getUsuarios(incluirInactivos?: boolean): Observable<Usuario[]>;
@@ -23,4 +30,7 @@ export abstract class AdministracionService {
   abstract crearNecesidad(dto: CreateNecesidadDto): Observable<Necesidad>;
   abstract actualizarNecesidad(id: number, dto: Partial<CreateNecesidadDto>): Observable<Necesidad>;
   abstract eliminarNecesidad(id: number): Observable<{ success: boolean }>;
+
+  abstract getParametros(): Observable<ParametroSistema[]>;
+  abstract updateParametro(clave: string, valor: string): Observable<ParametroSistema>;
 }

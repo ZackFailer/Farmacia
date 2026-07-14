@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as ExcelJS from 'exceljs';
 import type { ExportarCensoResponse } from '../../shared/models/exportar-censo.model';
+import type { EstadisticasMedicamentos } from '../../shared/models/estadisticas-medicamentos.model';
 
 const SITUACION_VIVIENDA_LABELS: Record<string, string> = {
   no_afectado: 'No afectado',
@@ -144,6 +145,87 @@ export class ExcelExportService {
         sheet.addRow({ seccion: 'Sin Movimientos', medicamento: m.nombre });
       }
     }
+  }
+
+  async generarExcelEstadisticas(data: EstadisticasMedicamentos, filename: string): Promise<void> {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'ApoPharma';
+
+    const sheet = workbook.addWorksheet('Estadísticas');
+    const headerStyle: Partial<ExcelJS.Style> = {
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } },
+      font: { bold: true, size: 11, color: { argb: 'FFFFFFFF' } },
+    };
+
+    sheet.columns = [
+      { header: 'Sección', key: 'seccion', width: 30 },
+      { header: 'Métrica', key: 'metrica', width: 35 },
+      { header: 'Valor', key: 'valor', width: 15 },
+    ];
+    sheet.getRow(1).eachCell((cell) => { cell.style = headerStyle; });
+
+    const addRow = (seccion: string, metrica: string, valor: number | string) => {
+      sheet.addRow({ seccion, metrica, valor: String(valor) });
+    };
+
+    addRow('General', 'Fecha', data.fechaActual ? new Date(data.fechaActual).toLocaleDateString() : '');
+    addRow('General', 'Hora de cierre', data.horaCierre);
+    addRow('General', 'Total pacientes', data.totalPacientes);
+    addRow('General', 'Total medicamentos', data.totalMedicamentos);
+    addRow('General', 'Total dispensaciones', data.totalDispensaciones);
+    addRow('General', 'Total dosis', data.totalDosis);
+    addRow('General', 'Promedio dosis/día', data.promedioDosisPorDia);
+    sheet.addRow({});
+
+    addRow('Distribución por Sexo y Edad', '', '');
+    for (const item of data.distribucionSexoEdad) {
+      addRow(
+        item.sexo === 'M' ? 'Hombres' : 'Mujeres',
+        `Edad ${item.rango}`,
+        item.count,
+      );
+    }
+    sheet.addRow({});
+
+    if (data.medicamentosMasDispensados.length > 0) {
+      sheet.columns = [
+        { header: 'Sección', key: 'seccion', width: 20 },
+        { header: 'Medicamento', key: 'medicamento', width: 30 },
+        { header: 'Presentación', key: 'presentacion', width: 20 },
+        { header: 'Concentración', key: 'concentracion', width: 15 },
+        { header: 'Dosis Totales', key: 'dosis', width: 15 },
+        { header: 'Pacientes', key: 'pacientes', width: 20 },
+      ];
+      const header2 = sheet.addRow({ seccion: 'Sección', medicamento: 'Medicamento', presentacion: 'Presentación', concentracion: 'Concentración', dosis: 'Dosis Totales', pacientes: 'Pacientes' });
+      header2.eachCell((cell) => { cell.style = headerStyle; });
+
+      for (const m of data.medicamentosMasDispensados) {
+        sheet.addRow({ seccion: 'Top 10', medicamento: m.medicamento, presentacion: m.presentacion, concentracion: m.concentracion, dosis: m.totalDosis, pacientes: m.pacientes });
+      }
+    }
+
+    if (data.medicamentosSinMovimientos.length > 0) {
+      sheet.addRow({});
+      sheet.columns = [
+        { header: 'Sección', key: 'seccion', width: 20 },
+        { header: 'Medicamento', key: 'medicamento', width: 40 },
+      ];
+      const header3 = sheet.addRow({ seccion: 'Sección', medicamento: 'Medicamento' });
+      header3.eachCell((cell) => { cell.style = headerStyle; });
+
+      for (const m of data.medicamentosSinMovimientos) {
+        sheet.addRow({ seccion: 'Sin Uso', medicamento: m.nombre });
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   private agregarHojaPacientes(

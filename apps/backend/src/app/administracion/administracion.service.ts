@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { hash } from 'bcryptjs';
 import { Usuario } from '../common/entities/usuario.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
+import { ParametroSistema } from '../common/entities/parametro-sistema.entity';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { ActualizarConfiguracionDto } from './dto/actualizar-configuracion.dto';
@@ -20,6 +21,8 @@ export class AdministracionService {
     private readonly usuarioRepository: Repository<Usuario>,
     @InjectRepository(Configuracion)
     private readonly configuracionRepository: Repository<Configuracion>,
+    @InjectRepository(ParametroSistema)
+    private readonly parametroRepository: Repository<ParametroSistema>,
   ) {}
 
   getUsuarios(incluirInactivos?: boolean) {
@@ -130,5 +133,19 @@ export class AdministracionService {
 
     configuracion.updatedById = usuarioId ?? null;
     return this.configuracionRepository.save(configuracion);
+  }
+
+  getParametros() {
+    return this.parametroRepository.find({ order: { clave: 'ASC' } });
+  }
+
+  async updateParametro(clave: string, valor: string) {
+    let param = await this.parametroRepository.findOne({ where: { clave } });
+    if (!param) {
+      param = this.parametroRepository.create({ clave, valor });
+    } else {
+      param.valor = valor;
+    }
+    return this.parametroRepository.save(param);
   }
 }

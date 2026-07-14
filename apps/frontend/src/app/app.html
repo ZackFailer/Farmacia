@@ -49,4 +49,13 @@
   </ion-menu>
 
   <ion-router-outlet id="main"></ion-router-outlet>
+
+  <ion-toast
+    [isOpen]="toast.state().isOpen"
+    [message]="toast.state().message"
+    [color]="toast.state().color"
+    [duration]="toast.state().duration"
+    position="bottom"
+    (didDismiss)="toast.dismiss()"
+  ></ion-toast>
 </ion-app>

@@ -287,6 +287,23 @@ src/app/
 
 ---
 
+## 8. Base de datos
+
+- PostgreSQL 16 en producción (Railway) y desarrollo local.
+- `synchronize: false` — migraciones explícitas con TypeORM.
+- Migración inicial: `apps/backend/src/app/common/migrations/1741200000000-CreatePostgresSchema.ts`.
+- Conexión vía `DATABASE_URL` (Railway) o variables individuales (`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`).
+- En Railway, el servicio PostgreSQL asigna `DATABASE_URL` automáticamente al servicio Web.
+- Seed data: medicamentos, patologías, necesidades, usuarios y configuraciones se cargan manualmente desde la consola SQL de Railway o mediante `scripts/exportar-seed.js`.
+
+## 9. Despliegue
+
+- Railway: dos servicios (Web + PostgreSQL).
+- Build: `railway.json` define `buildCommand` y `startCommand`.
+- El frontend compilado se sirve como estático desde el backend NestJS (sin servidor separado).
+
+---
+
 ## 8. Pendientes de alineación funcional
 
 - Exponer disponibilidad clínica suficiente dentro del flujo de recetas.

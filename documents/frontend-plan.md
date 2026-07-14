@@ -304,7 +304,16 @@ core/
 
 ---
 
-## 9. Pendientes de alineación funcional
+## 9. Despliegue (Railway)
+
+- El frontend compilado se sirve como estático desde el backend NestJS en `http://localhost:3000` (Railway) o `https://dominio-railway.app`.
+- No hay servidor separado para el frontend en producción.
+- Desarrollo local: `npx nx serve frontend` (puerto 4200) con proxy al backend.
+- El `baseHref` es `/` y las rutas se manejan con catch-all en Express.
+
+---
+
+## 10. Pendientes de alineación funcional
 
 - SyncService offline + cola localStorage (pendiente de implementación).
 - Filtro por carpa en lista-pacientes page (pendiente de implementación).

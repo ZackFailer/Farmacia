@@ -24,10 +24,6 @@ export class DispensacionDetalle {
   @Column({ name: 'dispensacion_id' })
   dispensacionId!: number;
 
-  /** null para dispensaciones nuevas (sin lote); poblado solo en históricas */
-  @Column({ name: 'lote_id', nullable: true })
-  loteId?: number;
-
   @ManyToOne(() => Medicamento, (medicamento) => medicamento.dispensacionDetalles, {
     nullable: false,
     onDelete: 'RESTRICT',

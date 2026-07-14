@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import {
   CreateDateColumn,
   Entity,
@@ -26,6 +27,7 @@ export class Usuario {
   @Column({ type: 'varchar', length: 20 })
   rol!: UserRole;
 
+  @Exclude()
   @Column({ name: 'pin_hash', type: 'varchar', length: 255 })
   pinHash!: string;
 

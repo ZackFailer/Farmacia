@@ -43,7 +43,9 @@ export class RecetasService {
     const receta = await this.recetaRepository.findOne({
       where: { id, activo: true },
       relations: {
-        paciente: true,
+        paciente: {
+          pacientePatologias: { patologia: true },
+        },
         doctor: true,
         detalles: { medicamento: true },
       },
@@ -56,7 +58,9 @@ export class RecetasService {
     return this.recetaRepository.find({
       where: { estado: 'pendiente', activo: true },
       relations: {
-        paciente: true,
+        paciente: {
+          pacientePatologias: { patologia: true },
+        },
         doctor: true,
         detalles: { medicamento: true },
       },
@@ -68,6 +72,9 @@ export class RecetasService {
     return this.recetaRepository.find({
       where: { pacienteId, activo: true },
       relations: {
+        paciente: {
+          pacientePatologias: { patologia: true },
+        },
         doctor: true,
         detalles: { medicamento: true },
       },

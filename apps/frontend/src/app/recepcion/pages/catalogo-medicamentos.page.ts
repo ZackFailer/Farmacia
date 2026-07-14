@@ -63,7 +63,7 @@ import { Rol } from '../../shared/enums/rol.enum';
         </div>
       } @else {
         @for (m of medicamentos(); track m.id) {
-          <ion-item button [class.item-inactivo]="m.activo === false" (click)="editarMedicamento(m)">
+          <ion-item button [class.item-inactivo]="m.activo === false">
             <ion-label>
               <h2>{{ m.nombre_generico }} {{ m.concentracion }}{{ m.unidad_concentracion }}</h2>
               <p>{{ m.presentacion }}{{ m.nombre_comercial ? ' · ' + m.nombre_comercial : '' }}</p>
@@ -76,6 +76,9 @@ import { Rol } from '../../shared/enums/rol.enum';
                 }
               </div>
             </ion-label>
+            <ion-button slot="end" fill="clear" color="primary" (click)="editarMedicamento(m)">
+              <ion-icon name="pencil-outline" slot="icon-only"></ion-icon>
+            </ion-button>
             @if (m.activo === false && esAdmin()) {
               <ion-button slot="end" fill="clear" color="success" (click)="reactivarMedicamento(m)">
                 <ion-icon name="refresh-outline" slot="icon-only"></ion-icon>
@@ -182,8 +185,8 @@ export class CatalogoMedicamentosPage {
     const alert = await this.alertCtrl.create({
       header: 'Eliminar medicamento',
       message: esAdmin
-        ? `¿Eliminar permanentemente <strong>${m.nombre_generico}</strong>?`
-        : `¿Desactivar <strong>${m.nombre_generico}</strong>?`,
+        ? `¿Eliminar permanentemente ${m.nombre_generico}?`
+        : `¿Desactivar ${m.nombre_generico}?`,
       buttons: [
         { text: 'Cancelar', role: 'cancel' },
         {

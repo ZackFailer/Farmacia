@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
-import { AdministracionService } from './administracion.service';
+import { AdministracionService, type ParametroSistema } from './administracion.service';
 import type { Usuario, CreateUsuarioDto, UpdateUsuarioDto } from '../../shared/models/usuario.model';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
 import type { Patologia, CreatePatologiaDto } from '../../shared/models/patologia.model';
@@ -191,5 +191,13 @@ export class MockAdministracionService extends AdministracionService {
     if (idx === -1) return throwError(() => new Error('Necesidad no encontrada'));
     necesidades.splice(idx, 1);
     return of({ success: true });
+  }
+
+  getParametros(): Observable<ParametroSistema[]> {
+    return of([{ id: 1, clave: 'hora_cierre', valor: '18:00', updatedAt: '' }]);
+  }
+
+  updateParametro(clave: string, valor: string): Observable<ParametroSistema> {
+    return of({ id: 1, clave, valor, updatedAt: new Date().toISOString() });
   }
 }

@@ -4,12 +4,10 @@ import {
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
   IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
   IonToggle, IonIcon, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
-  IonCheckbox, IonNote, IonChip,
   ModalController,
 } from '@ionic/angular/standalone';
 import { Sexo } from '../../shared/enums/sexo.enum';
-import { SituacionVivienda, SITUACION_VIVIENDA_LABELS } from '../../shared/enums/situacion-vivienda.enum';
-import { PacientesService } from '../services/pacientes.service';
+import { SituacionVivienda } from '../../shared/enums/situacion-vivienda.enum';
 import { CacheCatalogoService } from '../../core/services/cache-catalogo.service';
 import type { Patologia } from '../../shared/models/patologia.model';
 import type { Necesidad } from '../../shared/models/necesidad.model';
@@ -47,7 +45,6 @@ interface FamiliarForm {
     IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
     IonContent, IonItem, IonInput, IonLabel, IonSelect, IonSelectOption,
     IonToggle, IonIcon, IonFooter, IonDatetime, IonDatetimeButton, IonModal,
-    IonCheckbox,
     FormsModule,
   ],
   template: `
@@ -231,26 +228,21 @@ interface FamiliarForm {
             <p>Cargando catálogos...</p>
           </ion-label>
         </ion-item>
-      } @else if (patologiasItems.length === 0) {
-        <ion-item>
-          <ion-label class="ion-text-center">
-            <p>No hay patologías registradas</p>
-          </ion-label>
-        </ion-item>
       } @else {
-        @for (p of patologiasItems; track p.id) {
+        <ion-item>
+          <ion-label position="stacked">Seleccionar patologías</ion-label>
+          <ion-select [value]="patologiasSeleccionadas()" (ionChange)="onPatologiasChange($event)" multiple="true" interface="alert">
+            @for (p of patologiasItems; track p.id) {
+              <ion-select-option [value]="p.id">{{ p.nombre }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+
+        @for (p of patologiasSeleccionadas(); track p; let i = $index) {
           <ion-item>
-            <ion-checkbox slot="start" [(ngModel)]="p.seleccionado"></ion-checkbox>
-            <ion-label>
-              <h2>{{ p.nombre }}</h2>
-            </ion-label>
+            <ion-label position="stacked">Tratamiento para {{ getPatologiaNombre(p) }}</ion-label>
+            <ion-input [ngModel]="getPatologiaTratamiento(p)" (ngModelChange)="setPatologiaTratamiento(p, $event)" placeholder="Ej: 500mg cada 8h"></ion-input>
           </ion-item>
-          @if (p.seleccionado) {
-            <ion-item>
-              <ion-label position="stacked">Tratamiento</ion-label>
-              <ion-input [(ngModel)]="p.tratamiento" placeholder="Ej: 500mg cada 8h"></ion-input>
-            </ion-item>
-          }
         }
       }
 
@@ -263,21 +255,15 @@ interface FamiliarForm {
             <p>Cargando catálogos...</p>
           </ion-label>
         </ion-item>
-      } @else if (necesidadesItems.length === 0) {
-        <ion-item>
-          <ion-label class="ion-text-center">
-            <p>No hay necesidades registradas</p>
-          </ion-label>
-        </ion-item>
       } @else {
-        @for (n of necesidadesItems; track n.id) {
-          <ion-item>
-            <ion-checkbox slot="start" [(ngModel)]="n.seleccionado"></ion-checkbox>
-            <ion-label>
-              <h2>{{ n.nombre }}</h2>
-            </ion-label>
-          </ion-item>
-        }
+        <ion-item>
+          <ion-label position="stacked">Seleccionar necesidades</ion-label>
+          <ion-select [value]="necesidadIdsSeleccionados()" (ionChange)="onNecesidadesChange($event)" multiple="true" interface="alert">
+            @for (n of necesidadesItems; track n.id) {
+              <ion-select-option [value]="n.id">{{ n.nombre }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
       }
     </ion-content>
 
@@ -353,9 +339,11 @@ export class RegistroPacienteModal implements OnInit {
   patologiasItems: PatologiaItem[] = [];
   necesidadesItems: NecesidadItem[] = [];
   cargandoCatalogos = true;
+  patologiasSeleccionadas = signal<number[]>([]);
+  necesidadIdsSeleccionados = signal<number[]>([]);
+  patologiaTratamientos = signal<Record<number, string>>({});
 
   private readonly modalCtrl = inject(ModalController);
-  private readonly pacientesService = inject(PacientesService);
   private readonly cacheCatalogo = inject(CacheCatalogoService);
 
   async ngOnInit(): Promise<void> {
@@ -381,6 +369,26 @@ export class RegistroPacienteModal implements OnInit {
     } finally {
       this.cargandoCatalogos = false;
     }
+  }
+
+  onPatologiasChange(event: CustomEvent): void {
+    this.patologiasSeleccionadas.set(event.detail.value ?? []);
+  }
+
+  onNecesidadesChange(event: CustomEvent): void {
+    this.necesidadIdsSeleccionados.set(event.detail.value ?? []);
+  }
+
+  getPatologiaNombre(id: number): string {
+    return this.patologiasItems.find((p) => p.id === id)?.nombre ?? '';
+  }
+
+  getPatologiaTratamiento(id: number): string {
+    return this.patologiaTratamientos()[id] ?? '';
+  }
+
+  setPatologiaTratamiento(id: number, value: string | null | undefined): void {
+    this.patologiaTratamientos.update((map) => ({ ...map, [id]: value ?? '' }));
   }
 
   onFamiliarSexoChange(index: number, event: CustomEvent): void {
@@ -441,12 +449,12 @@ export class RegistroPacienteModal implements OnInit {
           ? Math.max(0, new Date().getFullYear() - new Date(this.fechaNacimiento).getFullYear())
           : 0;
 
-    const patologiasArray = this.patologiasItems
-      .filter((p) => p.seleccionado)
-      .map((p) => ({ patologiaId: p.id, tratamiento: p.tratamiento || undefined }));
-    const necesidadIds = this.necesidadesItems
-      .filter((n) => n.seleccionado)
-      .map((n) => n.id);
+    const tratamientos = this.patologiaTratamientos();
+    const patologiasArray = this.patologiasSeleccionadas().map((id) => ({
+      patologiaId: id,
+      tratamiento: tratamientos[id] || undefined,
+    }));
+    const necesidadIds = this.necesidadIdsSeleccionados();
 
     const dto = {
       nombre: this.nombre.trim(),

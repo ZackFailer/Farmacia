@@ -68,6 +68,9 @@ interface RecetaMedItem {
       --background: var(--stock-ok-bg);
       opacity: 0.85;
     }
+    .paciente-patologias {
+      margin-top: var(--app-space-sm);
+    }
   `,
   template: `
     <ion-header>
@@ -128,6 +131,15 @@ interface RecetaMedItem {
               <h2>{{ p.nombre }} {{ p.apellido }}</h2>
               <p>ID: {{ p.id_emergencia }} @if (p.cedula) { · C.I.: {{ p.cedula }} }</p>
               <ion-note>{{ p.sexo === 'M' ? 'Masculino' : 'Femenino' }} | {{ p.edad_estimada }} años | {{ p.peso_estimado }} kg</ion-note>
+              @if (p.pacientePatologias && p.pacientePatologias.length > 0) {
+                <div class="paciente-patologias">
+                  <ion-note color="primary">
+                    @for (pp of p.pacientePatologias; track pp.id; let last = $last) {
+                      {{ pp.patologia.nombre }}{{ !last ? ', ' : '' }}
+                    }
+                  </ion-note>
+                </div>
+              }
             </ion-card-content>
           </ion-card>
 

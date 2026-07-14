@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, Min } from 'class-validator';
+import { IsInt, Min } from 'class-validator';
 
 export class CrearDispensacionDetalleDto {
   @IsInt()
@@ -7,8 +7,4 @@ export class CrearDispensacionDetalleDto {
   @IsInt()
   @Min(1)
   cantidad!: number;
-
-  @IsOptional()
-  @IsInt()
-  loteId?: number;
 }

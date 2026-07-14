@@ -178,41 +178,39 @@ export class PacientesService {
   }
 
   async updatePaciente(id: number, dto: ActualizarPacienteDto, usuarioId?: number) {
-    const paciente = await this.pacienteRepository.findOne({
-      where: { id },
-      relations: {
-        pacientePatologias: true,
-        pacienteNecesidades: true,
-      },
-    });
-    if (!paciente) {
-      throw new NotFoundException('Patient not found');
-    }
+    const updateData: Record<string, unknown> = {};
 
-    if (dto.nombre !== undefined) paciente.nombre = dto.nombre;
-    if (dto.apellido !== undefined) paciente.apellido = dto.apellido;
-    if (dto.cedula !== undefined) paciente.cedula = dto.cedula;
-    if (dto.telefono !== undefined) paciente.telefono = dto.telefono;
-    if (dto.sexo !== undefined) paciente.sexo = dto.sexo;
-    if (dto.edadEstimada !== undefined) paciente.edadEstimada = dto.edadEstimada;
-    if (dto.fechaNacimiento !== undefined) paciente.fechaNacimiento = dto.fechaNacimiento;
-    if (dto.edadManual !== undefined) paciente.edadManual = dto.edadManual;
-    if (dto.esRecienNacido !== undefined) paciente.esRecienNacido = dto.esRecienNacido;
-    if (dto.pesoEstimado !== undefined) paciente.pesoEstimado = dto.pesoEstimado;
+    if (dto.nombre !== undefined) updateData['nombre'] = dto.nombre;
+    if (dto.apellido !== undefined) updateData['apellido'] = dto.apellido;
+    if (dto.cedula !== undefined) updateData['cedula'] = dto.cedula;
+    if (dto.telefono !== undefined) updateData['telefono'] = dto.telefono;
+    if (dto.sexo !== undefined) updateData['sexo'] = dto.sexo;
+    if (dto.edadEstimada !== undefined) updateData['edadEstimada'] = dto.edadEstimada;
+    if (dto.fechaNacimiento !== undefined) updateData['fechaNacimiento'] = dto.fechaNacimiento;
+    if (dto.edadManual !== undefined) updateData['edadManual'] = dto.edadManual;
+    if (dto.esRecienNacido !== undefined) updateData['esRecienNacido'] = dto.esRecienNacido;
+    if (dto.pesoEstimado !== undefined) updateData['pesoEstimado'] = dto.pesoEstimado;
+    if (dto.situacionVivienda !== undefined) updateData['situacionVivienda'] = dto.situacionVivienda;
+    if (dto.tieneDiscapacidadMotora !== undefined) updateData['tieneDiscapacidadMotora'] = dto.tieneDiscapacidadMotora;
+    if (dto.activo !== undefined) updateData['activo'] = dto.activo;
 
     // Compute edadEstimada if not explicitly provided
     if (dto.edadEstimada === undefined && (dto.fechaNacimiento !== undefined || dto.edadManual !== undefined || dto.esRecienNacido !== undefined)) {
-      paciente.edadEstimada = this.computeEdadEstimada({
-        esRecienNacido: dto.esRecienNacido ?? paciente.esRecienNacido,
-        fechaNacimiento: dto.fechaNacimiento ?? paciente.fechaNacimiento ?? undefined,
-        edadManual: dto.edadManual ?? paciente.edadManual ?? undefined,
+      updateData['edadEstimada'] = this.computeEdadEstimada({
+        esRecienNacido: dto.esRecienNacido ?? undefined,
+        fechaNacimiento: dto.fechaNacimiento ?? undefined,
+        edadManual: dto.edadManual ?? undefined,
       });
     }
-    if (dto.situacionVivienda !== undefined) paciente.situacionVivienda = dto.situacionVivienda;
-    if (dto.tieneDiscapacidadMotora !== undefined) paciente.tieneDiscapacidadMotora = dto.tieneDiscapacidadMotora;
-    if (dto.activo !== undefined) paciente.activo = dto.activo;
 
-    paciente.updatedById = usuarioId ?? null;
+    updateData['updatedById'] = usuarioId ?? null;
+
+    if (Object.keys(updateData).length > 0) {
+      const result = await this.pacienteRepository.update(id, updateData);
+      if (result.affected === 0) {
+        throw new NotFoundException('Patient not found');
+      }
+    }
 
     if (dto.patologias !== undefined || dto.patologiaIds !== undefined) {
       await this.pacientePatologiaRepository.delete({ pacienteId: id });
@@ -249,7 +247,6 @@ export class PacientesService {
       }
     }
 
-    await this.pacienteRepository.save(paciente);
     return this.loadPacienteConNucleo(id);
   }
 

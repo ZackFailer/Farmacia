@@ -6,7 +6,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { RecepcionModule } from './recepcion/recepcion.module';
-import { InventarioModule } from './inventario/inventario.module';
 import { PacientesModule } from './pacientes/pacientes.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { DispensacionModule } from './dispensacion/dispensacion.module';
@@ -15,17 +14,16 @@ import { AdministracionModule } from './administracion/administracion.module';
 import { PatologiaModule } from './patologia/patologia.module';
 import { NecesidadModule } from './necesidad/necesidad.module';
 import { CensoModule } from './censo/censo.module';
+import { EstadisticasMedicamentosModule } from './estadisticas-medicamentos/estadisticas-medicamentos.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { CommonModule } from './common/common.module';
 import { Usuario } from './common/entities/usuario.entity';
 import { Medicamento } from './common/entities/medicamento.entity';
-import { Lote } from './common/entities/lote.entity';
 import { Paciente } from './common/entities/paciente.entity';
 import { Dispensacion } from './common/entities/dispensacion.entity';
 import { DispensacionDetalle } from './common/entities/dispensacion-detalle.entity';
 import { Configuracion } from './common/entities/configuracion.entity';
-import { LoteMovimiento } from './common/entities/lote-movimiento.entity';
 import { NucleoFamiliar } from './common/entities/nucleo-familiar.entity';
 import { NucleoFamiliarMiembro } from './common/entities/nucleo-familiar-miembro.entity';
 import { Receta } from './common/entities/receta.entity';
@@ -34,7 +32,11 @@ import { CatalogoPatologia } from './common/entities/patologia.entity';
 import { CatalogoNecesidad } from './common/entities/necesidad.entity';
 import { PacientePatologia } from './common/entities/paciente-patologia.entity';
 import { PacienteNecesidad } from './common/entities/paciente-necesidad.entity';
+import { ParametroSistema } from './common/entities/parametro-sistema.entity';
 import { CreatePostgresSchema1741200000000 } from './common/migrations/1741200000000-CreatePostgresSchema';
+import { SimplificarSinLotes1741900000001 } from './common/migrations/1741900000001-SimplificarSinLotes';
+import { DropCantidadFromMedicamento1742000000002 } from './common/migrations/1742000000002-DropCantidadFromMedicamento';
+import { CreateParametroSistema1742100000003 } from './common/migrations/1742100000003-CreateParametroSistema';
 
 const dbUrl = process.env.DATABASE_URL;
 const dbConfig = dbUrl
@@ -55,12 +57,10 @@ const dbConfig = dbUrl
       entities: [
         Usuario,
         Medicamento,
-        Lote,
         Paciente,
         Dispensacion,
         DispensacionDetalle,
         Configuracion,
-        LoteMovimiento,
         NucleoFamiliar,
         NucleoFamiliarMiembro,
         Receta,
@@ -69,9 +69,10 @@ const dbConfig = dbUrl
         CatalogoNecesidad,
         PacientePatologia,
         PacienteNecesidad,
+        ParametroSistema,
       ],
       synchronize: false,
-      migrations: [CreatePostgresSchema1741200000000],
+      migrations: [CreatePostgresSchema1741200000000, SimplificarSinLotes1741900000001, DropCantidadFromMedicamento1742000000002, CreateParametroSistema1742100000003],
       migrationsRun: true,
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     }),
@@ -83,7 +84,6 @@ const dbConfig = dbUrl
     CommonModule,
     AuthModule,
     RecepcionModule,
-    InventarioModule,
     PacientesModule,
     RecetasModule,
     DispensacionModule,
@@ -92,6 +92,7 @@ const dbConfig = dbUrl
     PatologiaModule,
     NecesidadModule,
     CensoModule,
+    EstadisticasMedicamentosModule,
   ],
   controllers: [AppController],
   providers: [

@@ -53,7 +53,7 @@ Los items de la cola de sincronización offline que contengan el campo `es_damni
 - Backend: entidad, DTOs (crear/actualizar), enum, service mappings, estadísticas
 - Frontend: enum, modelos, services (API + mock), formularios (3 modales), display (8 páginas/modales), tablero estadístico, exportación XLSX, exportación CSV con BOM
 - Offline SyncQueue: migrador retrocompatible en `processItems`
-- Base de datos: columna migrada automáticamente por TypeORM `synchronize: true`
+- Base de datos: migración TypeORM con `ALTER TABLE ... ADD COLUMN` (synchronize: false)
 
 ### 3.2 No incluye
 
@@ -170,16 +170,27 @@ Se agrega al `package.json` del workspace raíz o del frontend (verificar polít
 
 ## 7. Notas técnicas
 
-### 7.1 Migración automática en DB
+### 7.1 Migración en DB
 
-TypeORM con `synchronize: true` eliminará la columna `es_damnificado` y creará `situacion_vivienda`. Para preservar datos existentes durante desarrollo, se puede ejecutar un script manual:
+Con `synchronize: false`, la migración se realiza mediante TypeORM. Crear una migración con:
+
+```bash
+npx nx run backend:typeorm migration:create ./src/app/common/migrations/AgregarSituacionVivienda
+```
+
+O ejecutar SQL directamente en PostgreSQL:
+
+```sql
+ALTER TABLE paciente ADD COLUMN situacion_vivienda VARCHAR(20) DEFAULT 'no_afectado';
+UPDATE paciente SET situacion_vivienda = 'damnificado' WHERE es_damnificado = true;
+```
+
+Si se migra desde SQLite existente, el script intermedio sería:
 
 ```sql
 ALTER TABLE paciente ADD COLUMN situacion_vivienda TEXT DEFAULT 'no_afectado';
 UPDATE paciente SET situacion_vivienda = 'damnificado' WHERE es_damnificado = 1;
 ```
-
-O esperar al seed que crea pacientes con el nuevo formato.
 
 ### 7.2 API Contract
 

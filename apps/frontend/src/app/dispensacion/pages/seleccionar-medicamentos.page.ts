@@ -16,6 +16,7 @@ import {
   IonButtons,
   IonBackButton,
   IonIcon,
+  IonCheckbox,
   ModalController,
 } from '@ionic/angular/standalone';
 import { DispensacionService } from '../services/dispensacion.service';
@@ -39,6 +40,7 @@ import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
     IonButtons,
     IonBackButton,
     IonIcon,
+    IonCheckbox,
   ],
   template: `
     <ion-header>
@@ -79,10 +81,11 @@ import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
         <ion-list>
           @for (item of estado().items; track $index; let i = $index) {
             <ion-item>
+              <ion-checkbox slot="start" [checked]="item.seleccionado !== false" (ionChange)="toggleSeleccionado(i)"></ion-checkbox>
               <ion-label>
                 <h2>{{ item.medicamento.nombre_generico }} {{ item.medicamento.concentracion }}{{ item.medicamento.unidad_concentracion }}</h2>
                 <p>{{ item.medicamento.presentacion }}</p>
-                <ion-note>Cantidad: {{ item.cantidad }} @if (item.dias) { · {{ item.dias }} días }</ion-note>
+                <ion-note>Cantidad en dosis: {{ item.cantidad }} @if (item.dias) { · {{ item.dias }} días }</ion-note>
                 @if (item.dosisIndicada) {
                   <p class="app-dosis-indicada"><strong>Indicación:</strong> {{ item.dosisIndicada }}</p>
                 }
@@ -92,7 +95,7 @@ import { BusquedaMedicamentoModal } from '../modals/busqueda-medicamento.modal';
               </ion-button>
             </ion-item>
             <ion-item>
-              <ion-label position="stacked">Cantidad</ion-label>
+              <ion-label position="stacked">Cantidad en dosis</ion-label>
               <ion-input type="number" [value]="item.cantidad" (ionInput)="actualizarCantidad(i, $event)" min="1"></ion-input>
             </ion-item>
           }
@@ -157,6 +160,12 @@ export class SeleccionarMedicamentosPage {
     }
   }
 
+  toggleSeleccionado(index: number): void {
+    const items = this.estado().items;
+    const nuevoSeleccionado = items[index].seleccionado === false;
+    this.dispensacionService.actualizarItem(index, { seleccionado: nuevoSeleccionado });
+  }
+
   eliminarItem(index: number): void {
     this.dispensacionService.eliminarItem(index);
   }
@@ -168,7 +177,13 @@ export class SeleccionarMedicamentosPage {
   }
 
   siguiente(): void {
-    if (this.estado().items.length === 0) return;
+    const items = this.estado().items;
+    const itemsSeleccionados = items.filter(i => i.seleccionado !== false);
+    if (itemsSeleccionados.length === 0) {
+      this.showFeedback('Seleccione al menos un medicamento para continuar.', 'warning');
+      return;
+    }
+    this.dispensacionService.marcarSeleccionados(itemsSeleccionados);
     this.router.navigate(['/dispensacion/confirmacion']);
   }
 }

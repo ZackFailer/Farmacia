@@ -334,6 +334,10 @@ export class CensoService {
       .where('dd.activo = :activo', { activo: true })
       .andWhere('d.activo = :activo', { activo: true })
       .groupBy('dd.medicamento_id')
+      .addGroupBy('m.nombre_generico')
+      .addGroupBy('m.presentacion')
+      .addGroupBy('m.concentracion')
+      .addGroupBy('m.unidad_concentracion')
       .orderBy('SUM(dd.cantidad)', 'DESC')
       .limit(10)
       .getRawMany();

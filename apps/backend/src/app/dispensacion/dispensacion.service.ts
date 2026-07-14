@@ -11,7 +11,6 @@ import { Receta } from '../common/entities/receta.entity';
 import { Configuracion } from '../common/entities/configuracion.entity';
 import { Dispensacion } from '../common/entities/dispensacion.entity';
 import { DispensacionDetalle } from '../common/entities/dispensacion-detalle.entity';
-import { Lote } from '../common/entities/lote.entity';
 import { CrearDispensacionDto } from './dto/crear-dispensacion.dto';
 
 @Injectable()
@@ -86,28 +85,11 @@ export class DispensacionService {
           );
         }
 
-        if (item.loteId) {
-          const lote = await manager.findOne(Lote, {
-            where: { id: item.loteId, medicamentoId: item.medicamentoId, activo: true },
-          });
-          if (!lote) {
-            throw new NotFoundException(`Lote ${item.loteId} not found for medication ${item.medicamentoId}`);
-          }
-          if (lote.cantidadActual < item.cantidad) {
-            throw new BadRequestException(
-              `Insufficient stock in lote ${item.loteId}: available ${lote.cantidadActual}, requested ${item.cantidad}`,
-            );
-          }
-          lote.cantidadActual -= item.cantidad;
-          await manager.save(Lote, lote);
-        }
-
         const detalle = manager.create(DispensacionDetalle, {
           dispensacionId: savedDispensacion.id,
           medicamentoId: item.medicamentoId,
           cantidad: item.cantidad,
           dosisMgKg,
-          loteId: item.loteId ?? undefined,
         });
         await manager.save(DispensacionDetalle, detalle);
       }

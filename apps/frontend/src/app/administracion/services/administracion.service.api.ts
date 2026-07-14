@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import type { Observable } from 'rxjs';
-import { AdministracionService } from './administracion.service';
+import { AdministracionService, type ParametroSistema } from './administracion.service';
 import { API_BASE_URL } from '../../core/services/api.constants';
 import type { Configuracion, UpdateConfiguracionDto } from '../../shared/models/configuracion.model';
 import type { CreateUsuarioDto, UpdateUsuarioDto, Usuario } from '../../shared/models/usuario.model';
@@ -138,6 +138,14 @@ export class ApiAdministracionService extends AdministracionService {
       created_at: item.createdAt,
       updated_at: item.updatedAt,
     };
+  }
+
+  getParametros(): Observable<ParametroSistema[]> {
+    return this.http.get<ParametroSistema[]>(`${API_BASE_URL}/parametros`);
+  }
+
+  updateParametro(clave: string, valor: string): Observable<ParametroSistema> {
+    return this.http.patch<ParametroSistema>(`${API_BASE_URL}/parametros/${encodeURIComponent(clave)}`, { valor });
   }
 
   private toConfiguracion(item: ApiConfiguracion): Configuracion {

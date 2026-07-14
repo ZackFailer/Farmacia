@@ -6,12 +6,11 @@ import { provideComponentInputBinding } from '@ionic/angular/common';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
+import { httpToastInterceptor } from './core/interceptors/http-toast.interceptor';
 import { AuthService } from './auth/services/auth.service';
 import { ApiAuthService } from './auth/services/auth.service.api';
 import { RecepcionService } from './recepcion/services/recepcion.service';
 import { ApiRecepcionService } from './recepcion/services/recepcion.service.api';
-import { InventarioService } from './inventario/services/inventario.service';
-import { ApiInventarioService } from './inventario/services/inventario.service.api';
 import { DispensacionService } from './dispensacion/services/dispensacion.service';
 import { ApiDispensacionService } from './dispensacion/services/dispensacion.service.api';
 import { HistorialService } from './historial/services/historial.service';
@@ -22,6 +21,8 @@ import { RecetasService } from './recetas/services/recetas.service';
 import { ApiRecetasService } from './recetas/services/recetas.service.api';
 import { AdministracionService } from './administracion/services/administracion.service';
 import { ApiAdministracionService } from './administracion/services/administracion.service.api';
+import { EstadisticasMedicamentosService } from './medicamentos/services/estadisticas-medicamentos.service';
+import { ApiEstadisticasMedicamentosService } from './medicamentos/services/estadisticas-medicamentos.service.api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -29,14 +30,14 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideIonicAngular(),
     provideComponentInputBinding(),
-    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor, httpToastInterceptor])),
     { provide: AuthService, useClass: ApiAuthService },
     { provide: RecepcionService, useClass: ApiRecepcionService },
-    { provide: InventarioService, useClass: ApiInventarioService },
     { provide: DispensacionService, useClass: ApiDispensacionService },
     { provide: PacientesService, useClass: ApiPacientesService },
     { provide: RecetasService, useClass: ApiRecetasService },
     { provide: HistorialService, useClass: ApiHistorialService },
     { provide: AdministracionService, useClass: ApiAdministracionService },
+    { provide: EstadisticasMedicamentosService, useClass: ApiEstadisticasMedicamentosService },
   ],
 };

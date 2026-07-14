@@ -14,11 +14,13 @@ import {
   IonIcon,
   IonButton,
   IonButtons,
+  IonToast,
   MenuController,
 } from '@ionic/angular/standalone';
 import { AuthService } from './auth/services/auth.service';
 import { IndicadorSyncComponent } from './shared/components/indicador-sync.component';
 import { Rol, ROL_LABELS } from './shared/enums/rol.enum';
+import { ToastService } from './shared/services/toast.service';
 
 interface MenuItem {
   ruta: string;
@@ -33,13 +35,12 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   { ruta: '/pacientes', label: 'Pacientes', icon: 'people-outline', activePrefix: '/pacientes', roles: [Rol.RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN, Rol.SURVEYOR] },
   { ruta: '/recetas', label: 'Recetas', icon: 'document-text-outline', activePrefix: '/recetas', roles: [Rol.DOCTOR, Rol.ADMIN] },
   { ruta: '/dispensacion', label: 'Dispensación', icon: 'medkit-outline', activePrefix: '/dispensacion', roles: [Rol.PHARMACEUTICAL, Rol.ADMIN] },
-  { ruta: '/inventario', label: 'Inventario', icon: 'cube-outline', activePrefix: '/inventario', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
-  { ruta: '/inventario/metricas', label: 'Métricas', icon: 'analytics-outline', activePrefix: '/inventario/metricas', roles: [Rol.MEDICATION_RECEPTIONIST, Rol.PHARMACEUTICAL, Rol.ADMIN] },
   { ruta: '/historial', label: 'Historial', icon: 'time-outline', activePrefix: '/historial', roles: [Rol.DOCTOR, Rol.PHARMACEUTICAL, Rol.ADMIN] },
+  { ruta: '/medicamentos/estadisticas', label: 'Estadísticas', icon: 'bar-chart-outline', activePrefix: '/medicamentos/estadisticas', roles: [Rol.PHARMACEUTICAL, Rol.MEDICATION_RECEPTIONIST, Rol.DOCTOR, Rol.ADMIN] },
   { ruta: '/censo/carpas', label: 'Censo - Carpas', icon: 'home-outline', activePrefix: '/censo/carpas', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
   { ruta: '/censo/tablero', label: 'Censo - Tablero', icon: 'stats-chart-outline', activePrefix: '/censo/tablero', roles: [Rol.SURVEYOR, Rol.RECEPTIONIST, Rol.ADMIN] },
-  { ruta: '/inventario/umbrales', label: 'Umbrales', icon: 'settings-outline', activePrefix: '/inventario/umbrales', roles: [Rol.ADMIN] },
   { ruta: '/admin/usuarios', label: 'Admin - Usuarios', icon: 'shield-outline', activePrefix: '/admin/usuarios', roles: [Rol.ADMIN] },
+  { ruta: '/admin/configuracion', label: 'Admin - Configuración', icon: 'settings-outline', activePrefix: '/admin/configuracion', roles: [Rol.ADMIN] },
   { ruta: '/admin/patologias', label: 'Admin - Patologías', icon: 'pulse-outline', activePrefix: '/admin/patologias', roles: [Rol.ADMIN, Rol.SURVEYOR] },
   { ruta: '/admin/necesidades', label: 'Admin - Necesidades', icon: 'list-outline', activePrefix: '/admin/necesidades', roles: [Rol.ADMIN, Rol.SURVEYOR] },
 ];
@@ -49,7 +50,7 @@ const ALL_MENU_ITEMS: MenuItem[] = [
   imports: [
     IonApp, IonRouterOutlet, IonMenu, IonHeader,
     IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel,
-    IonIcon, IonButton, IonButtons,
+    IonIcon, IonButton, IonButtons, IonToast,
     IndicadorSyncComponent,
   ],
   selector: 'app-root',
@@ -61,6 +62,7 @@ export class AppComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private menuCtrl = inject(MenuController);
+  readonly toast = inject(ToastService);
 
   readonly usuario = this.authService.usuario$;
 
@@ -71,11 +73,7 @@ export class AppComponent {
   });
 
   isActive(item: MenuItem): boolean {
-    const current = this.router.url;
-    if (item.activePrefix === '/inventario') {
-      return current === '/inventario';
-    }
-    return current.startsWith(item.activePrefix);
+    return this.router.url.startsWith(item.activePrefix);
   }
 
   navegar(ruta: string): void {

@@ -338,6 +338,13 @@ paciente_necesidad (
 - JWT para autenticación.
 - `@Roles()` para autorización por módulo.
 - Soft delete como comportamiento por defecto.
+- PostgreSQL 16 vía `pg` driver (Railway en producción, local para desarrollo).
+
+### Despliegue
+
+- **Railway**: dos servicios (Web + PostgreSQL). La app se sirve desde un solo proceso NestJS en puerto 3000; el frontend compilado se sirve como estático.
+- **Conexión DB**: `DATABASE_URL` (Railway) o variables individuales `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` (local).
+- **Migraciones**: TypeORM con `synchronize: false`. Migración inicial `1741200000000-CreatePostgresSchema`.
 
 ### Operación
 

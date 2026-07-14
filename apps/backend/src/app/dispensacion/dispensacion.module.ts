@@ -7,7 +7,6 @@ import { Configuracion } from '../common/entities/configuracion.entity';
 import { Dispensacion } from '../common/entities/dispensacion.entity';
 import { DispensacionDetalle } from '../common/entities/dispensacion-detalle.entity';
 import { Medicamento } from '../common/entities/medicamento.entity';
-import { Lote } from '../common/entities/lote.entity';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { Lote } from '../common/entities/lote.entity';
       Dispensacion,
       DispensacionDetalle,
       Medicamento,
-      Lote,
     ]),
     RecetasModule,
   ],

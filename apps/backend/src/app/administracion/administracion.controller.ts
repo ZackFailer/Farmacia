@@ -9,6 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { IsString, IsNotEmpty } from 'class-validator';
+
+class UpdateParametroDto {
+  @IsString()
+  @IsNotEmpty()
+  valor!: string;
+}
 import { AdministracionService } from './administracion.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtUser } from '../common/types/jwt-user.type';
@@ -61,5 +68,18 @@ export class AdministracionController {
     @CurrentUser() user: JwtUser,
   ) {
     return this.administracionService.updateConfiguracion(id, dto, user.sub);
+  }
+
+  @Get('parametros')
+  getParametros() {
+    return this.administracionService.getParametros();
+  }
+
+  @Patch('parametros/:clave')
+  updateParametro(
+    @Param('clave') clave: string,
+    @Body() dto: UpdateParametroDto,
+  ) {
+    return this.administracionService.updateParametro(clave, dto.valor);
   }
 }

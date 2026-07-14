@@ -14,6 +14,7 @@ export interface RecetaItem {
   dosisCalculada?: number;
   dosisValida?: boolean;
   dosisMaxima?: number;
+  seleccionado?: boolean;
 }
 
 export interface EstadoDispensacion {
@@ -49,7 +50,7 @@ export abstract class DispensacionService {
   setReceta(r: Receta): void {
     const items: RecetaItem[] = (r.detalles ?? []).reduce<RecetaItem[]>((acc, d) => {
       if (d.medicamento) {
-        acc.push({ medicamento: d.medicamento, cantidad: d.cantidad_recetada ?? 1, dias: d.dias, dosisIndicada: d.dosis_indicada });
+        acc.push({ medicamento: d.medicamento, cantidad: d.cantidad_recetada ?? 1, dias: d.dias, dosisIndicada: d.dosis_indicada, seleccionado: true });
       }
       return acc;
     }, []);
@@ -64,7 +65,7 @@ export abstract class DispensacionService {
   }
 
   agregarItem(item: RecetaItem): void {
-    this._estado.update(e => ({ ...e, items: [...e.items, item] }));
+    this._estado.update(e => ({ ...e, items: [...e.items, { ...item, seleccionado: true }] }));
   }
 
   actualizarItem(index: number, patch: Partial<RecetaItem>): void {
@@ -76,6 +77,10 @@ export abstract class DispensacionService {
 
   eliminarItem(index: number): void {
     this._estado.update(e => ({ ...e, items: e.items.filter((_, i) => i !== index) }));
+  }
+
+  marcarSeleccionados(items: RecetaItem[]): void {
+    this._estado.update(e => ({ ...e, items }));
   }
 
   resetPaciente(): void {

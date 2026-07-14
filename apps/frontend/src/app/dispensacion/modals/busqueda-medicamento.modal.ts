@@ -39,7 +39,7 @@ import type { Medicamento } from '../../shared/models/medicamento.model';
           </ion-item>
 
           <ion-item>
-            <ion-label position="stacked">Cantidad *</ion-label>
+            <ion-label position="stacked">Cantidad en dosis *</ion-label>
             <ion-input type="number" [(ngModel)]="cantidad" placeholder="1"></ion-input>
           </ion-item>
         </div>
